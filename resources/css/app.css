@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --color-brand-200: #ffac8a;
+    --color-brand-300: #ff8069;
+    /* Existing accent utilities share the store palette across public and admin views. */
+    --color-lime-200: var(--color-brand-200);
+    --color-lime-300: var(--color-brand-300);
+}
+@layer base {
+    body { @apply bg-[#100b0d] text-slate-100 antialiased; }
+    button, a, input, select, textarea { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300; }
+    button { @apply cursor-pointer; }
+    select { color-scheme: dark; }
+    input, textarea { color-scheme: dark; }
+}
+@layer components {
+    .shell { @apply mx-auto w-full max-w-7xl px-5 md:px-8; }
+    .panel { @apply rounded-2xl border border-white/10 bg-[#1b1317]; }
+    .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-lime-200; box-shadow: 0 4px 24px #ef38201a; }
+    .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10; }
+    .field { @apply block w-full rounded-xl border border-white/15 bg-[#130e11] px-4 py-3 text-sm text-white placeholder:text-slate-500; }
+    .label { @apply mb-2 block text-sm font-medium text-slate-300; }
+    .eyebrow { @apply text-xs font-bold uppercase tracking-[0.2em] text-lime-300; }
+    .muted { @apply text-sm leading-6 text-slate-400; }
+    .status { @apply inline-flex rounded-full border border-white/10 bg-[#24171c] px-2.5 py-1 text-xs font-semibold; }
+    .nav-link { @apply rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white; }
+    .admin-link { @apply rounded-xl border border-white/10 px-4 py-3 text-sm hover:border-lime-300/50; }
+    .store-logo { @apply h-12 w-12 shrink-0 rounded-xl border border-red-400/30 object-contain shadow-lg shadow-red-950/40; }
+    .store-hero { background: radial-gradient(ellipse at 85% 30%, #dc241f30, transparent 65%), linear-gradient(135deg, #241318, #130e11); }
+}
