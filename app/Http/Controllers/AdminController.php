@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\GameAccount;
 use App\Models\Setting;
+use App\Models\TradeRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class AdminController extends Controller
 {
     public function dashboard(): View
     {
-        return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
+        return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'tradeRequests' => TradeRequest::where('status', 'pending')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
     }
 
     public function accounts(): View
@@ -100,6 +101,33 @@ class AdminController extends Controller
     public function categories(): View
     {
         return view('admin.categories', ['categories' => Category::withCount('accounts')->orderBy('name')->get()]);
+    }
+
+    public function tradeRequests(): View
+    {
+        return view('admin.trade-requests', ['requests' => TradeRequest::with('category')->latest()->paginate(15)]);
+    }
+
+    public function tradeRequest(TradeRequest $tradeRequest): View
+    {
+        return view('admin.trade-request-show', ['tradeRequest' => $tradeRequest->load('category', 'images')]);
+    }
+
+    public function updateTradeRequest(Request $request, TradeRequest $tradeRequest): RedirectResponse
+    {
+        $data = $request->validate(['status' => 'required|in:pending,processing,accepted,rejected', 'admin_note' => 'nullable|string|max:5000']);
+        $tradeRequest->update($data);
+
+        return back()->with('success', 'Status pengajuan berhasil diperbarui.');
+    }
+
+    public function deleteTradeRequest(TradeRequest $tradeRequest): RedirectResponse
+    {
+        $paths = $tradeRequest->images->pluck('image_path')->all();
+        $tradeRequest->delete();
+        Storage::disk('public')->delete($paths);
+
+        return redirect()->route('admin.trade-requests')->with('success', 'Pengajuan tukar tambah berhasil dihapus.');
     }
 
     public function saveCategory(Request $request, ?Category $category = null): RedirectResponse

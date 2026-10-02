@@ -1,0 +1,8 @@
+@extends('layouts.admin')
+@section('title', 'Pengajuan tukar tambah')
+@section('admin-title', 'Pengajuan tukar tambah')
+@section('admin-content')
+<div class="mb-5 flex flex-wrap items-center justify-between gap-3"><p class="muted">{{ $requests->total() }} pengajuan masuk</p><a class="btn-secondary" href="{{ route('trade.create') }}" target="_blank" rel="noopener noreferrer">Lihat form publik ↗</a></div>
+<div class="panel overflow-x-auto"><table class="w-full min-w-[760px] text-left text-sm"><thead class="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500"><tr><th class="p-5">Pengaju</th><th class="p-5">Game</th><th class="p-5">Estimasi</th><th class="p-5">Status</th><th class="p-5">Tanggal</th><th class="p-5">Aksi</th></tr></thead><tbody>@forelse($requests as $request)<tr class="border-b border-white/5"><td class="p-5"><p class="font-semibold">{{ $request->name }}</p><p class="muted text-xs">{{ $request->whatsapp_number }} · {{ $request->email }}</p></td><td class="p-5">{{ $request->category->name }}</td><td class="p-5 whitespace-nowrap">{{ $request->formattedEstimatedPrice() }}</td><td class="p-5"><span class="status text-lime-300">{{ ['pending' => 'Pending', 'processing' => 'Diproses', 'accepted' => 'Diterima', 'rejected' => 'Ditolak'][$request->status] }}</span></td><td class="p-5 whitespace-nowrap">{{ $request->created_at->format('d M Y H:i') }}</td><td class="p-5"><a class="py-3 text-lime-300" href="{{ route('admin.trade-requests.show', $request) }}">Detail</a></td></tr>@empty<tr><td colspan="6" class="p-10 text-center text-slate-400">Belum ada pengajuan tukar tambah.</td></tr>@endforelse</tbody></table></div>
+<div class="mt-6">{{ $requests->links() }}</div>
+@endsection
