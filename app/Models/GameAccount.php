@@ -26,7 +26,7 @@ class GameAccount extends Model
 
     public function imageUrl(): string
     {
-        return str_starts_with($this->main_image, 'demo/') ? asset($this->main_image) : Storage::disk('public')->url($this->main_image);
+        return str_starts_with($this->main_image, 'demo/') || str_starts_with($this->main_image, 'images/') ? asset($this->main_image) : Storage::disk('public')->url($this->main_image);
     }
 
     public function formattedPrice(): string

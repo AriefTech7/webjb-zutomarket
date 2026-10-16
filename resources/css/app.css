@@ -5,31 +5,41 @@
 
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --color-brand-200: #ffac8a;
-    --color-brand-300: #ff8069;
-    /* Existing accent utilities share the store palette across public and admin views. */
+    --color-brand-200: #dbe7ff;
+    --color-brand-300: #a9c3ff;
     --color-lime-200: var(--color-brand-200);
     --color-lime-300: var(--color-brand-300);
 }
+
 @layer base {
-    body { @apply bg-[#100b0d] text-slate-100 antialiased; }
+    body {
+        @apply min-h-screen bg-[#070b1c] text-slate-100 antialiased;
+        background-image: radial-gradient(circle at 10% -10%, #839cff2b, transparent 32%), radial-gradient(circle at 100% 20%, #8e7bff1f, transparent 28%);
+    }
+
     button, a, input, select, textarea { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300; }
     button { @apply cursor-pointer; }
-    select { color-scheme: dark; }
-    input, textarea { color-scheme: dark; }
+    select, input, textarea { color-scheme: dark; }
 }
+
 @layer components {
     .shell { @apply mx-auto w-full max-w-7xl px-5 md:px-8; }
-    .panel { @apply rounded-2xl border border-white/10 bg-[#1b1317]; }
-    .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-lime-200; box-shadow: 0 4px 24px #ef38201a; }
-    .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10; }
-    .field { @apply block w-full rounded-xl border border-white/15 bg-[#130e11] px-4 py-3 text-sm text-white placeholder:text-slate-500; }
-    .label { @apply mb-2 block text-sm font-medium text-slate-300; }
+    .panel { @apply rounded-2xl border border-[#a9c3ff]/15 bg-[#101833]/85 shadow-xl shadow-[#020617]/20 backdrop-blur-sm; }
+    .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-lime-200; box-shadow: 0 8px 28px #739dff42; }
+    .btn-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#a9c3ff]/25 bg-[#a9c3ff]/10 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-[#a9c3ff]/20; }
+    .field { @apply block w-full rounded-xl border border-[#a9c3ff]/20 bg-[#080f25] px-4 py-3 text-sm text-white placeholder:text-slate-500 transition focus:border-lime-300/70; }
+    .label { @apply mb-2 block text-sm font-medium text-slate-200; }
     .eyebrow { @apply text-xs font-bold uppercase tracking-[0.2em] text-lime-300; }
     .muted { @apply text-sm leading-6 text-slate-400; }
-    .status { @apply inline-flex rounded-full border border-white/10 bg-[#24171c] px-2.5 py-1 text-xs font-semibold; }
-    .nav-link { @apply rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white; }
-    .admin-link { @apply rounded-xl border border-white/10 px-4 py-3 text-sm hover:border-lime-300/50; }
-    .store-logo { @apply h-12 w-12 shrink-0 rounded-xl border border-red-400/30 object-contain shadow-lg shadow-red-950/40; }
-    .store-hero { background: radial-gradient(ellipse at 85% 30%, #dc241f30, transparent 65%), linear-gradient(135deg, #241318, #130e11); }
+    .status { @apply inline-flex rounded-full border border-[#a9c3ff]/20 bg-[#070d20]/80 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm; }
+    .nav-link { @apply rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-[#a9c3ff]/10 hover:text-white; }
+    .admin-link { @apply rounded-xl border border-[#a9c3ff]/15 bg-[#a9c3ff]/5 px-4 py-3 text-sm transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10; }
+    .brand-wordmark { @apply h-auto w-32 max-w-[42vw] shrink-0 md:w-40; }
+    .brand-mascot { @apply h-12 w-12 shrink-0 rounded-xl border border-[#a9c3ff]/25 bg-[#a9c3ff]/10 object-contain object-top p-0.5 shadow-lg shadow-[#020617]/50; }
+    .store-hero { @apply border-[#a9c3ff]/20; background: linear-gradient(135deg, #101b42 0%, #0b1128 52%, #141034 100%); }
+    .hero-visual { @apply relative min-h-64 overflow-hidden rounded-2xl border border-[#a9c3ff]/20 shadow-2xl shadow-[#020617]/60 sm:min-h-80 lg:min-h-[25rem]; }
+    .hero-visual::after { content: ''; @apply pointer-events-none absolute inset-0; background: linear-gradient(90deg, #09112bb3 0%, transparent 55%), linear-gradient(0deg, #070b1c59, transparent 45%); }
+    .hero-visual img { @apply absolute inset-0 h-full w-full object-cover object-center; }
+    .catalog-media { @apply relative aspect-[16/10] overflow-hidden bg-[#0b122d]; }
+    .catalog-media::after { content: ''; @apply pointer-events-none absolute inset-x-0 bottom-0 h-2/3; background: linear-gradient(transparent, #071026a6); }
 }
