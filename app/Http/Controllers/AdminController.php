@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Category;
@@ -45,13 +44,13 @@ class AdminController extends Controller
     {
         $request->merge(['slug' => Str::slug($request->input('slug') ?: $request->input('title', ''))]);
         $data = $request->validate([
-            'title' => 'required|string|max:150', 'slug' => ['required', 'max:180', Rule::unique('game_accounts')->ignore($account->id)],
-            'category_id' => 'required|exists:categories,id', 'price' => 'required|integer|min:0|max:999999999999',
-            'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
-            'status' => 'required|in:available,sold,draft',
-            'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
-            'remove_images' => 'nullable|array', 'remove_images.*' => 'integer',
+            'title'         => 'required|string|max:150', 'slug'             => ['required', 'max:180', Rule::unique('game_accounts')->ignore($account->id)],
+            'category_id'   => 'required|exists:categories,id', 'price'      => 'required|integer|min:0|max:999999999999',
+            'description'   => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
+            'status'        => 'required|in:available,sold,draft',
+            'main_image'    => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'images'        => 'nullable|array|max:6', 'images.*'            => 'image|mimes:jpg,jpeg,png,webp|max:4096',
+            'remove_images' => 'nullable|array', 'remove_images.*'           => 'integer',
         ]);
         $deletedImages = $account->images()->whereIn('id', $data['remove_images'] ?? [])->get();
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
@@ -59,16 +58,16 @@ class AdminController extends Controller
         }
         unset($data['images'], $data['remove_images'], $data['main_image']);
         $newPaths = [];
-        $oldMain = $account->main_image;
+        $oldMain  = $account->main_image;
         try {
             DB::transaction(function () use ($request, $account, $data, $deletedImages, &$newPaths) {
                 if ($request->hasFile('main_image')) {
                     $data['main_image'] = $request->file('main_image')->store('accounts', 'public');
-                    $newPaths[] = $data['main_image'];
+                    $newPaths[]         = $data['main_image'];
                 }
                 $account->fill($data)->save();
                 foreach ($request->file('images', []) as $image) {
-                    $path = $image->store('accounts', 'public');
+                    $path       = $image->store('accounts', 'public');
                     $newPaths[] = $path;
                     $account->images()->create(['image_path' => $path]);
                 }
