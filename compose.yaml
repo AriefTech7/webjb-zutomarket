@@ -1,40 +1,8 @@
 services:
-  app:
-    build:
-      context: .
-      target: application
-    env_file: .env
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
-      DB_HOST: mysql
-      DB_PORT: 3306
-    depends_on:
-      mysql:
-        condition: service_healthy
-    volumes:
-      - storage_data:/var/www/html/storage
-    restart: unless-stopped
-
-  nginx:
-    build:
-      context: .
-      target: web
-    ports:
-      - "${APP_PORT:-8080}:80"
-    depends_on:
-      - app
-    volumes:
-      - storage_data:/var/www/html/storage:ro
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/up || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-    restart: unless-stopped
-
   mysql:
     image: mysql:8.4
+    ports:
+      - "127.0.0.1:${DB_PORT:-33067}:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-game_market}
       MYSQL_USER: ${DB_USERNAME:-game_market}
@@ -47,7 +15,5 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
-    restart: unless-stopped
 volumes:
   mysql_data:
-  storage_data:
