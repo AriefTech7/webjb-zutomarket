@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('wishlist', fn (Request $request): Limit => Limit::perMinute(60)
+            ->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('trade-request', fn (Request $request): Limit => Limit::perMinute(8)
+            ->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('admin-login', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by($request->ip()));
     }
 }

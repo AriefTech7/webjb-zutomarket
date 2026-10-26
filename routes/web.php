@@ -12,13 +12,13 @@ Route::get('/', [CatalogController::class, 'index'])->name('catalog');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
-Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
+Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:wishlist')->name('wishlist.accounts');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::get('/tukar-tambah', [TradeRequestController::class, 'create'])->name('trade.create');
-Route::post('/tukar-tambah', [TradeRequestController::class, 'store'])->middleware('throttle:8,1')->name('trade.store');
+Route::post('/tukar-tambah', [TradeRequestController::class, 'store'])->middleware('throttle:trade-request')->name('trade.store');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
-    Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
 });
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
