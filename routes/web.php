@@ -3,12 +3,16 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\TradeRequestController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CatalogController::class, 'index'])->name('catalog');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::get('/tukar-tambah', [TradeRequestController::class, 'create'])->name('trade.create');
 Route::post('/tukar-tambah', [TradeRequestController::class, 'store'])->middleware('throttle:8,1')->name('trade.store');
@@ -19,6 +23,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/finance', [FinanceController::class, 'index'])->name('finance');
+    Route::get('/finance/create', [FinanceController::class, 'create'])->name('finance.create');
+    Route::post('/finance', [FinanceController::class, 'store'])->name('finance.store');
+    Route::post('/finance/{transaction}/reverse', [FinanceController::class, 'reverse'])->name('finance.reverse');
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
     Route::get('/accounts/create', [AdminController::class, 'form'])->name('accounts.create');
     Route::post('/accounts', [AdminController::class, 'store'])->name('accounts.store');

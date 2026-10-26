@@ -42,4 +42,10 @@
     .hero-visual img { @apply absolute inset-0 h-full w-full object-cover object-center; }
     .catalog-media { @apply relative aspect-[16/10] overflow-hidden bg-[#0b122d]; }
     .catalog-media::after { content: ''; @apply pointer-events-none absolute inset-x-0 bottom-0 h-2/3; background: linear-gradient(transparent, #071026a6); }
+    .account-image-zoom { position: relative; }
+    .account-image-lens { @apply pointer-events-none absolute z-20 overflow-hidden rounded-full border-2 border-lime-300 bg-[#080f25] shadow-xl; }
+    .account-image-lens img { position: absolute; max-width: none; }
+    @media (hover: hover) and (pointer: fine) {
+        .account-image-zoom > [data-main-image] { cursor: zoom-in; }
+    }
 }

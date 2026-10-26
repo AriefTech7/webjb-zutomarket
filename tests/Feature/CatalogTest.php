@@ -71,8 +71,8 @@ class CatalogTest extends TestCase
         $image = $account->images()->firstOrFail();
         Storage::disk('public')->assertExists($image->image_path);
         $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk();
-        $this->put('/admin/accounts/'.$account->id, array_merge($data, ['status' => 'sold', 'remove_images' => [$image->id]]))->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'sold']);
+        $this->put('/admin/accounts/'.$account->id, array_merge($data, ['status' => 'draft', 'remove_images' => [$image->id]]))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'draft']);
         Storage::disk('public')->assertMissing($image->image_path);
         $this->delete('/admin/accounts/'.$account->id)->assertRedirect();
         Storage::disk('public')->assertMissing($account->main_image);
@@ -88,7 +88,7 @@ class CatalogTest extends TestCase
         $account = GameAccount::factory()->create(['category_id' => $category->id]);
         $this->delete('/admin/categories/'.$category->id)->assertSessionHasErrors('category');
         $this->assertDatabaseHas('categories', ['id' => $category->id, 'slug' => 'valorant-asia']);
-        $account->delete();
+        $this->delete('/admin/accounts/'.$account->id)->assertRedirect();
         $this->delete('/admin/categories/'.$category->id)->assertRedirect();
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }

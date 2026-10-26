@@ -147,4 +147,20 @@ class TradeRequestTest extends TestCase
 
         $this->get('/admin')->assertOk()->assertSee('Tukar tambah pending')->assertSee('1');
     }
+
+    public function test_category_used_by_trade_request_cannot_be_deleted(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $category = Category::factory()->create();
+        $tradeRequest = TradeRequest::create([
+            'category_id' => $category->id, 'name' => 'Pelanggan tukar tambah',
+            'whatsapp_number' => '6281234567890', 'email' => 'pelanggan@example.com',
+            'description' => 'Akun pelanggan masih menunggu peninjauan.', 'status' => 'pending',
+        ]);
+
+        $this->delete('/admin/categories/'.$category->id)->assertSessionHasErrors('category');
+
+        $this->assertModelExists($category);
+        $this->assertModelExists($tradeRequest);
+    }
 }

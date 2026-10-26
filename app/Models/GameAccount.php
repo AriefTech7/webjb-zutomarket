@@ -6,13 +6,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 class GameAccount extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'cost_price', 'description', 'specifications', 'main_image', 'status'];
+
+    protected function casts(): array
+    {
+        return ['price' => 'integer', 'cost_price' => 'integer'];
+    }
+
+    public function financialTransactions(): HasMany
+    {
+        return $this->hasMany(FinancialTransaction::class);
+    }
 
     public function category(): BelongsTo
     {

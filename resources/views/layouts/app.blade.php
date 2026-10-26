@@ -22,12 +22,13 @@
                 aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
                     alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark"><span
                     class="sr-only">{{ $storeName }}</span></a>
-            <nav class="hidden items-center gap-4 md:flex" aria-label="Navigasi utama"><a
+            <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Jelajahi akun</a><a
                     class="nav-link {{ request()->routeIs('trade.*') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('trade.create') }}">Tukar tambah</a><a class="nav-link"
                     href="{{ route('how') }}">Cara transaksi</a>
+                <a class="nav-link {{ request()->routeIs('wishlist') ? 'text-white bg-white/5' : '' }}" href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count class="text-xs text-rose-300">0</span></a>
                 @if ($whatsappNumber)
                     <a class="btn-secondary" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
                         rel="noopener noreferrer">Kontak admin ↗</a>
@@ -35,13 +36,14 @@
                 <a class="btn-secondary" href="{{ route(auth()->check() ? 'admin.dashboard' : 'login') }}">
                     {{ auth()->check() ? 'Dashboard' : 'Admin area' }} ↗</a>
             </nav>
-            <button class="btn-secondary md:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu"
+            <button class="btn-secondary xl:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu"
                 aria-label="Buka menu">☰</button>
         </div>
-        <nav id="mobile-menu" data-mobile-menu class="shell hidden space-y-2 pb-5 md:hidden"
+        <nav id="mobile-menu" data-mobile-menu class="shell hidden space-y-2 pb-5 xl:hidden"
             aria-label="Navigasi mobile"><a class="nav-link block" href="{{ route('catalog') }}">Jelajahi akun</a><a
                 class="nav-link block" href="{{ route('trade.create') }}">Tukar tambah</a><a class="nav-link block"
                 href="{{ route('how') }}">Cara transaksi</a>
+            <a class="nav-link block" href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count class="text-xs text-rose-300">0</span></a>
             @if ($whatsappNumber)
                 <a class="nav-link block text-lime-300" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
                     rel="noopener noreferrer">Kontak admin ↗</a>
@@ -51,6 +53,7 @@
         </nav>
     </header>
     <main class="flex-1">
+        <div data-wishlist-feedback role="status" aria-live="polite" class="shell hidden mt-5 rounded-xl border border-rose-300/20 bg-rose-300/5 p-4 text-sm text-slate-200"></div>
         @if (session('success'))
             <div role="status" class="shell mt-5">
                 <div class="rounded-xl border border-lime-300/30 bg-lime-300/10 p-4 text-sm text-lime-200">
@@ -70,16 +73,25 @@
     </main>
     <footer class="mt-16 border-t border-[#a9c3ff]/15 py-8">
         <div class="shell flex flex-col justify-between gap-4 sm:flex-row">
-            <div class="flex items-center gap-3"><img src="{{ asset('images/zuto-maskot.webp') }}"
-                    alt="Maskot {{ $storeName }}" width="48" height="48" class="brand-mascot" loading="lazy">
+            <div class="flex items-center gap-3">
                 <div><img src="{{ asset('images/zuto-wordmark.webp') }}" alt="{{ $storeName }}" width="1199"
                         height="422" class="brand-wordmark">
                     <p class="muted mt-1">Akun pilihan. Petualangan baru.</p>
                 </div>
             </div>
-            <div class="muted sm:text-right">
-                <p>© {{ date('Y') }} {{ $storeName }}. All rights reserved.</p><a href="{{ route('how') }}"
-                    class="hover:text-lime-300">Transaksi dilanjutkan melalui WhatsApp ↗</a>
+            <div class="w-full sm:max-w-md sm:text-right">
+                <p class="muted">© {{ date('Y') }} {{ $storeName }}.</p>
+                <a href="{{ route('how') }}" class="mt-1 inline-block text-sm text-slate-400 transition hover:text-lime-300">Transaksi dilanjutkan melalui WhatsApp ↗</a>
+                <nav class="mt-4 grid gap-2 sm:grid-cols-2" aria-label="Ikuti {{ $storeName }}">
+                    <a href="https://whatsapp.com/channel/0029VbE83IN3mFXxE4NlTG0L" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3 rounded-xl border border-[#a9c3ff]/15 bg-white/[0.03] p-3 text-left transition hover:border-lime-300/40 hover:bg-lime-300/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300">
+                        <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-lime-300/10 text-lime-300" aria-hidden="true">↗</span>
+                        <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-slate-100">Saluran WhatsApp</span><span class="block truncate text-xs text-slate-400">Ikuti update terbaru</span></span>
+                    </a>
+                    <a href="https://www.instagram.com/zutomarket.id" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3 rounded-xl border border-[#a9c3ff]/15 bg-white/[0.03] p-3 text-left transition hover:border-lime-300/40 hover:bg-lime-300/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300">
+                        <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-lime-300/10 text-lime-300" aria-hidden="true">◎</span>
+                        <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-slate-100">Instagram</span><span class="block truncate text-xs text-slate-400">@zutomarket.id</span></span>
+                    </a>
+                </nav>
             </div>
         </div>
     </footer>
