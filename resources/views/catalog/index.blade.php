@@ -21,6 +21,6 @@
         </div>
         <div class="mt-8">{{ $accounts->links() }}</div>
     </section>
-    <section class="mt-12 grid gap-5 lg:grid-cols-2"><div class="panel flex flex-col justify-between gap-5 p-7 md:flex-row md:items-center"><div><p class="eyebrow mb-2">Simple steps, next level</p><h2 class="text-xl font-bold">Ketemu akun yang cocok?</h2><p class="muted mt-1">Buka detail akun dan diskusikan transaksi langsung dengan admin.</p></div><a href="{{ route('how') }}" class="btn-secondary shrink-0">Pelajari cara transaksi ↗</a></div><div class="panel flex flex-col justify-between gap-5 border-[#a9c3ff]/20 p-7 md:flex-row md:items-center"><div><p class="eyebrow mb-2">Trade-in request</p><h2 class="text-xl font-bold">Punya akun untuk tukar tambah?</h2><p class="muted mt-1">Kirim detail akun, estimasi harga, dan screenshot. Admin akan follow up via WhatsApp.</p></div><a href="{{ route('trade.create') }}" class="btn shrink-0">Ajukan tukar tambah ↗</a></div></section>
+     <section class="mt-12"><div class="panel flex flex-col justify-between gap-5 p-7 md:flex-row md:items-center"><div><p class="eyebrow mb-2">Simple steps, next level</p><h2 class="text-xl font-bold">Ketemu akun yang cocok?</h2><p class="muted mt-1">Buka detail akun dan diskusikan transaksi langsung dengan admin.</p></div><a href="{{ route('how') }}" class="btn-secondary shrink-0">Pelajari cara transaksi ↗</a></div></section>
 </div>
 @endsection

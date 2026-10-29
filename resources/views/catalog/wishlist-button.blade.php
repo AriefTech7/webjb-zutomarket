@@ -1,4 +1,0 @@
-<button type="button" data-wishlist-toggle="{{ $account->id }}" data-account-title="{{ $account->title }}" aria-pressed="false" aria-label="Simpan {{ $account->title }} ke wishlist" disabled class="{{ ($compact ?? false) ? 'absolute right-3 top-3 z-20 flex size-11 items-center justify-center rounded-xl border border-white/20 bg-[#080f25]/90' : 'btn-secondary inline-flex items-center justify-center gap-2' }} text-slate-200 transition hover:text-rose-300 aria-pressed:text-rose-300 disabled:cursor-wait">
-    <svg data-wishlist-heart class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" /></svg>
-    @unless($compact ?? false)<span data-wishlist-label>Simpan ke wishlist</span>@endunless
-</button>

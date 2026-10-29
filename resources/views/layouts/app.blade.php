@@ -16,7 +16,7 @@
 <body class="min-h-screen flex flex-col">
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
     @php($whatsappNumber = \App\Models\Setting::valueFor('whatsapp_number'))
-    <header class="border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 backdrop-blur-xl">
+    <header class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
         <div class="shell flex h-20 items-center justify-between gap-4">
             <a href="{{ route('catalog') }}" class="flex min-w-0 items-center gap-3"
                 aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
@@ -25,10 +25,7 @@
             <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Jelajahi akun</a><a
-                    class="nav-link {{ request()->routeIs('trade.*') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('trade.create') }}">Tukar tambah</a><a class="nav-link"
-                    href="{{ route('how') }}">Cara transaksi</a>
-                <a class="nav-link {{ request()->routeIs('wishlist') ? 'text-white bg-white/5' : '' }}" href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count class="text-xs text-rose-300">0</span></a>
+                    class="nav-link {{ request()->routeIs('how') ? 'text-white bg-white/5' : '' }}" href="{{ route('how') }}">Cara transaksi</a>
                 @if ($whatsappNumber)
                     <a class="btn-secondary" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
                         rel="noopener noreferrer">Kontak admin ↗</a>
@@ -39,21 +36,17 @@
             <button class="btn-secondary xl:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu"
                 aria-label="Buka menu">☰</button>
         </div>
-        <nav id="mobile-menu" data-mobile-menu class="shell hidden space-y-2 pb-5 xl:hidden"
-            aria-label="Navigasi mobile"><a class="nav-link block" href="{{ route('catalog') }}">Jelajahi akun</a><a
-                class="nav-link block" href="{{ route('trade.create') }}">Tukar tambah</a><a class="nav-link block"
+            <nav id="mobile-menu" data-mobile-menu class="shell hidden space-y-2 pb-5 xl:hidden"
+            aria-label="Navigasi mobile"><a class="nav-link block" href="{{ route('catalog') }}">Jelajahi akun</a><a class="nav-link block"
                 href="{{ route('how') }}">Cara transaksi</a>
-            <a class="nav-link block" href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count class="text-xs text-rose-300">0</span></a>
             @if ($whatsappNumber)
                 <a class="nav-link block text-lime-300" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
                     rel="noopener noreferrer">Kontak admin ↗</a>
             @endif
-            <a class="nav-link block" href="{{ route('admin.dashboard') }}">
-                Admin area</a>
+            <a class="nav-link block" href="{{ route(auth()->check() ? 'admin.dashboard' : 'login') }}">{{ auth()->check() ? 'Dashboard' : 'Admin area' }}</a>
         </nav>
     </header>
     <main class="flex-1">
-        <div data-wishlist-feedback role="status" aria-live="polite" class="shell hidden mt-5 rounded-xl border border-rose-300/20 bg-rose-300/5 p-4 text-sm text-slate-200"></div>
         @if (session('success'))
             <div role="status" class="shell mt-5">
                 <div class="rounded-xl border border-lime-300/30 bg-lime-300/10 p-4 text-sm text-lime-200">

@@ -42,14 +42,17 @@ class CatalogTest extends TestCase
 
     public function test_admin_authentication_protects_all_management_pages_and_mutations(): void
     {
+        $this->get('/admin/login')->assertOk()->assertSee('Username')->assertDontSee('type="email"', false);
+
         foreach (['/admin', '/admin/accounts', '/admin/categories', '/admin/settings', '/admin/accounts/create'] as $path) {
             $this->get($path)->assertRedirect('/admin/login');
         }
         $this->post('/admin/accounts', [])->assertRedirect('/admin/login');
-        $user = User::factory()->create(['password' => 'correct-password']);
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'incorrect'])->assertSessionHasErrors('email');
+        $user = User::factory()->create(['username' => 'admin-toko', 'password' => 'correct-password']);
+        $this->post('/admin/login', ['username' => $user->username, 'password' => 'incorrect'])->assertSessionHasErrors('username');
         $this->assertGuest();
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'correct-password'])->assertRedirect('/admin/accounts/create');
+        $this->post('/admin/login', ['email' => $user->email, 'password' => 'correct-password'])->assertSessionHasErrors('username');
+        $this->post('/admin/login', ['username' => $user->username, 'password' => 'correct-password'])->assertRedirect('/admin/accounts/create');
         $this->assertAuthenticatedAs($user);
         foreach (['/admin', '/admin/accounts', '/admin/categories', '/admin/settings', '/admin/accounts/create'] as $path) {
             $this->get($path)->assertOk();
@@ -109,5 +112,12 @@ class CatalogTest extends TestCase
         $response = $this->get('/?'.http_build_query(['q' => 'Mythic', 'category' => $category->slug]));
         $response->assertOk()->assertSee('page=2', false)->assertSee('q=Mythic', false);
         $this->assertCount(12, $response->viewData('accounts'));
+    }
+
+    public function test_removed_optional_features_are_not_publicly_reachable(): void
+    {
+        foreach (['/wishlist', '/wishlist/accounts', '/tukar-tambah', '/admin/finance', '/admin/trade-requests'] as $path) {
+            $this->get($path)->assertNotFound();
+        }
     }
 }

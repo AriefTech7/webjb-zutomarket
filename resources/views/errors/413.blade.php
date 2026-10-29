@@ -5,6 +5,6 @@
     <h1>Upload terlalu besar</h1>
     <p>{{ $message }}</p>
     <p>Gunakan tombol kembali di browser untuk memperbaiki pilihan gambar.</p>
-    <a href="/tukar-tambah" style="color:#ff8069">Buka form tukar tambah</a>
+    <a href="/admin/accounts" style="color:#ff8069">Kembali ke pengelolaan akun</a>
 </body>
 </html>

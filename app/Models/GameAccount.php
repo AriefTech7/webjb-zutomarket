@@ -14,16 +14,11 @@ class GameAccount extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'cost_price', 'description', 'specifications', 'main_image', 'status'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status'];
 
     protected function casts(): array
     {
-        return ['price' => 'integer', 'cost_price' => 'integer'];
-    }
-
-    public function financialTransactions(): HasMany
-    {
-        return $this->hasMany(FinancialTransaction::class);
+        return ['price' => 'integer'];
     }
 
     public function category(): BelongsTo

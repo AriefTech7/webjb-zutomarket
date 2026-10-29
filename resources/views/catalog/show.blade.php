@@ -2,7 +2,7 @@
 @section('title', $account->title)
 @section('description', \Illuminate\Support\Str::limit($account->description, 150))
 @section('content')
-<div class="shell py-8"><div class="mb-7 flex flex-wrap items-center justify-between gap-4"><nav class="muted flex flex-wrap gap-2"><a href="{{ route('catalog') }}">Katalog</a><span>/</span><a href="{{ route('categories.show', $account->category->slug) }}">{{ $account->category->name }}</a><span>/ Detail akun</span></nav>@include('catalog.wishlist-button', ['account' => $account, 'compact' => false])</div>
+<div class="shell py-8"><div class="mb-7 flex flex-wrap items-center justify-between gap-4"><nav class="muted flex flex-wrap gap-2"><a href="{{ route('catalog') }}">Katalog</a><span>/</span><a href="{{ route('categories.show', $account->category->slug) }}">{{ $account->category->name }}</a><span>/ Detail akun</span></nav></div>
     <div class="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div>
             <div class="panel overflow-hidden">
