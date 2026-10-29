@@ -14,8 +14,8 @@ class CreateAdmin extends Command
 
     public function handle(): int
     {
-        $data = ['name' => $this->ask('Nama admin'), 'email' => $this->ask('Email'), 'password' => $this->secret('Password (minimal 12 karakter)')];
-        $validator = Validator::make($data, ['name' => 'required|max:100', 'email' => 'required|email|unique:users', 'password' => 'required|min:12']);
+        $data = ['name' => $this->ask('Nama admin'), 'username' => $this->ask('Username'), 'email' => $this->ask('Email'), 'password' => $this->secret('Password (minimal 12 karakter)')];
+        $validator = Validator::make($data, ['name' => 'required|max:100', 'username' => 'required|alpha_dash|max:50|unique:users', 'email' => 'required|email|unique:users', 'password' => 'required|min:12']);
         if ($validator->fails()) {
             $this->error($validator->errors()->first());
 

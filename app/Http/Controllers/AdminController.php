@@ -3,24 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\FinancialTransaction;
 use App\Models\GameAccount;
 use App\Models\Setting;
-use App\Models\TradeRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AdminController extends Controller
 {
     public function dashboard(): View
     {
-        return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'tradeRequests' => TradeRequest::where('status', 'pending')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
+        return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
     }
 
     public function accounts(): View
@@ -30,7 +27,7 @@ class AdminController extends Controller
 
     public function form(?GameAccount $account = null): View
     {
-        return view('admin.account-form', ['account' => $account ?? new GameAccount, 'categories' => Category::orderBy('name')->get(), 'financeLocked' => $account && ($account->financialTransactions()->exists() || FinancialTransaction::where('received_account_id', $account->id)->exists())]);
+        return view('admin.account-form', ['account' => $account ?? new GameAccount, 'categories' => Category::orderBy('name')->get()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,7 +48,6 @@ class AdminController extends Controller
             'category_id' => 'required|exists:categories,id', 'price' => 'required|integer|min:0|max:999999999999',
             'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
             'status' => 'required|in:available,sold,draft',
-            'cost_price' => 'nullable|integer|min:0|max:999999999999',
             'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
             'remove_images' => 'nullable|array', 'remove_images.*' => 'integer',
@@ -67,18 +63,6 @@ class AdminController extends Controller
             DB::transaction(function () use ($request, $account, $data, $deletedImages, &$newPaths) {
                 if ($account->exists) {
                     $account->refreshForUpdate();
-                }
-                if ($data['status'] === 'sold' && $account->status !== 'sold') {
-                    throw ValidationException::withMessages(['status' => 'Gunakan Konfirmasi penjualan agar transaksi masuk laporan bulanan.']);
-                }
-                if ($account->exists && FinancialTransaction::where('active_sale_account_id', $account->id)->exists() && $data['status'] !== 'sold') {
-                    throw ValidationException::withMessages(['status' => 'Batalkan penjualan melalui Laporan keuangan sebelum mengubah status stok.']);
-                }
-                if ($account->exists && ($account->financialTransactions()->exists() || FinancialTransaction::where('received_account_id', $account->id)->exists())) {
-                    unset($data['cost_price']);
-                }
-                if ($account->main_image === 'images/zuto-maskot.webp' && $data['status'] === 'available' && ! $request->hasFile('main_image')) {
-                    throw ValidationException::withMessages(['main_image' => 'Unggah foto akun hasil tukar tambah sebelum menampilkannya di katalog.']);
                 }
                 if ($request->hasFile('main_image')) {
                     $data['main_image'] = $request->file('main_image')->store('accounts', 'public');
@@ -108,9 +92,6 @@ class AdminController extends Controller
     {
         $paths = DB::transaction(function () use ($account): array {
             $account->refreshForUpdate();
-            if ($account->financialTransactions()->exists() || FinancialTransaction::where('received_account_id', $account->id)->exists()) {
-                throw ValidationException::withMessages(['account' => 'Akun memiliki riwayat keuangan dan tidak dapat dihapus. Gunakan status Draft untuk menyembunyikan stok yang belum terjual.']);
-            }
             $paths = $account->images->pluck('image_path')->all();
             if (! str_starts_with($account->main_image, 'demo/') && ! str_starts_with($account->main_image, 'images/')) {
                 $paths[] = $account->main_image;
@@ -129,47 +110,6 @@ class AdminController extends Controller
         return view('admin.categories', ['categories' => Category::withCount('accounts')->orderBy('name')->get()]);
     }
 
-    public function tradeRequests(): View
-    {
-        return view('admin.trade-requests', ['requests' => TradeRequest::with('category')->latest()->paginate(15)]);
-    }
-
-    public function tradeRequest(TradeRequest $tradeRequest): View
-    {
-        return view('admin.trade-request-show', ['tradeRequest' => $tradeRequest->load('category', 'images')]);
-    }
-
-    public function updateTradeRequest(Request $request, TradeRequest $tradeRequest): RedirectResponse
-    {
-        $data = $request->validate(['status' => 'required|in:pending,processing,accepted,rejected', 'admin_note' => 'nullable|string|max:5000']);
-        DB::transaction(function () use ($tradeRequest, $data): void {
-            $tradeRequest->refreshForUpdate();
-            if ($tradeRequest->status === 'completed') {
-                throw ValidationException::withMessages(['status' => 'Tukar tambah sudah selesai. Gunakan pembatalan transaksi di laporan keuangan.']);
-            }
-            $tradeRequest->update($data);
-        });
-
-        return back()->with('success', 'Status pengajuan berhasil diperbarui.');
-    }
-
-    public function deleteTradeRequest(TradeRequest $tradeRequest): RedirectResponse
-    {
-        $paths = DB::transaction(function () use ($tradeRequest): array {
-            $tradeRequest->refreshForUpdate();
-            if (FinancialTransaction::where('trade_request_id', $tradeRequest->id)->exists()) {
-                throw ValidationException::withMessages(['trade_request' => 'Pengajuan memiliki riwayat keuangan dan tidak dapat dihapus.']);
-            }
-            $paths = $tradeRequest->images->pluck('image_path')->all();
-            $tradeRequest->delete();
-
-            return $paths;
-        });
-        Storage::disk('public')->delete($paths);
-
-        return redirect()->route('admin.trade-requests')->with('success', 'Pengajuan tukar tambah berhasil dihapus.');
-    }
-
     public function saveCategory(Request $request, ?Category $category = null): RedirectResponse
     {
         $category ??= new Category;
@@ -184,9 +124,6 @@ class AdminController extends Controller
     {
         if ($category->accounts()->withTrashed()->exists()) {
             return back()->withErrors(['category' => 'Kategori masih digunakan. Pindahkan atau hapus akun di kategori ini terlebih dahulu.']);
-        }
-        if (TradeRequest::where('category_id', $category->id)->exists()) {
-            return back()->withErrors(['category' => 'Kategori masih digunakan oleh pengajuan tukar tambah dan tidak dapat dihapus.']);
         }
         $category->delete();
 
