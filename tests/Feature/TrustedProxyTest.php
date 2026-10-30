@@ -15,7 +15,7 @@ class TrustedProxyTest extends TestCase
         $this->withHeaders([
             'X-Forwarded-Proto' => 'https',
             'X-Forwarded-Host' => 'attacker.example',
-        ])->get('http://shop.example/admin/finance')->assertRedirect('https://shop.example/admin/login');
+        ])->get('http://shop.example/admin/settings')->assertRedirect('https://shop.example/admin/login');
     }
 
     public function test_untrusted_client_cannot_change_redirect_scheme(): void
@@ -23,7 +23,7 @@ class TrustedProxyTest extends TestCase
         config(['trustedproxy.proxies' => '192.0.2.1']);
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.1']);
 
-        $this->withHeader('X-Forwarded-Proto', 'https')->get('http://shop.example/admin/finance')
+        $this->withHeader('X-Forwarded-Proto', 'https')->get('http://shop.example/admin/settings')
             ->assertRedirect('http://shop.example/admin/login');
     }
 

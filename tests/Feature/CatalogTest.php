@@ -73,9 +73,9 @@ class CatalogTest extends TestCase
         Storage::disk('public')->assertExists($account->main_image);
         $image = $account->images()->firstOrFail();
         Storage::disk('public')->assertExists($image->image_path);
-        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk();
-        $this->put('/admin/accounts/'.$account->id, array_merge($data, ['status' => 'draft', 'remove_images' => [$image->id]]))->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'draft']);
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('value="sold"', false)->assertSee('Terjual');
+        $this->put('/admin/accounts/'.$account->id, array_merge($data, ['status' => 'sold', 'remove_images' => [$image->id]]))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'sold']);
         Storage::disk('public')->assertMissing($image->image_path);
         $this->delete('/admin/accounts/'.$account->id)->assertRedirect();
         Storage::disk('public')->assertMissing($account->main_image);

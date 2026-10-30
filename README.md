@@ -10,8 +10,10 @@
 ## Deploy production dengan Docker
 
 Stack production terpisah dari `compose.yaml` lokal: Nginx non-root, PHP-FPM
-8.5.12, MySQL 8.4 dan queue worker. Asset dibangun menggunakan Node 24 LTS;
+8.5.12, dan MySQL 8.4. Asset dibangun menggunakan Node 24 LTS;
 Node, dependency development, `.env` dan data lokal tidak masuk image runtime.
+Database hanya tersedia pada jaringan internal Docker, sedangkan Nginx hanya
+dipublish ke loopback host. Aplikasi memakai queue sinkron tanpa worker terpisah.
 Siapkan Docker Engine + Compose dan sekitar 4 GB RAM untuk batas container bawaan.
 Sesuaikan kapasitas PHP-FPM dan batas memori bila kapasitas server berbeda.
 
@@ -78,7 +80,8 @@ terluar secara spesifik terlebih dahulu. Jangan publish port MySQL atau PHP-FPM.
 PHP menonaktifkan session upload progress sejak startup untuk mengikuti advisory
 PHP2Shell. `.user.ini` lokal tidak digunakan, Xdebug tidak dipasang, dan PHP
 menggunakan batas memori. Build ulang dengan `--pull` untuk memperoleh pembaruan
-image; naikkan tag PHP/Node pada `Dockerfile` saat patch keamanan baru tersedia.
+image; naikkan tag PHP, Node, Composer, Nginx, dan MySQL secara terkontrol saat
+patch keamanan baru tersedia.
 
 ### Update dan backup
 
@@ -96,7 +99,6 @@ Jangan commit dump database. Jalankan prosedur update setelah backup terverifika
 ```bash
 dc build --pull app web
 dc exec app php artisan down --no-interaction
-dc stop worker
 dc run --rm app php artisan migrate --force --no-interaction
 dc up -d --force-recreate
 dc exec app php artisan up --no-interaction

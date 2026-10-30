@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [CatalogController::class, 'index'])->name('catalog');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
+Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');

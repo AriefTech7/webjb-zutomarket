@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (PostTooLargeException $exception, Request $request) {
-            $message = 'Total upload melebihi batas server. Pilih maksimal 5 screenshot, masing-masing maksimal 4 MB, atau perkecil gambar lalu coba lagi.';
+            $message = 'Total upload gambar akun melebihi batas server. Pilih maksimal 6 gambar tambahan, masing-masing maksimal 4 MB, atau perkecil gambar lalu coba lagi.';
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 413);
             }
