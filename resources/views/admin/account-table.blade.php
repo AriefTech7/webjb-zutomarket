@@ -51,7 +51,7 @@
                     </td>
                     <td class="p-5 whitespace-nowrap">{{ $account->formattedPrice() }}</td>
                     <td class="p-5"><span
-                            class="status {{ $account->status === 'available' ? 'text-lime-300' : 'text-slate-400' }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft'][$account->status] }}</span>
+                            class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft'][$account->status] }}</span>
                     </td>
                     <td class="p-5">
                         <div class="flex items-center gap-4"><a class="py-3 text-lime-300"

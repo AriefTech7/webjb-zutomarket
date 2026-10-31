@@ -39,7 +39,7 @@
                 pembeli.</p>
         </div>
         <div><label class="label" for="status">Status akun</label><select class="field" id="status" name="status">
-                @foreach (['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia'] + ($account->status === 'sold' ? ['sold' => 'Terjual'] : []) as $value => $label)
+                @foreach (['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia', 'sold' => 'Terjual'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('status', $account->status ?? 'draft') === $value)>{{ $label }}</option>
                 @endforeach
             </select>

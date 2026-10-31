@@ -11,7 +11,7 @@ Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('ac
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
-    Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
 });
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
