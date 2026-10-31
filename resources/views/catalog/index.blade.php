@@ -48,7 +48,7 @@
                 </div>
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-3"><label
                         class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox"
-                            class="accent-lime-300" name="available" value="1" @checked(request('available'))> Hanya akun
+                            class="accent-lime-300" name="available" value="1" data-submit-on-change @checked(request('available'))> Hanya akun
                         tersedia</label>
                     @if (request()->query() || $selected)
                         <a class="text-xs text-lime-300" href="{{ route('catalog') }}#katalog">Reset pencarian ×</a>

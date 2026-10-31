@@ -12,6 +12,12 @@ document.querySelectorAll('[data-confirm]').forEach((form) => {
     });
 });
 
+document.querySelectorAll('[data-submit-on-change]').forEach((control) => {
+    control.addEventListener('change', (event) => {
+        event.currentTarget.form?.requestSubmit();
+    });
+});
+
 const accountImage = document.querySelector('[data-main-image]');
 let hideAccountZoom = () => {};
 
