@@ -55,7 +55,7 @@ class CatalogTest extends TestCase
         $this->post('/admin/login', ['username' => $user->username, 'password' => 'correct-password'])->assertRedirect('/admin/accounts/create');
         $this->assertAuthenticatedAs($user);
         foreach (['/admin', '/admin/accounts', '/admin/categories', '/admin/settings', '/admin/accounts/create'] as $path) {
-            $this->get($path)->assertOk();
+            $this->get($path)->assertOk()->assertSee('Admin workspace')->assertDontSee('auth()->');
         }
         $this->post('/admin/logout')->assertRedirect('/');
         $this->assertGuest();
