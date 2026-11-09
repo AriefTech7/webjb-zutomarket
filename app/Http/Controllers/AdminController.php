@@ -20,9 +20,11 @@ class AdminController extends Controller
         return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
     }
 
-    public function accounts(): View
+    public function accounts(Request $request): View
     {
-        return view('admin.accounts', ['accounts' => GameAccount::with('category')->latest()->paginate(15)]);
+        $data = $request->validate(['q' => 'nullable|string|max:100']);
+
+        return view('admin.accounts', ['accounts' => GameAccount::with('category')->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
     }
 
     public function form(?GameAccount $account = null): View

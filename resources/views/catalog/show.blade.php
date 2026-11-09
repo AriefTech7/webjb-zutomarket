@@ -49,6 +49,7 @@
                             {{ $account->status === 'sold' ? 'Akun ini sudah terjual.' : 'Kontak WhatsApp belum diatur oleh admin.' }}
                         </p>
                     @endif
+                    <div class="mt-3 grid">@include('catalog.wishlist-button', ['account' => $account])</div>
                 </div>
                 <div class="mt-6">
                     <h2 class="mb-3 font-bold">Spesifikasi akun</h2>

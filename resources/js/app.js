@@ -1,8 +1,6 @@
-document.querySelector('[data-menu-toggle]')?.addEventListener('click', (event) => {
-    const menu = document.querySelector('[data-mobile-menu]');
-    const open = menu.classList.toggle('hidden') === false;
-    event.currentTarget.setAttribute('aria-expanded', String(open));
-});
+import { initialiseWishlist } from './wishlist';
+
+initialiseWishlist();
 
 document.querySelectorAll('[data-confirm]').forEach((form) => {
     form.addEventListener('submit', (event) => {

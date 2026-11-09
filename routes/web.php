@@ -3,12 +3,16 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CatalogController::class, 'index'])->name('catalog');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
+Route::view('/joki-ml', 'catalog.joki')->name('joki');
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');

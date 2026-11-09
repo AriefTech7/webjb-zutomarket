@@ -23,7 +23,7 @@
             </div>
         </li>
     @empty
-        <li class="panel p-6 text-center text-sm text-slate-400">Belum ada akun. Tambahkan akun pertamamu.</li>
+        <li class="panel p-6 text-center text-sm text-slate-400">{{ $emptyMessage ?? 'Belum ada akun. Tambahkan akun pertamamu.' }}</li>
     @endforelse
 </ul>
 <div class="panel hidden overflow-x-auto md:block">
@@ -62,7 +62,7 @@
                         </div>
                     </td>
             </tr>@empty<tr>
-                    <td colspan="4" class="p-10 text-center text-slate-400">Belum ada akun. Tambahkan akun pertamamu.
+                    <td colspan="4" class="p-10 text-center text-slate-400">{{ $emptyMessage ?? 'Belum ada akun. Tambahkan akun pertamamu.' }}
                     </td>
                 </tr>
             @endforelse

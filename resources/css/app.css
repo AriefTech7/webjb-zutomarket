@@ -45,6 +45,18 @@
     .account-image-zoom { position: relative; }
     .account-image-lens { @apply pointer-events-none absolute z-20 overflow-hidden rounded-full border-2 border-lime-300 bg-[#080f25] shadow-xl; }
     .account-image-lens img { position: absolute; max-width: none; }
+    .joki-card { @apply rounded-2xl border-2 border-[#a9c3ff]/25 bg-[#101833]; box-shadow: 5px 5px 0 #02061f; }
+    .joki-tinted { background-color: color-mix(in srgb, var(--tint) 12%, #101833); border-color: color-mix(in srgb, var(--tint) 45%, transparent); }
+    .joki-icon { @apply flex size-12 shrink-0 items-center justify-center rounded-xl border-2 border-[#a9c3ff]/30 bg-[#0b1230]; box-shadow: 3px 3px 0 #02061f; }
+    .joki-mark { @apply flex size-12 shrink-0 items-center justify-center rounded-xl bg-lime-300 text-slate-950; box-shadow: 3px 3px 0 #02061f; }
+    .joki-banner { background: linear-gradient(100deg, #5b6dff, #a06bff 55%, #f06bb4); }
+    .joki-ladder { @apply flex flex-col-reverse gap-3; }
+    .joki-rank { @apply flex items-center gap-3 rounded-xl border-2 border-[#a9c3ff]/20 bg-[#0b1230] p-3; box-shadow: 3px 3px 0 #02061f; }
+    .joki-bar { width: 100%; height: calc(1.75rem + var(--i) * 2rem); border-radius: 0.75rem 0.75rem 0 0; background: repeating-linear-gradient(135deg, var(--rank) 0 12px, color-mix(in srgb, var(--rank) 70%, #fff) 12px 24px); }
+    @media (min-width: 48rem) {
+        .joki-ladder { @apply flex-row items-end border-b-4 border-[#02061f]; }
+        .joki-rank { @apply min-w-0 flex-1 flex-col items-start rounded-none border-0 bg-transparent p-0; box-shadow: none; }
+    }
     @media (hover: hover) and (pointer: fine) {
         .account-image-zoom > [data-main-image] { cursor: zoom-in; }
     }

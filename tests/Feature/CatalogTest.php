@@ -114,9 +114,44 @@ class CatalogTest extends TestCase
         $this->assertCount(12, $response->viewData('accounts'));
     }
 
+    public function test_admin_search_matches_every_status_and_reports_no_results(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $category = Category::factory()->create(['name' => 'Valorant']);
+        GameAccount::factory()->create(['category_id' => $category->id, 'title' => 'Akun Radiant', 'status' => 'draft']);
+        GameAccount::factory()->create(['title' => 'Tidak cocok']);
+
+        foreach (['Radiant', 'Valorant', 'Valorant Radiant'] as $keyword) {
+            $this->get('/admin/accounts?'.http_build_query(['q' => $keyword]))->assertOk()->assertSee('Akun Radiant')->assertDontSee('Tidak cocok')->assertSee('1 akun cocok');
+        }
+        $this->get('/admin/accounts')->assertOk()->assertSee('Akun Radiant')->assertSee('Tidak cocok')->assertSee('2 akun dalam katalog');
+        $this->get('/admin/accounts?q=unknown-keyword')->assertOk()->assertSee('Tidak ada akun yang cocok')->assertDontSee('Belum ada akun');
+    }
+
+    public function test_admin_search_keeps_keyword_across_pages_and_rejects_overlong_keyword(): void
+    {
+        $this->actingAs(User::factory()->create());
+        GameAccount::factory()->count(16)->create();
+
+        $response = $this->get('/admin/accounts?q=Mythic');
+
+        $response->assertOk()->assertSee('page=2', false)->assertSee('q=Mythic', false);
+        $this->assertCount(15, $response->viewData('accounts'));
+        $this->get('/admin/accounts?q='.str_repeat('a', 101))->assertSessionHasErrors('q');
+    }
+
+    public function test_joki_page_links_to_whatsapp_only_when_a_number_is_set(): void
+    {
+        $this->get('/joki-ml')->assertOk()->assertSee('Joki Mobile Legends')->assertSee('Rp 6.000')->assertSee('Kontak WhatsApp belum diatur')->assertDontSee('wa.me/', false);
+
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+
+        $this->get('/joki-ml')->assertOk()->assertSee('https://wa.me/6281234567890?text=Halo%20admin', false)->assertSee('Rank%20saat%20ini%3A%20Epic%20%28Rp%206.000%2Fbintang%29', false)->assertDontSee('Kontak WhatsApp belum diatur');
+    }
+
     public function test_removed_optional_features_are_not_publicly_reachable(): void
     {
-        foreach (['/wishlist', '/wishlist/accounts', '/tukar-tambah', '/admin/finance', '/admin/trade-requests'] as $path) {
+        foreach (['/tukar-tambah', '/admin/finance', '/admin/trade-requests'] as $path) {
             $this->get($path)->assertNotFound();
         }
     }

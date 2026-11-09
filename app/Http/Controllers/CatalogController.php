@@ -17,12 +17,7 @@ class CatalogController extends Controller
         if ($selected) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $selected));
         }
-        foreach (preg_split('/\s+/', trim($data['q'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) as $keyword) {
-            $query->where(function ($q) use ($keyword) {
-                $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $keyword).'%';
-                $q->where('title', 'like', $term)->orWhere('description', 'like', $term)->orWhere('specifications', 'like', $term)->orWhereHas('category', fn ($c) => $c->where('name', 'like', $term));
-            });
-        }
+        $query->search($data['q'] ?? '');
         if ($request->boolean('available')) {
             $query->where('status', 'available');
         }

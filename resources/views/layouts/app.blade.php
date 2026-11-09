@@ -13,9 +13,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}">
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
-    @php($whatsappNumber = \App\Models\Setting::valueFor('whatsapp_number'))
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
         <div class="shell flex h-20 items-center justify-between gap-4">
@@ -25,31 +24,18 @@
                     class="sr-only">{{ $storeName }}</span></a>
             <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('catalog') }}">Jelajahi akun</a><a
-                    class="nav-link {{ request()->routeIs('how') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('how') }}">Cara transaksi</a>
-                @if ($whatsappNumber)
-                    <a class="btn-secondary" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
-                        rel="noopener noreferrer">Kontak admin ↗</a>
-                @endif
-                <a class="btn-secondary" href="{{ route(auth()->check() ? 'admin.dashboard' : 'login') }}">
-                    {{ auth()->check() ? 'Dashboard' : 'Admin area' }} ↗</a>
+                    href="{{ route('catalog') }}">Home</a><a
+                    class="nav-link {{ request()->routeIs('joki') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('joki') }}">Joki ML</a><a
+                    class="nav-link {{ request()->routeIs('wishlist') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count hidden
+                        class="text-xs text-rose-300">0</span></a>
             </nav>
-            <button class="btn-secondary xl:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu"
-                aria-label="Buka menu">☰</button>
         </div>
-        <nav id="mobile-menu" data-mobile-menu class="shell hidden space-y-2 pb-5 xl:hidden"
-            aria-label="Navigasi mobile"><a class="nav-link block" href="{{ route('catalog') }}">Jelajahi akun</a><a
-                class="nav-link block" href="{{ route('how') }}">Cara transaksi</a>
-            @if ($whatsappNumber)
-                <a class="nav-link block text-lime-300" href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
-                    rel="noopener noreferrer">Kontak admin ↗</a>
-            @endif
-            <a class="nav-link block"
-                href="{{ route(auth()->check() ? 'admin.dashboard' : 'login') }}">{{ auth()->check() ? 'Dashboard' : 'Admin area' }}</a>
-        </nav>
     </header>
     <main class="flex-1">
+        <div data-wishlist-feedback role="status" aria-live="polite"
+            class="shell hidden mt-5 rounded-xl border border-rose-300/20 bg-rose-300/5 p-4 text-sm text-slate-200"></div>
         @if (session('success'))
             <div role="status" class="shell mt-5">
                 <div class="rounded-xl border border-lime-300/30 bg-lime-300/10 p-4 text-sm text-lime-200">
@@ -104,6 +90,47 @@
             </div>
         </div>
     </footer>
+    @unless (request()->is('admin*'))
+        <nav class="joki-card fixed inset-x-3 bottom-3 z-40 mx-auto max-w-lg xl:hidden" aria-label="Navigasi bawah">
+            <div class="grid grid-cols-3">
+                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'joki' => ['Joki ML', ['joki']], 'wishlist' => ['Wishlist', ['wishlist']]] as $route => [$label, $activeRoutes])
+                    @php($isActive = request()->routeIs(...$activeRoutes))
+                    <a href="{{ route($route) }}"
+                        class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition {{ $isActive ? 'text-white' : 'text-slate-400 hover:text-white' }}"
+                        @if ($isActive) aria-current="page" @endif>
+                        <span class="relative flex h-8 w-12 items-center justify-center rounded-xl {{ $isActive ? 'bg-lime-300 text-slate-950' : '' }}">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                @switch($route)
+                                    @case('catalog')
+                                        <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5Z" />
+                                    @break
+
+                                    @case('joki')
+                                        <path
+                                            d="M7.5 7h9a4 4 0 0 1 3.9 3.1l1.1 6.1a2.5 2.5 0 0 1-4.2 2.2L14.5 16h-5l-2.8 2.4a2.5 2.5 0 0 1-4.2-2.2l1.1-6.1A4 4 0 0 1 7.5 7Z" />
+                                        <path d="M7.5 10v5M5 12.5h5" />
+                                        <circle cx="16" cy="11" r=".75" fill="currentColor" stroke="none" />
+                                        <circle cx="18" cy="14" r=".75" fill="currentColor" stroke="none" />
+                                    @break
+
+                                    @case('wishlist')
+                                        <path
+                                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                                    @break
+                                @endswitch
+                            </svg>
+                            @if ($route === 'wishlist')
+                                <span data-wishlist-count hidden
+                                    class="absolute -top-1 right-1 min-w-4 rounded-full bg-rose-400 px-1 text-center text-[10px] font-bold leading-4 text-slate-950">0</span>
+                            @endif
+                        </span>
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+        </nav>
+    @endunless
 </body>
 
 </html>

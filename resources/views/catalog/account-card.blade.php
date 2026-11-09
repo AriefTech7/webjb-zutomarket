@@ -1,5 +1,6 @@
 <article
     class="panel group relative overflow-hidden transition duration-200 hover:-translate-y-1 hover:border-lime-300/40">
+    @include('catalog.wishlist-button', ['account' => $account, 'compact' => true])
     <a href="{{ route('accounts.show', $account->slug) }}" class="block">
         <div class="catalog-media"><img src="{{ $account->imageUrl() }}" alt="{{ $account->title }}"
                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105 {{ $account->status === 'sold' ? 'grayscale' : '' }}"

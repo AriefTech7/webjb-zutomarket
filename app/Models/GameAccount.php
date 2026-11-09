@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +30,21 @@ class GameAccount extends Model
     public function images(): HasMany
     {
         return $this->hasMany(GameAccountImage::class);
+    }
+
+    /**
+     * Keep only accounts that match every keyword in the search text.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeSearch(Builder $query, string $search): void
+    {
+        foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $keyword) {
+            $query->where(function (Builder $q) use ($keyword): void {
+                $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $keyword).'%';
+                $q->where('title', 'like', $term)->orWhere('description', 'like', $term)->orWhere('specifications', 'like', $term)->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $term));
+            });
+        }
     }
 
     public function imageUrl(): string

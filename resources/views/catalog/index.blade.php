@@ -1,22 +1,11 @@
 @extends('layouts.app')
 @section('content')
     <div class="shell">
-        <section
-            class="store-hero relative my-8 grid items-center gap-8 overflow-hidden rounded-3xl border px-6 py-10 md:px-10 lg:grid-cols-[1fr_1.15fr] lg:py-12">
-            <div class="relative max-w-2xl">
-                <h1 class="text-4xl font-black leading-[1.12] tracking-tight md:text-6xl">Akun impianmu.<br><span
-                        class="text-lime-300">Next level</span> permainanmu.</h1>
-                <p class="mt-5 max-w-lg leading-7 text-slate-400">Temukan akun game dengan rank, hero, dan koleksi favoritmu.
-                    Pilih yang cocok, ngobrol langsung dengan admin.</p>
-                <div class="mt-7 flex flex-wrap gap-3"><a class="btn" href="#katalog">Jelajahi akun <span
-                            aria-hidden="true">↗</span></a><a class="btn-secondary" href="{{ route('how') }}">Cara
-                        transaksi →</a></div>
-                <div class="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-400"><span>◈ Spesifikasi
-                        transparan</span><span>◈ Tanpa daftar akun</span><span>◈ Kontak admin langsung</span></div>
-            </div>
-            <div class="hero-visual mx-auto w-full max-w-3xl lg:max-w-none"><img
-                    src="{{ asset('images/zuto-sampul.webp') }}" alt="Ilustrasi SHOPGAME ZUTO" width="1919" height="1095"
-                    fetchpriority="high"></div>
+        <section class="store-hero my-8 overflow-hidden rounded-3xl border">
+            <h1 class="sr-only">Jual beli akun game di ZutoMarket</h1>
+            <img class="w-full" src="{{ asset('images/zuto-banner.webp') }}"
+                alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="1280" height="430"
+                fetchpriority="high">
         </section>
         <section id="katalog" class="scroll-mt-6">
             <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
