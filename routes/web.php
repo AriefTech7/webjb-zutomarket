@@ -11,6 +11,8 @@ Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->na
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::view('/joki-ml', 'catalog.joki')->name('joki');
+Route::view('/tentang', 'catalog.about')->name('about');
+Route::view('/profil', 'catalog.profile')->name('profile');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
 Route::middleware('guest')->group(function () {

@@ -44,6 +44,7 @@
                     <p class="muted mb-5">Konfirmasi ketersediaan dan detail transaksi dengan admin.</p>
                     @if ($url = $account->whatsappUrl())
                         <a class="btn w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">Hubungi admin via WhatsApp ↗</a>
+                        <a class="btn-secondary mt-3 w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Ajukan tukar tambah ↗</a>
                     @else
                         <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">
                             {{ $account->status === 'sold' ? 'Akun ini sudah terjual.' : 'Kontak WhatsApp belum diatur oleh admin.' }}

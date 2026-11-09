@@ -40,6 +40,20 @@ class CatalogTest extends TestCase
         $this->get('/?available=1')->assertDontSee('Mythic &amp; Hero', false);
     }
 
+    public function test_trade_in_button_opens_whatsapp_only_for_available_accounts(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
+
+        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan tukar tambah untuk akun Mythic & Hero seharga Rp 350.000.'), $account->tradeInWhatsappUrl());
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Ajukan tukar tambah');
+
+        $account->update(['status' => 'sold']);
+
+        $this->assertNull($account->tradeInWhatsappUrl());
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan tukar tambah');
+    }
+
     public function test_admin_authentication_protects_all_management_pages_and_mutations(): void
     {
         $this->get('/admin/login')->assertOk()->assertSee('Username')->assertDontSee('type="email"', false);
@@ -140,13 +154,41 @@ class CatalogTest extends TestCase
         $this->get('/admin/accounts?q='.str_repeat('a', 101))->assertSessionHasErrors('q');
     }
 
-    public function test_joki_page_links_to_whatsapp_only_when_a_number_is_set(): void
+    public function test_joki_order_form_appears_only_when_a_whatsapp_number_is_set(): void
     {
-        $this->get('/joki-ml')->assertOk()->assertSee('Joki Mobile Legends')->assertSee('Rp 6.000')->assertSee('Kontak WhatsApp belum diatur')->assertDontSee('wa.me/', false);
+        $this->get('/joki-ml')->assertOk()->assertSee('Joki Mobile Legends')->assertSee('Rp 6.000')->assertSee('Kontak WhatsApp belum diatur')->assertDontSee('data-joki-form', false)->assertDontSee('wa.me/', false);
 
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
 
-        $this->get('/joki-ml')->assertOk()->assertSee('https://wa.me/6281234567890?text=Halo%20admin', false)->assertSee('Rank%20saat%20ini%3A%20Epic%20%28Rp%206.000%2Fbintang%29', false)->assertDontSee('Kontak WhatsApp belum diatur');
+        $this->get('/joki-ml')->assertOk()->assertDontSee('Kontak WhatsApp belum diatur')
+            ->assertSee('data-whatsapp-url="https://wa.me/6281234567890"', false)
+            ->assertSee('href="#pesan" data-joki-rank="Epic"', false)
+            ->assertSee('data-price="6000"', false)
+            ->assertSee('Masukkan Data Akun')->assertSee('Request Hero')
+            ->assertSee('type="password"', false);
+    }
+
+    public function test_joki_order_form_cannot_submit_account_data_to_the_server(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+
+        $html = $this->get('/joki-ml')->assertOk()->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/<form[^>]*data-joki-form[^>]*(action|method)=/', $html);
+        $this->assertStringContainsString('<button type="button" class="btn" data-joki-submit>', $html);
+        $this->assertSame(0, preg_match('/<button(?![^>]*type="button")[^>]*data-joki/', $html));
+    }
+
+    public function test_about_and_profile_pages_are_public_and_linked_from_navigation(): void
+    {
+        $this->get('/')->assertOk()->assertSee(route('about'), false)->assertSee(route('profile'), false);
+        $this->get('/tentang')->assertOk()->assertSee('Tentang kami')->assertDontSee('wa.me/', false);
+        $this->get('/profil')->assertOk()->assertSee('Profil saya')->assertSee('hanya tersimpan di browser ini')->assertSee('data-profile-form', false);
+        $this->assertGuest();
+
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+
+        $this->get('/tentang')->assertOk()->assertSee('https://wa.me/6281234567890', false);
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

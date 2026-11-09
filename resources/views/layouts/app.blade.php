@@ -22,15 +22,21 @@
                 aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
                     alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark"><span
                     class="sr-only">{{ $storeName }}</span></a>
+            @unless (request()->is('admin*'))
             <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Home</a><a
-                    class="nav-link {{ request()->routeIs('joki') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('joki') }}">Joki ML</a><a
                     class="nav-link {{ request()->routeIs('wishlist') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count hidden
-                        class="text-xs text-rose-300">0</span></a>
+                        class="text-xs text-rose-300">0</span></a><a
+                    class="nav-link {{ request()->routeIs('joki') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('joki') }}">Joki ML</a><a
+                    class="nav-link {{ request()->routeIs('about') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('about') }}">Tentang</a><a
+                    class="nav-link {{ request()->routeIs('profile') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('profile') }}">Akun</a>
             </nav>
+            @endunless
         </div>
     </header>
     <main class="flex-1">
@@ -91,15 +97,17 @@
         </div>
     </footer>
     @unless (request()->is('admin*'))
-        <nav class="joki-card fixed inset-x-3 bottom-3 z-40 mx-auto max-w-lg xl:hidden" aria-label="Navigasi bawah">
-            <div class="grid grid-cols-3">
-                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'joki' => ['Joki ML', ['joki']], 'wishlist' => ['Wishlist', ['wishlist']]] as $route => [$label, $activeRoutes])
+        <nav class="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md rounded-2xl border border-white/20 bg-[#34416e]/70 p-1 shadow-xl shadow-[#020617]/50 backdrop-blur-xl xl:hidden"
+            aria-label="Navigasi bawah">
+            <div class="grid grid-cols-5">
+                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'wishlist' => ['Wishlist', ['wishlist']], 'joki' => ['Joki ML', ['joki']], 'about' => ['Tentang', ['about']], 'profile' => ['Akun', ['profile']]] as $route => [$label, $activeRoutes])
                     @php($isActive = request()->routeIs(...$activeRoutes))
+                    @php($isCenter = $route === 'joki')
                     <a href="{{ route($route) }}"
-                        class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition {{ $isActive ? 'text-white' : 'text-slate-400 hover:text-white' }}"
+                        class="relative flex min-h-12 flex-col items-center gap-0.5 rounded-xl text-[10px] font-semibold transition {{ $isCenter ? 'justify-end pb-1.5 font-bold text-amber-300' : 'justify-center ' . ($isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:text-white') }}"
                         @if ($isActive) aria-current="page" @endif>
-                        <span class="relative flex h-8 w-12 items-center justify-center rounded-xl {{ $isActive ? 'bg-lime-300 text-slate-950' : '' }}">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                        <span class="{{ $isCenter ? 'absolute -top-6 size-12 rounded-full border-[3px] border-[#070b1c] bg-amber-300 text-slate-950 shadow-lg shadow-amber-300/30' : 'relative h-5 w-10' }} flex items-center justify-center">
+                            <svg class="{{ $isCenter ? 'h-6 w-6' : 'h-5 w-5' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                 @switch($route)
                                     @case('catalog')
@@ -112,6 +120,15 @@
                                         <path d="M7.5 10v5M5 12.5h5" />
                                         <circle cx="16" cy="11" r=".75" fill="currentColor" stroke="none" />
                                         <circle cx="18" cy="14" r=".75" fill="currentColor" stroke="none" />
+                                    @break
+
+                                    @case('about')
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M12 16v-4M12 8h.01" />
+                                    @break
+
+                                    @case('profile')
+                                        <path d="M20 21v-1a6 6 0 0 0-6-6h-4a6 6 0 0 0-6 6v1M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
                                     @break
 
                                     @case('wishlist')

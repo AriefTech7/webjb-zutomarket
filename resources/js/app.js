@@ -1,6 +1,10 @@
+import { initialiseJokiOrder } from './joki';
+import { initialiseProfile } from './profile';
 import { initialiseWishlist } from './wishlist';
 
 initialiseWishlist();
+initialiseProfile();
+initialiseJokiOrder();
 
 document.querySelectorAll('[data-confirm]').forEach((form) => {
     form.addEventListener('submit', (event) => {

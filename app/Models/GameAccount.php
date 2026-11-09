@@ -59,15 +59,24 @@ class GameAccount extends Model
 
     public function whatsappUrl(): ?string
     {
+        return $this->whatsappLink(strtr(Setting::valueFor('whatsapp_default_message', 'Halo admin, saya tertarik dengan akun {nama_akun} seharga {harga}. Apakah masih tersedia?'), [
+            '{nama_akun}' => $this->title,
+            '{harga}' => $this->formattedPrice(),
+            '{url}' => route('accounts.show', $this->slug),
+        ]));
+    }
+
+    public function tradeInWhatsappUrl(): ?string
+    {
+        return $this->whatsappLink('Halo admin, saya ingin mengajukan tukar tambah untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Akun yang saya tawarkan: ...');
+    }
+
+    private function whatsappLink(string $message): ?string
+    {
         $number = Setting::valueFor('whatsapp_number');
         if (! $number || $this->status !== 'available') {
             return null;
         }
-        $message = strtr(Setting::valueFor('whatsapp_default_message', 'Halo admin, saya tertarik dengan akun {nama_akun} seharga {harga}. Apakah masih tersedia?'), [
-            '{nama_akun}' => $this->title,
-            '{harga}' => $this->formattedPrice(),
-            '{url}' => route('accounts.show', $this->slug),
-        ]);
 
         return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
     }
