@@ -44,6 +44,12 @@
                 @endforeach
             </select>
         </div>
+        <div><label class="label" for="seller_whatsapp">Nomor WhatsApp penjual (opsional)</label><input class="field"
+                id="seller_whatsapp" name="seller_whatsapp" inputmode="numeric" maxlength="15"
+                value="{{ old('seller_whatsapp', $account->seller_whatsapp) }}" placeholder="6281234567890">
+            <p class="muted mt-2 text-xs">Isi jika pembeli akun ini harus langsung menghubungi penjualnya. Kosongkan untuk
+                memakai nomor WhatsApp toko. Awali dengan 62, tanpa tanda + atau spasi.</p>
+        </div>
         <div><label class="label" for="main_image">Gambar utama
                 {{ $account->exists ? '(opsional untuk mengganti)' : '*' }}</label>
             @if ($account->exists)

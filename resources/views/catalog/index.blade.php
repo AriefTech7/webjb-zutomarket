@@ -54,7 +54,7 @@
                         <span class="ml-1 opacity-50">{{ $category->accounts_count }}</span></a>
                 @endforeach
             </div>
-            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div class="grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3 xl:grid-cols-4">
                 @forelse($accounts as $account)
                     @include('catalog.account-card', ['account' => $account])
                 @empty

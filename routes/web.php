@@ -23,6 +23,9 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
+    Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
+    Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');
     Route::get('/accounts/create', [AdminController::class, 'form'])->name('accounts.create');
     Route::post('/accounts', [AdminController::class, 'store'])->name('accounts.store');
     Route::get('/accounts/{account}/edit', [AdminController::class, 'form'])->name('accounts.edit');

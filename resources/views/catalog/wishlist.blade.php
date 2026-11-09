@@ -8,7 +8,7 @@
     <p data-wishlist-loading role="status" class="muted mt-8">Memuat wishlist…</p>
     <div data-wishlist-error role="alert" class="hidden mt-6 rounded-xl border border-rose-300/30 bg-rose-300/5 p-5"><p data-wishlist-error-message>Wishlist belum dapat dimuat. Pilihanmu tetap tersimpan.</p><button type="button" data-wishlist-retry class="btn-secondary mt-3">Coba lagi</button></div>
     <div data-wishlist-empty class="panel hidden mt-8 p-10 text-center"><p class="text-4xl text-rose-300" aria-hidden="true">♡</p><h2 class="mt-4 text-xl font-bold">Wishlist masih kosong</h2><p class="muted mt-2">Tekan tombol hati pada akun yang kamu sukai, lalu temukan kembali di sini.</p><a class="btn mt-5" href="{{ route('catalog') }}">Mulai jelajahi akun ↗</a></div>
-    <div data-wishlist-grid class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true"></div>
+    <div data-wishlist-grid class="mt-8 grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true"></div>
     <noscript><p class="panel mt-6 p-5">Aktifkan JavaScript agar wishlist dapat disimpan dan ditampilkan di browser ini.</p></noscript>
 </section>
 @endsection

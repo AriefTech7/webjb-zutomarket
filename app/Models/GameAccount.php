@@ -15,11 +15,20 @@ class GameAccount extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'seller_whatsapp'];
 
     protected function casts(): array
     {
-        return ['price' => 'integer'];
+        return ['price' => 'integer', 'sold_at' => 'datetime'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (GameAccount $account): void {
+            if ($account->isDirty('status')) {
+                $account->sold_at = $account->status === 'sold' ? now() : null;
+            }
+        });
     }
 
     public function category(): BelongsTo
@@ -73,7 +82,7 @@ class GameAccount extends Model
 
     private function whatsappLink(string $message): ?string
     {
-        $number = Setting::valueFor('whatsapp_number');
+        $number = $this->seller_whatsapp ?: Setting::valueFor('whatsapp_number');
         if (! $number || $this->status !== 'available') {
             return null;
         }

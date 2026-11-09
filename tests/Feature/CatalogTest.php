@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\GameAccount;
+use App\Models\ManualSale;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +53,112 @@ class CatalogTest extends TestCase
 
         $this->assertNull($account->tradeInWhatsappUrl());
         $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan tukar tambah');
+    }
+
+    public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void
+    {
+        $sellerAccount = GameAccount::factory()->create(['seller_whatsapp' => '6289999999999']);
+        $storeAccount = GameAccount::factory()->create();
+
+        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->whatsappUrl());
+        $this->assertNull($storeAccount->whatsappUrl());
+        $this->get('/akun/'.$sellerAccount->slug)->assertOk()->assertSee('Hubungi penjual via WhatsApp')->assertSee('https://wa.me/6289999999999?text=', false);
+
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+
+        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->whatsappUrl());
+        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->tradeInWhatsappUrl());
+        $this->assertStringStartsWith('https://wa.me/6281234567890?text=', $storeAccount->whatsappUrl());
+
+        $sellerAccount->update(['status' => 'sold']);
+
+        $this->assertNull($sellerAccount->whatsappUrl());
+    }
+
+    public function test_admin_can_set_clear_and_is_warned_about_an_invalid_seller_number(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $account = GameAccount::factory()->create();
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => $account->price, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['seller_whatsapp' => '6289999999999'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'seller_whatsapp' => '6289999999999']);
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('value="6289999999999"', false);
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['seller_whatsapp' => '0812 3456'])->assertSessionHasErrors(['seller_whatsapp' => 'Nomor penjual harus diawali kode negara tanpa tanda +, contoh 6281234567890.']);
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'seller_whatsapp' => '6289999999999']);
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['seller_whatsapp' => ''])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'seller_whatsapp' => null]);
+    }
+
+    public function test_sales_page_requires_login_and_reports_only_accounts_sold_in_the_chosen_month(): void
+    {
+        $this->get('/admin/sales')->assertRedirect('/admin/login');
+        $this->actingAs(User::factory()->create());
+        GameAccount::factory()->create(['title' => 'Terjual Oktober', 'status' => 'sold', 'price' => 200000])->forceFill(['sold_at' => '2026-10-31 23:00:00'])->save();
+        GameAccount::factory()->create(['title' => 'Terjual Awal Oktober', 'status' => 'sold', 'price' => 100000])->forceFill(['sold_at' => '2026-10-01 00:00:00'])->save();
+        GameAccount::factory()->create(['title' => 'Terjual November', 'status' => 'sold', 'price' => 900000])->forceFill(['sold_at' => '2026-11-01 00:00:00'])->save();
+        GameAccount::factory()->create(['title' => 'Masih Tersedia']);
+
+        $response = $this->get('/admin/sales?month=2026-10');
+
+        $response->assertOk()->assertSee('Terjual Oktober')->assertSee('Terjual Awal Oktober')->assertDontSee('Terjual November')->assertDontSee('Masih Tersedia');
+        $this->assertSame(2, $response->viewData('monthCount'));
+        $this->assertSame(300000, $response->viewData('monthRevenue'));
+        $this->assertSame(3, $response->viewData('totalCount'));
+        $this->assertSame(1200000, $response->viewData('totalRevenue'));
+        $this->get('/admin/sales?month=2026-09')->assertOk()->assertSee('Belum ada akun terjual');
+        $this->get('/admin/sales?month=oktober')->assertSessionHasErrors('month');
+    }
+
+    public function test_manual_sales_require_login_and_can_be_added_counted_and_deleted(): void
+    {
+        $this->post('/admin/sales', [])->assertRedirect('/admin/login');
+        $existing = ManualSale::factory()->create();
+        $this->delete('/admin/sales/'.$existing->id)->assertRedirect('/admin/login');
+        $this->assertDatabaseHas('manual_sales', ['id' => $existing->id]);
+        $this->actingAs(User::factory()->create());
+        GameAccount::factory()->create(['title' => 'Akun Oktober', 'status' => 'sold', 'price' => 200000])->forceFill(['sold_at' => '2026-10-10 10:00:00'])->save();
+
+        $this->post('/admin/sales', ['item' => 'Joki Legend 5 bintang', 'amount' => 60000, 'sold_on' => '2026-10-31', 'note' => 'Budi'])
+            ->assertSessionHasNoErrors()->assertRedirect('/admin/sales?month=2026-10');
+
+        $response = $this->get('/admin/sales?month=2026-10');
+
+        $response->assertOk()->assertSee('Joki Legend 5 bintang')->assertSee('Budi')->assertSee('Akun Oktober');
+        $this->assertSame(3, $response->viewData('monthCount'));
+        $this->assertSame(320000, $response->viewData('monthRevenue'));
+        $this->assertSame(3, $response->viewData('totalCount'));
+        $this->get('/admin/sales?month=2026-11')->assertOk()->assertDontSee('Joki Legend 5 bintang');
+
+        $this->delete('/admin/sales/'.$existing->id)->assertRedirect();
+        $this->assertDatabaseMissing('manual_sales', ['id' => $existing->id]);
+    }
+
+    public function test_manual_sale_rejects_missing_or_invalid_values(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post('/admin/sales', ['amount' => 0, 'sold_on' => 'kemarin'])->assertSessionHasErrors(['item', 'amount', 'sold_on']);
+        $this->assertDatabaseCount('manual_sales', 0);
+    }
+
+    public function test_sold_date_follows_status_changes_and_is_kept_on_unrelated_edits(): void
+    {
+        $account = GameAccount::factory()->create();
+        $this->assertNull($account->sold_at);
+
+        $this->travelTo('2026-10-15 10:00:00');
+        $account->update(['status' => 'sold']);
+        $this->assertSame('2026-10-15', $account->sold_at->toDateString());
+
+        $this->travelTo('2026-10-20 10:00:00');
+        $account->update(['price' => 1000]);
+        $this->assertSame('2026-10-15', $account->fresh()->sold_at->toDateString());
+
+        $account->update(['status' => 'available']);
+        $this->assertNull($account->fresh()->sold_at);
     }
 
     public function test_admin_authentication_protects_all_management_pages_and_mutations(): void

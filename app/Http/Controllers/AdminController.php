@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\GameAccount;
+use App\Models\ManualSale;
 use App\Models\Setting;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,45 @@ class AdminController extends Controller
         $data = $request->validate(['q' => 'nullable|string|max:100']);
 
         return view('admin.accounts', ['accounts' => GameAccount::with('category')->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
+    }
+
+    public function sales(Request $request): View
+    {
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+        $month = CarbonImmutable::createFromFormat('!Y-m', $data['month'] ?? now()->format('Y-m'));
+        $allSold = GameAccount::where('status', 'sold')->whereNotNull('sold_at');
+        $monthSold = (clone $allSold)->where('sold_at', '>=', $month)->where('sold_at', '<', $month->addMonth());
+        $monthManual = ManualSale::where('sold_on', '>=', $month->toDateString())->where('sold_on', '<', $month->addMonth()->toDateString());
+
+        return view('admin.sales', [
+            'month' => $month,
+            'monthCount' => (clone $monthSold)->count() + (clone $monthManual)->count(),
+            'monthRevenue' => (int) (clone $monthSold)->sum('price') + (int) (clone $monthManual)->sum('amount'),
+            'totalCount' => (clone $allSold)->count() + ManualSale::count(),
+            'totalRevenue' => (int) (clone $allSold)->sum('price') + (int) ManualSale::sum('amount'),
+            'accounts' => $monthSold->with('category')->latest('sold_at')->orderByDesc('id')->paginate(20)->withQueryString(),
+            'manualSales' => $monthManual->orderByDesc('sold_on')->orderByDesc('id')->paginate(20, ['*'], 'manual_page')->withQueryString(),
+        ]);
+    }
+
+    public function storeSale(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'item' => 'required|string|max:150',
+            'amount' => 'required|integer|min:1|max:999999999999',
+            'sold_on' => 'required|date_format:Y-m-d',
+            'note' => 'nullable|string|max:255',
+        ]);
+        $sale = ManualSale::create($data);
+
+        return redirect()->route('admin.sales', ['month' => $sale->sold_on->format('Y-m')])->with('success', 'Penjualan berhasil dicatat.');
+    }
+
+    public function destroySale(ManualSale $manualSale): RedirectResponse
+    {
+        $manualSale->delete();
+
+        return back()->with('success', 'Catatan penjualan berhasil dihapus.');
     }
 
     public function form(?GameAccount $account = null): View
@@ -50,10 +91,11 @@ class AdminController extends Controller
             'category_id' => 'required|exists:categories,id', 'price' => 'required|integer|min:0|max:999999999999',
             'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
             'status' => 'required|in:available,sold,draft',
+            'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
             'remove_images' => 'nullable|array', 'remove_images.*' => 'integer',
-        ]);
+        ], ['seller_whatsapp.regex' => 'Nomor penjual harus diawali kode negara tanpa tanda +, contoh 6281234567890.']);
         $deletedImages = $account->images()->whereIn('id', $data['remove_images'] ?? [])->get();
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
             return back()->withErrors(['images' => 'Maksimal 6 gambar tambahan per akun.'])->withInput();
