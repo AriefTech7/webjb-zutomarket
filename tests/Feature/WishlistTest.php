@@ -23,7 +23,8 @@ class WishlistTest extends TestCase
         $account = GameAccount::factory()->create();
 
         $this->get('/')->assertOk()->assertSee('data-wishlist-toggle="'.$account->id.'"', false)
-            ->assertSee(route('wishlist'), false)->assertSee('data-wishlist-count', false);
+            ->assertSee(route('rental'), false)->assertSee('Rental Akun');
+        $this->get('/profil')->assertOk()->assertSee(route('wishlist'), false)->assertSee('data-wishlist-count', false);
         $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Simpan ke wishlist')
             ->assertSee('aria-pressed="false"', false);
     }

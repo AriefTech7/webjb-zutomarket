@@ -26,9 +26,8 @@
             <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Home</a><a
-                    class="nav-link {{ request()->routeIs('wishlist') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('wishlist') }}">♡ Wishlist <span data-wishlist-count hidden
-                        class="text-xs text-rose-300">0</span></a><a
+                    class="nav-link {{ request()->routeIs('rental') ? 'text-white bg-white/5' : '' }}"
+                    href="{{ route('rental') }}">Rental Akun</a><a
                     class="nav-link {{ request()->routeIs('joki') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('joki') }}">Joki ML</a><a
                     class="nav-link {{ request()->routeIs('about') ? 'text-white bg-white/5' : '' }}"
@@ -100,7 +99,7 @@
         <nav class="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md rounded-2xl border border-white/20 bg-[#34416e]/70 p-1 shadow-xl shadow-[#020617]/50 backdrop-blur-xl xl:hidden"
             aria-label="Navigasi bawah">
             <div class="grid grid-cols-5">
-                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'wishlist' => ['Wishlist', ['wishlist']], 'joki' => ['Joki ML', ['joki']], 'about' => ['Tentang', ['about']], 'profile' => ['Akun', ['profile']]] as $route => [$label, $activeRoutes])
+                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'rental' => ['Rental Akun', ['rental']], 'joki' => ['Joki ML', ['joki']], 'about' => ['Tentang', ['about']], 'profile' => ['Akun', ['profile']]] as $route => [$label, $activeRoutes])
                     @php($isActive = request()->routeIs(...$activeRoutes))
                     @php($isCenter = $route === 'joki')
                     <a href="{{ route($route) }}"
@@ -131,16 +130,12 @@
                                         <path d="M20 21v-1a6 6 0 0 0-6-6h-4a6 6 0 0 0-6 6v1M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
                                     @break
 
-                                    @case('wishlist')
-                                        <path
-                                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                                    @case('rental')
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M12 7v5l3 2" />
                                     @break
                                 @endswitch
                             </svg>
-                            @if ($route === 'wishlist')
-                                <span data-wishlist-count hidden
-                                    class="absolute -top-1 right-1 min-w-4 rounded-full bg-rose-400 px-1 text-center text-[10px] font-bold leading-4 text-slate-950">0</span>
-                            @endif
                         </span>
                         {{ $label }}
                     </a>

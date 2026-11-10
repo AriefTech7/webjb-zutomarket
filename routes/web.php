@@ -11,6 +11,8 @@ Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->na
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::view('/joki-ml', 'catalog.joki')->name('joki');
+Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-sale');
+Route::get('/rental', [CatalogController::class, 'rental'])->name('rental');
 Route::view('/tentang', 'catalog.about')->name('about');
 Route::view('/profil', 'catalog.profile')->name('profile');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
@@ -35,6 +37,10 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/categories', [AdminController::class, 'saveCategory'])->name('categories.store');
     Route::put('/categories/{category}', [AdminController::class, 'saveCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [AdminController::class, 'deleteCategory'])->name('categories.destroy');
+    Route::get('/contacts', [AdminController::class, 'contacts'])->name('contacts');
+    Route::post('/contacts', [AdminController::class, 'saveContact'])->name('contacts.store');
+    Route::put('/contacts/{contact}', [AdminController::class, 'saveContact'])->name('contacts.update');
+    Route::delete('/contacts/{contact}', [AdminController::class, 'deleteContact'])->name('contacts.destroy');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::put('/settings', [AdminController::class, 'saveSettings'])->name('settings.update');
 });

@@ -5,13 +5,13 @@
                 <img class="h-14 w-16 shrink-0 rounded-lg object-cover" src="{{ $account->imageUrl() }}" alt="" loading="lazy">
                 <div class="min-w-0 flex-1">
                     <p class="break-words text-sm font-semibold">{{ $account->title }}</p>
-                    <p class="muted mt-1 break-words text-xs">{{ $account->category->name }}</p>
+                    <p class="muted mt-1 break-words text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif</p>
                     <p class="mt-1 text-xs text-slate-500">{{ $account->created_at->format('d M Y') }}</p>
                 </div>
             </div>
             <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
                 <p class="text-sm font-bold text-lime-300">{{ $account->formattedPrice() }}</p>
-                <span class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft'][$account->status] }}</span>
+                <span class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft', 'rented' => 'Disewa'][$account->status] }}</span>
             </div>
             <div class="mt-3 grid grid-cols-2 gap-3">
                 <a class="btn-secondary px-3" href="{{ route('admin.accounts.edit', $account) }}" aria-label="Edit {{ $account->title }}">Edit akun</a>
@@ -44,14 +44,14 @@
                                 src="{{ $account->imageUrl() }}" alt="">
                             <div>
                                 <p class="font-semibold">{{ $account->title }}</p>
-                                <p class="muted text-xs">{{ $account->category->name }} ·
+                                <p class="muted text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif ·
                                     {{ $account->created_at->format('d M Y') }}</p>
                             </div>
                         </div>
                     </td>
                     <td class="p-5 whitespace-nowrap">{{ $account->formattedPrice() }}</td>
                     <td class="p-5"><span
-                            class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft'][$account->status] }}</span>
+                            class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft', 'rented' => 'Disewa'][$account->status] }}</span>
                     </td>
                     <td class="p-5">
                         <div class="flex items-center gap-4"><a class="py-3 text-lime-300"

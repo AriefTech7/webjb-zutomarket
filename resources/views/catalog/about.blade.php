@@ -4,21 +4,22 @@
 @section('content')
     @php
         $storeName = \App\Models\Setting::valueFor('store_name');
-        $whatsappNumber = \App\Models\Setting::valueFor('whatsapp_number');
-        $chatIcon = 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z';
-        $cameraIcon = 'M4 4h16v16H4V4ZM16 11.4a4 4 0 1 1-7.9 1.2 4 4 0 0 1 7.9-1.2ZM17.5 6.5h.01';
-        $broadcastIcon = 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5';
-        $musicIcon = 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z';
-        $groups = [
-            'admin' => ['WA Admin', $chatIcon, $whatsappNumber ? [['Admin '.$storeName, 'Jual beli akun, joki, cicilan, dan tukar tambah', 'WA', 'https://wa.me/'.$whatsappNumber, $chatIcon]] : []],
-            'social' => ['Sosmed', $cameraIcon, [
-                ['Instagram', '@zutomarket.id', 'IG', 'https://www.instagram.com/zutomarket.id', $cameraIcon],
-                ['TikTok', '@aku_zuto', 'TIKTOK', 'https://www.tiktok.com/@aku_zuto', $musicIcon],
-            ]],
-            'channel' => ['Saluran', $broadcastIcon, [
-                ['Saluran WhatsApp', 'Ikuti update terbaru', 'SALURAN', 'https://whatsapp.com/channel/0029VbE83IN3mFXxE4NlTG0L', $broadcastIcon],
-            ]],
+        $icons = [
+            'admin' => 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z',
+            'social' => 'M4 4h16v16H4V4ZM16 11.4a4 4 0 1 1-7.9 1.2 4 4 0 0 1 7.9-1.2ZM17.5 6.5h.01',
+            'channel' => 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5',
+            'TIKTOK' => 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+            'LINK' => 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
         ];
+        $links = \App\Models\ContactLink::orderBy('sort_order')->orderBy('id')->get()->groupBy('group');
+        $groups = collect(\App\Models\ContactLink::GROUPS)->mapWithKeys(fn (string $label, string $group): array => [$group => [
+            $label,
+            $icons[$group],
+            ($links[$group] ?? collect())->map(fn (\App\Models\ContactLink $link): array => [
+                $link->title, $link->subtitle, $link->badgeLabel(), $link->url(),
+                $group === 'social' ? ($icons[$link->badgeLabel()] ?? ($link->badgeLabel() === 'IG' ? $icons['social'] : $icons['LINK'])) : $icons[$group],
+            ])->all(),
+        ]])->all();
     @endphp
     <section class="shell max-w-3xl py-8">
         <a class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-300 transition hover:text-white" href="{{ route('catalog') }}">← Kembali</a>
@@ -54,7 +55,7 @@
                         </a>
                     </li>
                 @empty
-                    <li class="panel p-6 text-center text-sm text-slate-400">Belum ada kontak WhatsApp admin.</li>
+                    <li class="panel p-6 text-center text-sm text-slate-400">Belum ada kontak {{ $label }}.</li>
                 @endforelse
             </ul>
         @endforeach

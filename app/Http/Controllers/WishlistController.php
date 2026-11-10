@@ -22,8 +22,8 @@ class WishlistController extends Controller
         ]);
         $ids = array_map(intval(...), $data['ids'] ?? []);
         $positions = array_flip($ids);
-        $accounts = GameAccount::query()->select(['id', 'category_id', 'title', 'slug', 'price', 'main_image', 'status', 'specifications'])
-            ->with('category:id,name')->whereIn('id', $ids)->whereIn('status', ['available', 'sold'])
+        $accounts = GameAccount::query()->select(['id', 'category_id', 'title', 'slug', 'price', 'original_price', 'flash_sale_ends_at', 'main_image', 'status', 'specifications'])
+            ->with('category:id,name')->whereIn('id', $ids)->forSale()->whereIn('status', ['available', 'sold'])
             ->get()->sortBy(fn (GameAccount $account): int => $positions[$account->id])->values();
 
         return response()->json([

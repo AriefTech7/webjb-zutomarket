@@ -7,6 +7,33 @@
                 alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="1280" height="430"
                 fetchpriority="high">
         </section>
+        @if ($flashSaleCount)
+            <a class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-amber-300/40 bg-linear-to-r from-amber-300/20 to-rose-400/10 p-4 transition hover:border-amber-300"
+                href="{{ route('flash-sale') }}">
+                <span class="flex min-w-0 items-center gap-3">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-300 text-slate-950"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" /></svg></span>
+                    <span class="min-w-0">
+                        <span class="block font-black uppercase tracking-wide text-amber-300">Flash Sale</span>
+                        <span class="muted block text-xs">{{ $flashSaleCount }} akun · berakhir dalam <span
+                                data-countdown="{{ $nextFlashSale->flash_sale_ends_at->toIso8601ZuluString() }}">{{ $nextFlashSale->flashSaleCountdown() }}</span></span>
+                    </span>
+                </span>
+                <span class="shrink-0 text-sm font-bold text-amber-300">Lihat →</span>
+            </a>
+        @endif
+        @if ($rentalCount)
+            <a class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-lime-300/30 bg-linear-to-r from-lime-300/15 to-violet-400/10 p-4 transition hover:border-lime-300"
+                href="{{ route('rental') }}">
+                <span class="flex min-w-0 items-center gap-3">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-lime-300 text-slate-950"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 6v6l4 2" /></svg></span>
+                    <span class="min-w-0">
+                        <span class="block font-black uppercase tracking-wide text-lime-300">Rental Akun</span>
+                        <span class="muted block text-xs">{{ $rentalCount }} akun · {{ $rentalReadyCount }} siap disewa</span>
+                    </span>
+                </span>
+                <span class="shrink-0 text-sm font-bold text-lime-300">Lihat →</span>
+            </a>
+        @endif
         <section id="katalog" class="scroll-mt-6">
             <div class="mb-6 hidden flex-wrap items-end justify-between gap-4 md:flex">
                 <div>

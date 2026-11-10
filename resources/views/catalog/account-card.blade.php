@@ -11,6 +11,10 @@
             @else
                 <span class="status absolute left-2 top-2 z-10 text-lime-300 md:left-3 md:top-3">● Tersedia</span>
             @endif
+            @if ($account->isOnFlashSale())
+                <span class="absolute bottom-2 left-2 z-10 rounded-lg bg-amber-300 px-2 py-1 text-[10px] font-black text-slate-950 md:text-xs">⚡ <span
+                        data-countdown="{{ $account->flash_sale_ends_at->toIso8601ZuluString() }}">{{ $account->flashSaleCountdown() }}</span></span>
+            @endif
             @if (str_starts_with($account->main_image, 'demo/'))
                 <span class="absolute bottom-2 right-3 z-10 text-[10px] text-white/60">DATA DEMO</span>
             @endif
@@ -26,8 +30,16 @@
                         <p class="mb-1 hidden text-[10px] text-slate-500 md:block">Status</p>
                         <p class="text-sm font-bold text-rose-300 md:text-base">Sudah terjual</p>
                     @else
-                        <p class="mb-1 hidden text-[10px] text-slate-500 md:block">Harga akun</p>
-                        <p class="text-sm font-bold text-slate-100 md:text-base">{{ $account->formattedPrice() }}</p>
+                        @if ($account->hasDiscount())
+                            <p class="text-[10px] text-slate-500 line-through md:text-xs">{{ $account->formattedOriginalPrice() }}</p>
+                        @else
+                            <p class="mb-1 hidden text-[10px] text-slate-500 md:block">Harga akun</p>
+                        @endif
+                        <p class="flex flex-wrap items-center gap-1.5 text-sm font-bold text-slate-100 md:text-base">{{ $account->formattedPrice() }}
+                            @if ($account->hasDiscount())
+                                <span class="rounded bg-rose-400/15 px-1.5 text-[10px] font-bold text-rose-300">-{{ $account->discountPercent() }}%</span>
+                            @endif
+                        </p>
                     @endif
                 </div><span
                     class="hidden h-10 w-10 items-center justify-center rounded-xl md:flex border border-white/10 bg-white/5 text-lime-300 transition group-hover:border-lime-300 group-hover:bg-lime-300 group-hover:text-black"

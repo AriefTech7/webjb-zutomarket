@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\ContactLink;
 use App\Models\GameAccount;
 use App\Models\ManualSale;
 use App\Models\Setting;
@@ -88,14 +89,42 @@ class AdminController extends Controller
         $request->merge(['slug' => Str::slug($request->input('slug') ?: $request->input('title', ''))]);
         $data = $request->validate([
             'title' => 'required|string|max:150', 'slug' => ['required', 'max:180', Rule::unique('game_accounts')->ignore($account->id)],
-            'category_id' => 'required|exists:categories,id', 'price' => 'required|integer|min:0|max:999999999999',
+            'category_id' => 'required|exists:categories,id', 'price' => 'required_unless:is_rental,1|nullable|integer|min:0|max:999999999999',
+            'is_rental' => 'nullable|boolean',
+            'packages' => 'nullable|array|max:6',
+            'packages.*.duration' => 'nullable|string|max:50|required_with:packages.*.price',
+            'packages.*.price' => 'nullable|integer|min:0|max:999999999999|required_with:packages.*.duration',
+            'ready_estimate_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
-            'status' => 'required|in:available,sold,draft',
+            'status' => 'required|in:available,sold,draft,rented',
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
+            'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
+            'flash_sale_ends_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
             'remove_images' => 'nullable|array', 'remove_images.*' => 'integer',
-        ], ['seller_whatsapp.regex' => 'Nomor penjual harus diawali kode negara tanpa tanda +, contoh 6281234567890.']);
+        ], [
+            'seller_whatsapp.regex' => 'Nomor penjual harus diawali kode negara tanpa tanda +, contoh 6281234567890.',
+            'original_price.gt' => 'Harga coret harus lebih besar dari harga jual.',
+        ]);
+        if (! empty($data['flash_sale_ends_at'])) {
+            $data['flash_sale_ends_at'] = CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['flash_sale_ends_at'], GameAccount::LOCAL_TIMEZONE)->utc();
+        }
+        $data['is_rental'] = $request->boolean('is_rental');
+        $packages = collect($data['packages'] ?? [])->filter(fn (array $package): bool => filled($package['duration'] ?? null))->values();
+        if ($data['is_rental'] && $packages->isEmpty()) {
+            return back()->withErrors(['packages' => 'Isi minimal satu paket sewa untuk akun rental.'])->withInput();
+        }
+        if ($data['status'] === 'rented' && ! $data['is_rental']) {
+            return back()->withErrors(['status' => 'Status "Sedang disewa" hanya untuk akun rental.'])->withInput();
+        }
+        if ($data['is_rental']) {
+            $data['price'] = (int) $packages->min('price');
+        }
+        $data['ready_estimate_at'] = $data['is_rental'] && ! empty($data['ready_estimate_at'])
+            ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['ready_estimate_at'], GameAccount::LOCAL_TIMEZONE)->utc()
+            : null;
+        unset($data['packages']);
         $deletedImages = $account->images()->whereIn('id', $data['remove_images'] ?? [])->get();
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
             return back()->withErrors(['images' => 'Maksimal 6 gambar tambahan per akun.'])->withInput();
@@ -104,7 +133,7 @@ class AdminController extends Controller
         $newPaths = [];
         $oldMain = $account->main_image;
         try {
-            DB::transaction(function () use ($request, $account, $data, $deletedImages, &$newPaths) {
+            DB::transaction(function () use ($request, $account, $data, $deletedImages, $packages, &$newPaths) {
                 if ($account->exists) {
                     $account->refreshForUpdate();
                 }
@@ -119,6 +148,12 @@ class AdminController extends Controller
                     $account->images()->create(['image_path' => $path]);
                 }
                 $account->images()->whereIn('id', $deletedImages->modelKeys())->delete();
+                $account->rentalPackages()->delete();
+                if ($account->is_rental) {
+                    foreach ($packages as $index => $package) {
+                        $account->rentalPackages()->create(['duration' => $package['duration'], 'price' => (int) $package['price'], 'sort_order' => $index]);
+                    }
+                }
             });
         } catch (\Throwable $exception) {
             Storage::disk('public')->delete($newPaths);
@@ -174,6 +209,35 @@ class AdminController extends Controller
         return back()->with('success', 'Kategori berhasil dihapus.');
     }
 
+    public function contacts(): View
+    {
+        return view('admin.contacts', ['contacts' => ContactLink::orderBy('sort_order')->orderBy('id')->get()->groupBy('group')]);
+    }
+
+    public function saveContact(Request $request, ?ContactLink $contact = null): RedirectResponse
+    {
+        $contact ??= new ContactLink;
+        $data = $request->validate([
+            'group' => ['required', Rule::in(array_keys(ContactLink::GROUPS))],
+            'title' => 'required|string|max:80',
+            'subtitle' => 'nullable|string|max:120',
+            'value' => ['required', 'string', 'max:500', $request->input('group') === 'admin' ? 'regex:/^[1-9][0-9]{7,14}$/' : 'url:https'],
+            'badge' => 'nullable|string|max:12',
+            'sort_order' => 'nullable|integer|min:0|max:999',
+        ], ['value.regex' => 'Nomor WhatsApp harus diawali kode negara tanpa tanda +, contoh 6281234567890.', 'value.url' => 'Isi tautan lengkap yang diawali https://.']);
+        $data['sort_order'] ??= 0;
+        $contact->fill($data)->save();
+
+        return back()->with('success', 'Kontak berhasil disimpan.');
+    }
+
+    public function deleteContact(ContactLink $contact): RedirectResponse
+    {
+        $contact->delete();
+
+        return back()->with('success', 'Kontak berhasil dihapus.');
+    }
+
     public function settings(): View
     {
         return view('admin.settings');
@@ -181,7 +245,7 @@ class AdminController extends Controller
 
     public function saveSettings(Request $request): RedirectResponse
     {
-        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_default_message' => 'required|string|max:1000']);
+        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_rental_number' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_default_message' => 'required|string|max:1000']);
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
