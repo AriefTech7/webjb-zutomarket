@@ -33,8 +33,6 @@ class CatalogController extends Controller
             'selected' => $selected,
             'flashSaleCount' => GameAccount::onFlashSale()->count(),
             'nextFlashSale' => GameAccount::onFlashSale()->orderBy('flash_sale_ends_at')->first(),
-            'rentalCount' => GameAccount::rental()->count(),
-            'rentalReadyCount' => GameAccount::rental()->where('status', 'available')->count(),
         ]);
     }
 

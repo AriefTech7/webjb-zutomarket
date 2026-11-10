@@ -120,7 +120,7 @@ class CatalogTest extends TestCase
         GameAccount::factory()->create(['title' => 'Akun sewa draft', 'is_rental' => true, 'status' => 'draft']);
         $sale = GameAccount::factory()->create(['title' => 'Akun jual biasa']);
 
-        $this->get('/')->assertOk()->assertSee('Akun jual biasa')->assertDontSee('Akun sewa FF')->assertSee('Rental Akun')->assertSee('2 akun · 1 siap disewa');
+        $this->get('/')->assertOk()->assertSee('Akun jual biasa')->assertDontSee('Akun sewa FF')->assertSee(route('rental'), false)->assertDontSee('siap disewa');
         $this->get('/rental')->assertOk()->assertSeeInOrder(['Akun sewa FF', 'Akun lagi disewa'])->assertSee('Rp 25.000')->assertSee('6 Jam')
             ->assertSee('Ready ± 12 Nov 20:30 WIB')->assertDontSee('Akun sewa draft')->assertDontSee('Akun jual biasa');
         $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$rental->id, $sale->id]]))->assertOk()->assertJsonPath('ids', [$sale->id]);
@@ -484,6 +484,22 @@ class CatalogTest extends TestCase
 
         $this->delete('/admin/contacts/'.$contact->id)->assertRedirect();
         $this->assertDatabaseMissing('contact_links', ['id' => $contact->id]);
+    }
+
+    public function test_store_pages_offer_the_installable_app_but_admin_pages_do_not(): void
+    {
+        $this->get('/')->assertOk()->assertSee('rel="manifest"', false)->assertSee('data-install-prompt', false)->assertSee('Pasang Aplikasi ZutoMarket');
+        $this->get('/admin/login')->assertOk()->assertDontSee('data-install-prompt', false);
+
+        $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame(['standalone', '/', '/'], [$manifest['display'], $manifest['start_url'], $manifest['scope']]);
+        $this->assertContains('maskable', array_column($manifest['icons'], 'purpose'));
+        foreach ($manifest['icons'] as $icon) {
+            [$width, $height] = getimagesize(public_path(ltrim($icon['src'], '/')));
+            $this->assertSame($icon['sizes'], $width.'x'.$height);
+        }
+        $this->assertFileExists(public_path('sw.js'));
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

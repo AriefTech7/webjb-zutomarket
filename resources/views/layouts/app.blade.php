@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'ZutoShopGame') · {{ \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO') }}</title>
     <link rel="icon" type="image/webp" href="{{ asset('images/zuto-maskot.webp') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#070b1c">
+    <link rel="apple-touch-icon" href="{{ asset('images/icons/apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="ZutoMarket">
     <meta name="description" content="@yield('description', 'Jelajahi katalog akun game, pilih spesifikasi favoritmu, dan hubungi admin langsung melalui WhatsApp.')">
     @if (request()->is('admin*'))
         <meta name="robots" content="noindex,nofollow">
@@ -96,6 +102,32 @@
         </div>
     </footer>
     @unless (request()->is('admin*'))
+        <div data-install-prompt hidden role="dialog" aria-labelledby="install-title"
+            class="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md xl:inset-x-auto xl:bottom-6 xl:right-6 xl:w-[26rem]">
+            <div class="panel bg-[#101833] p-5 shadow-2xl shadow-[#020617]/70">
+                <div class="flex items-start gap-3">
+                    <img class="size-12 shrink-0 rounded-2xl" src="{{ asset('images/icons/icon-192.png') }}" alt="" width="48" height="48">
+                    <div class="min-w-0 flex-1">
+                        <h2 id="install-title" class="font-bold">Pasang Aplikasi ZutoMarket</h2>
+                        <p class="muted text-xs">Gratis, ringan, langsung dari home screen kamu.</p>
+                    </div>
+                    <button type="button" class="-m-1 p-1 text-slate-400 transition hover:text-white" data-install-dismiss aria-label="Tutup">✕</button>
+                </div>
+                <ul class="mt-4 space-y-3 text-sm">
+                    @foreach ([['Akses kilat', 'buka ZutoMarket langsung dari home screen, tanpa mengetik alamat.', 'M13 2 4 14h7l-1 8 9-12h-7l1-8Z'], ['Tampilan penuh', 'layar penuh seperti aplikasi, tanpa address bar.', 'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3'], ['Selalu terbaru', 'katalog, flash sale, dan rental langsung dari website.', 'M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5']] as [$title, $description, $icon])
+                        <li class="flex gap-3">
+                            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-lime-300/10 text-lime-300"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $icon }}" /></svg></span>
+                            <p class="text-slate-300"><strong class="text-white">{{ $title }}</strong> — {{ $description }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="mt-4 rounded-xl bg-white/5 p-3 text-xs text-slate-300" data-install-ios hidden>Di iPhone: ketuk tombol <strong>Bagikan</strong> di Safari, lalu pilih <strong>Tambah ke Layar Utama</strong>.</p>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <button type="button" class="btn-secondary" data-install-dismiss>Nanti saja</button>
+                    <button type="button" class="btn" data-install-accept>⬇ Pasang Sekarang</button>
+                </div>
+            </div>
+        </div>
         <nav class="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md rounded-2xl border border-white/20 bg-[#34416e]/70 p-1 shadow-xl shadow-[#020617]/50 backdrop-blur-xl xl:hidden"
             aria-label="Navigasi bawah">
             <div class="grid grid-cols-5">

@@ -1,4 +1,5 @@
 import { initialiseCountdowns } from './countdown';
+import { initialiseInstallPrompt } from './install';
 import { initialiseJokiOrder } from './joki';
 import { initialiseProfile } from './profile';
 import { initialiseWishlist } from './wishlist';
@@ -7,6 +8,7 @@ initialiseWishlist();
 initialiseProfile();
 initialiseJokiOrder();
 initialiseCountdowns();
+initialiseInstallPrompt();
 
 document.querySelectorAll('[data-tabs]').forEach((list) => {
     const tabs = [...list.querySelectorAll('[role="tab"]')];
