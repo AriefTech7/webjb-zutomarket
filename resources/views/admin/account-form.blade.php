@@ -25,9 +25,19 @@
                         terlebih dahulu →</a>
                 @endif
             </div>
-            <div><label class="label" for="price">Harga (Rupiah)</label><input class="field" id="price"
+            <div><label class="label" for="price">Harga (Rupiah, kosongkan untuk akun rental)</label><input class="field" id="price"
                     name="price" type="number" min="0" max="999999999999" step="1"
-                    value="{{ old('price', $account->price) }}" required></div>
+                    value="{{ old('price', $account->price) }}"></div>
+            <div><label class="label" for="original_price">Harga coret (opsional)</label><input class="field"
+                    id="original_price" name="original_price" type="number" min="0" max="999999999999" step="1"
+                    value="{{ old('original_price', $account->original_price) }}" placeholder="Harga sebelum diskon">
+                <p class="muted mt-2 text-xs">Tampil dicoret di atas harga jual, lengkap dengan persentase diskon.</p>
+            </div>
+            <div><label class="label" for="flash_sale_ends_at">Flash sale sampai (opsional)</label><input class="field"
+                    id="flash_sale_ends_at" name="flash_sale_ends_at" type="datetime-local"
+                    value="{{ old('flash_sale_ends_at', $account->flash_sale_ends_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}">
+                <p class="muted mt-2 text-xs">Waktu WIB. Akun tampil di halaman Flash Sale sampai waktu ini. Kosongkan jika tidak ikut flash sale.</p>
+            </div>
         </div>
         <div><label class="label" for="description">Deskripsi</label>
             <textarea class="field" id="description" name="description" rows="4" required>{{ old('description', $account->description) }}</textarea>
@@ -39,10 +49,36 @@
                 pembeli.</p>
         </div>
         <div><label class="label" for="status">Status akun</label><select class="field" id="status" name="status">
-                @foreach (['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia', 'sold' => 'Terjual'] as $value => $label)
+                @foreach (['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia / siap disewa', 'sold' => 'Terjual', 'rented' => 'Sedang disewa (khusus rental)'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('status', $account->status ?? 'draft') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
+        </div>
+        @php($packageRows = array_pad(array_values(old('packages', $account->rentalPackages->map(fn ($package) => ['duration' => $package->duration, 'price' => $package->price])->all())), 6, ['duration' => '', 'price' => '']))
+        <fieldset class="panel space-y-4 p-5">
+            <legend class="sr-only">Rental akun</legend>
+            <label class="flex items-center gap-3 font-semibold"><input type="hidden" name="is_rental" value="0"><input type="checkbox" name="is_rental" value="1" class="size-5" @checked(old('is_rental', $account->is_rental))> Akun rental (disewakan, tidak dijual)</label>
+            <p class="muted text-xs">Akun rental tampil di halaman Rental, bukan di katalog jual. Harga akun otomatis memakai paket termurah.</p>
+            <div>
+                <p class="label">Paket sewa (maksimal 6)</p>
+                <div class="space-y-2">
+                    @foreach ($packageRows as $index => $package)
+                        <div class="grid grid-cols-2 gap-2">
+                            <input class="field" name="packages[{{ $index }}][duration]" value="{{ $package['duration'] ?? '' }}" maxlength="50" placeholder="Contoh: 6 Jam" aria-label="Durasi paket {{ $index + 1 }}">
+                            <input class="field" name="packages[{{ $index }}][price]" type="number" min="0" step="1" value="{{ $package['price'] ?? '' }}" placeholder="Harga" aria-label="Harga paket {{ $index + 1 }}">
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <div><label class="label" for="ready_estimate_at">Estimasi ready (WIB, saat sedang disewa)</label><input class="field"
+                    id="ready_estimate_at" name="ready_estimate_at" type="datetime-local"
+                    value="{{ old('ready_estimate_at', $account->ready_estimate_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}"></div>
+        </fieldset>
+        <div><label class="label" for="seller_whatsapp">Nomor WhatsApp penjual (opsional)</label><input class="field"
+                id="seller_whatsapp" name="seller_whatsapp" inputmode="numeric" maxlength="15"
+                value="{{ old('seller_whatsapp', $account->seller_whatsapp) }}" placeholder="6281234567890">
+            <p class="muted mt-2 text-xs">Isi jika pembeli akun ini harus langsung menghubungi penjualnya. Kosongkan untuk
+                memakai nomor WhatsApp toko. Awali dengan 62, tanpa tanda + atau spasi.</p>
         </div>
         <div><label class="label" for="main_image">Gambar utama
                 {{ $account->exists ? '(opsional untuk mengganti)' : '*' }}</label>

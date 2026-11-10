@@ -18,6 +18,14 @@
             <p class="muted mt-2 text-xs">Gunakan kode negara, tanpa +, spasi, atau tanda hubung. Contoh: 6281234567890.</p>
         </div>
         <div>
+            <label for="whatsapp_rental_number" class="label">Nomor WhatsApp rental (opsional)</label>
+            <input class="field" id="whatsapp_rental_number" name="whatsapp_rental_number" type="tel" inputmode="numeric"
+                pattern="[1-9][0-9]{7,14}"
+                value="{{ old('whatsapp_rental_number', \App\Models\Setting::valueFor('whatsapp_rental_number')) }}"
+                placeholder="6281234567890">
+            <p class="muted mt-2 text-xs">Pesan sewa akun rental dikirim ke nomor ini. Kosongkan untuk memakai nomor WhatsApp di atas.</p>
+        </div>
+        <div>
             <label for="whatsapp_default_message" class="label">Pesan otomatis</label>
             <textarea class="field" id="whatsapp_default_message" name="whatsapp_default_message" rows="5" required
                 maxlength="1000">{{ old('whatsapp_default_message', \App\Models\Setting::valueFor('whatsapp_default_message', 'Halo admin, saya tertarik dengan akun {nama_akun} seharga {harga}. Apakah masih tersedia? {url}')) }}</textarea>

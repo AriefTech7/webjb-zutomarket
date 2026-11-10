@@ -1,7 +1,24 @@
-document.querySelector('[data-menu-toggle]')?.addEventListener('click', (event) => {
-    const menu = document.querySelector('[data-mobile-menu]');
-    const open = menu.classList.toggle('hidden') === false;
-    event.currentTarget.setAttribute('aria-expanded', String(open));
+import { initialiseCountdowns } from './countdown';
+import { initialiseInstallPrompt } from './install';
+import { initialiseJokiOrder } from './joki';
+import { initialiseProfile } from './profile';
+import { initialiseWishlist } from './wishlist';
+
+initialiseWishlist();
+initialiseProfile();
+initialiseJokiOrder();
+initialiseCountdowns();
+initialiseInstallPrompt();
+
+document.querySelectorAll('[data-tabs]').forEach((list) => {
+    const tabs = [...list.querySelectorAll('[role="tab"]')];
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+        tabs.forEach((other) => {
+            const selected = other === tab;
+            other.setAttribute('aria-selected', String(selected));
+            document.getElementById(other.getAttribute('aria-controls')).hidden = !selected;
+        });
+    }));
 });
 
 document.querySelectorAll('[data-confirm]').forEach((form) => {

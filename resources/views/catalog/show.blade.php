@@ -37,19 +37,43 @@
             <div>
                 <p class="eyebrow mb-3">{{ $account->category->name }}</p>
                 <h1 class="text-3xl font-black leading-tight md:text-4xl">{{ $account->title }}</h1><span
-                    class="status my-5 {{ $account->status === 'available' ? 'text-lime-300' : 'text-slate-400' }}">{{ $account->status === 'available' ? '● Tersedia' : 'Terjual' }}</span>
+                    class="status my-5 {{ $account->status === 'available' ? 'text-lime-300' : ($account->is_rental ? 'text-amber-300' : 'text-rose-300') }}">{{ $account->status === 'available' ? ($account->is_rental ? '● Siap disewa' : '● Tersedia') : ($account->is_rental ? 'Sedang disewa' : 'Terjual') }}</span>
+                @if ($account->is_rental)
+                    @include('catalog.rental-panel', ['account' => $account])
+                @else
                 <div class="panel p-6">
-                    <p class="muted">Harga akun</p>
-                    <p class="my-2 text-3xl font-black text-lime-300">{{ $account->formattedPrice() }}</p>
-                    <p class="muted mb-5">Konfirmasi ketersediaan dan detail transaksi dengan admin.</p>
-                    @if ($url = $account->whatsappUrl())
-                        <a class="btn w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">Hubungi admin via WhatsApp ↗</a>
+                    @if ($account->status === 'sold')
+                        <p class="muted">Status akun</p>
+                        <p class="my-2 text-3xl font-black uppercase tracking-widest text-rose-300">Terjual</p>
+                        <p class="muted mb-5">Akun ini sudah terjual. Lihat akun lain yang masih tersedia di katalog.</p>
                     @else
-                        <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">
-                            {{ $account->status === 'sold' ? 'Akun ini sudah terjual.' : 'Kontak WhatsApp belum diatur oleh admin.' }}
+                        <p class="muted">Harga akun</p>
+                        @if ($account->hasDiscount())
+                            <p class="mt-2 text-sm text-slate-500 line-through">{{ $account->formattedOriginalPrice() }}</p>
+                        @endif
+                        <p class="my-2 flex flex-wrap items-center gap-3 text-3xl font-black text-lime-300">{{ $account->formattedPrice() }}
+                            @if ($account->hasDiscount())
+                                <span class="rounded-lg bg-rose-400/15 px-2 py-1 text-sm text-rose-300">-{{ $account->discountPercent() }}%</span>
+                            @endif
                         </p>
+                        @if ($account->isOnFlashSale())
+                            <p class="mb-3 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-300/15 px-3 py-1.5 text-sm font-bold text-amber-300">⚡ Flash sale berakhir dalam <span
+                                    data-countdown="{{ $account->flash_sale_ends_at->toIso8601ZuluString() }}">{{ $account->flashSaleCountdown() }}</span></p>
+                        @endif
+                        <p class="muted mb-5">Konfirmasi ketersediaan dan detail transaksi dengan admin.</p>
                     @endif
+                    @if ($url = $account->whatsappUrl())
+                        <a class="btn w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">{{ $account->seller_whatsapp ? 'Hubungi penjual' : 'Hubungi admin' }} via WhatsApp ↗</a>
+                        <a class="btn-secondary mt-3 w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Ajukan tukar tambah ↗</a>
+                        <a class="btn-secondary mt-3 w-full" href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Ajukan cicilan ↗</a>
+                    @elseif ($account->status === 'sold')
+                        <a class="btn w-full" href="{{ route('catalog') }}">Lihat akun lain ↗</a>
+                    @else
+                        <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">Kontak WhatsApp belum diatur oleh admin.</p>
+                    @endif
+                    <div class="mt-3 grid">@include('catalog.wishlist-button', ['account' => $account])</div>
                 </div>
+                @endif
                 <div class="mt-6">
                     <h2 class="mb-3 font-bold">Spesifikasi akun</h2>
                     <div class="panel whitespace-pre-line p-5 text-sm leading-7 text-slate-300">{{ $account->specifications }}</div>
