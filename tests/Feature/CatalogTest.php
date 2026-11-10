@@ -502,6 +502,20 @@ class CatalogTest extends TestCase
         $this->assertFileExists(public_path('sw.js'));
     }
 
+    public function test_pages_share_the_logo_preview_image_and_favicon(): void
+    {
+        $account = GameAccount::factory()->create(['title' => 'Akun spesial']);
+
+        $this->get('/')->assertOk()->assertSee('<meta property="og:image" content="'.asset('images/zuto-og.jpg').'">', false)
+            ->assertSee('rel="icon" type="image/png" sizes="48x48"', false)->assertSee('Created By OzinVoid')
+            ->assertSee('<title>ZutoMarket · SHOPGAME ZUTO</title>', false)->assertSee('<meta property="og:title" content="ZutoMarket · SHOPGAME ZUTO">', false)->assertDontSee('ZutoShopGame');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('<meta property="og:title" content="Akun spesial', false)
+            ->assertSee('<meta property="og:url" content="'.route('accounts.show', $account->slug).'">', false);
+        $this->assertSame([1200, 630], array_slice(getimagesize(public_path('images/zuto-og.jpg')), 0, 2));
+        $this->assertFileExists(public_path('images/icons/favicon-48.png'));
+        $this->assertFileExists(public_path('images/zuto-logo.webp'));
+    }
+
     public function test_removed_optional_features_are_not_publicly_reachable(): void
     {
         foreach (['/tukar-tambah', '/admin/finance', '/admin/trade-requests'] as $path) {

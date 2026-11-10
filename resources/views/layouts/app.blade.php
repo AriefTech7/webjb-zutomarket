@@ -4,8 +4,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'ZutoShopGame') · {{ \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO') }}</title>
-    <link rel="icon" type="image/webp" href="{{ asset('images/zuto-maskot.webp') }}">
+    <title>@yield('title', 'ZutoMarket') · {{ \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO') }}</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/icons/favicon-48.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/icons/icon-192.png') }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="ZutoMarket">
+    <meta property="og:title" content="@yield('title', 'ZutoMarket') · {{ \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO') }}">
+    <meta property="og:description" content="@yield('description', 'Jelajahi katalog akun game, pilih spesifikasi favoritmu, dan hubungi admin langsung melalui WhatsApp.')">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ asset('images/zuto-og.jpg') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Logo ZutoMarket.id">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <meta name="theme-color" content="#070b1c">
     <link rel="apple-touch-icon" href="{{ asset('images/icons/apple-touch-icon.png') }}">
@@ -77,6 +88,7 @@
                 <a href="{{ route('how') }}"
                     class="mt-1 inline-block text-sm text-slate-400 transition hover:text-lime-300">Transaksi
                     dilanjutkan melalui WhatsApp ↗</a>
+                <p class="mt-1 text-xs text-slate-500">Created By OzinVoid</p>
                 <nav class="mt-4 grid gap-2 sm:grid-cols-2" aria-label="Ikuti {{ $storeName }}">
                     <a href="https://whatsapp.com/channel/0029VbE83IN3mFXxE4NlTG0L" target="_blank"
                         rel="noopener noreferrer"
