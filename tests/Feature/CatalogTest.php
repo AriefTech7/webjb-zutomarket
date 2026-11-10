@@ -41,6 +41,23 @@ class CatalogTest extends TestCase
         $this->get('/?available=1')->assertDontSee('Mythic &amp; Hero', false);
     }
 
+    public function test_sold_accounts_are_marked_and_hide_their_price_in_every_public_view(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $sold = GameAccount::factory()->create(['title' => 'Akun laku', 'price' => 777777, 'status' => 'sold']);
+        $available = GameAccount::factory()->create(['title' => 'Akun ready', 'price' => 555555]);
+
+        $this->get('/')->assertOk()->assertSee('Akun laku')->assertSee('Sudah terjual')->assertDontSee('Rp 777.777')->assertSee('Rp 555.555');
+        $this->get('/akun/'.$sold->slug)->assertOk()->assertSee('sudah terjual')->assertSee('Lihat akun lain')->assertDontSee('Rp 777.777')->assertDontSee('Ajukan tukar tambah');
+        $this->get('/akun/'.$available->slug)->assertOk()->assertSee('Rp 555.555')->assertDontSee('Lihat akun lain');
+
+        $html = $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$sold->id, $available->id]]))->assertOk()->json('html');
+
+        $this->assertStringNotContainsString('Rp 777.777', $html);
+        $this->assertStringContainsString('Rp 555.555', $html);
+        $this->assertStringContainsString('Terjual', $html);
+    }
+
     public function test_trade_in_button_opens_whatsapp_only_for_available_accounts(): void
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
@@ -53,6 +70,23 @@ class CatalogTest extends TestCase
 
         $this->assertNull($account->tradeInWhatsappUrl());
         $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan tukar tambah');
+    }
+
+    public function test_installment_button_asks_for_terms_and_follows_the_seller_number(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
+        $sellerAccount = GameAccount::factory()->create(['seller_whatsapp' => '6289999999999']);
+
+        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan cicilan untuk akun Mythic & Hero seharga Rp 350.000.'), $account->installmentWhatsappUrl());
+        $this->assertStringEndsWith(rawurlencode('Mohon info DP dan tenor yang tersedia.'), $account->installmentWhatsappUrl());
+        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->installmentWhatsappUrl());
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Ajukan cicilan');
+
+        $account->update(['status' => 'sold']);
+
+        $this->assertNull($account->installmentWhatsappUrl());
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan cicilan');
     }
 
     public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void

@@ -37,18 +37,25 @@
             <div>
                 <p class="eyebrow mb-3">{{ $account->category->name }}</p>
                 <h1 class="text-3xl font-black leading-tight md:text-4xl">{{ $account->title }}</h1><span
-                    class="status my-5 {{ $account->status === 'available' ? 'text-lime-300' : 'text-slate-400' }}">{{ $account->status === 'available' ? '● Tersedia' : 'Terjual' }}</span>
+                    class="status my-5 {{ $account->status === 'available' ? 'text-lime-300' : 'text-rose-300' }}">{{ $account->status === 'available' ? '● Tersedia' : 'Terjual' }}</span>
                 <div class="panel p-6">
-                    <p class="muted">Harga akun</p>
-                    <p class="my-2 text-3xl font-black text-lime-300">{{ $account->formattedPrice() }}</p>
-                    <p class="muted mb-5">Konfirmasi ketersediaan dan detail transaksi dengan admin.</p>
+                    @if ($account->status === 'sold')
+                        <p class="muted">Status akun</p>
+                        <p class="my-2 text-3xl font-black uppercase tracking-widest text-rose-300">Terjual</p>
+                        <p class="muted mb-5">Akun ini sudah terjual. Lihat akun lain yang masih tersedia di katalog.</p>
+                    @else
+                        <p class="muted">Harga akun</p>
+                        <p class="my-2 text-3xl font-black text-lime-300">{{ $account->formattedPrice() }}</p>
+                        <p class="muted mb-5">Konfirmasi ketersediaan dan detail transaksi dengan admin.</p>
+                    @endif
                     @if ($url = $account->whatsappUrl())
                         <a class="btn w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">{{ $account->seller_whatsapp ? 'Hubungi penjual' : 'Hubungi admin' }} via WhatsApp ↗</a>
                         <a class="btn-secondary mt-3 w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Ajukan tukar tambah ↗</a>
+                        <a class="btn-secondary mt-3 w-full" href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Ajukan cicilan ↗</a>
+                    @elseif ($account->status === 'sold')
+                        <a class="btn w-full" href="{{ route('catalog') }}">Lihat akun lain ↗</a>
                     @else
-                        <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">
-                            {{ $account->status === 'sold' ? 'Akun ini sudah terjual.' : 'Kontak WhatsApp belum diatur oleh admin.' }}
-                        </p>
+                        <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">Kontak WhatsApp belum diatur oleh admin.</p>
                     @endif
                     <div class="mt-3 grid">@include('catalog.wishlist-button', ['account' => $account])</div>
                 </div>

@@ -80,6 +80,11 @@ class GameAccount extends Model
         return $this->whatsappLink('Halo admin, saya ingin mengajukan tukar tambah untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Akun yang saya tawarkan: ...');
     }
 
+    public function installmentWhatsappUrl(): ?string
+    {
+        return $this->whatsappLink('Halo admin, saya ingin mengajukan cicilan untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Mohon info DP dan tenor yang tersedia.');
+    }
+
     private function whatsappLink(string $message): ?string
     {
         $number = $this->seller_whatsapp ?: Setting::valueFor('whatsapp_number');
