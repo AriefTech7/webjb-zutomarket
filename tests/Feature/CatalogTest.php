@@ -323,13 +323,15 @@ class CatalogTest extends TestCase
     public function test_about_and_profile_pages_are_public_and_linked_from_navigation(): void
     {
         $this->get('/')->assertOk()->assertSee(route('about'), false)->assertSee(route('profile'), false);
-        $this->get('/tentang')->assertOk()->assertSee('Tentang kami')->assertDontSee('wa.me/', false);
-        $this->get('/profil')->assertOk()->assertSee('Profil saya')->assertSee('hanya tersimpan di browser ini')->assertSee('data-profile-form', false);
+        $this->get('/tentang')->assertOk()->assertSee('Tentang kami')->assertSee('WA Admin')->assertSee('Instagram')->assertSee('TikTok')->assertSee('Saluran WhatsApp')
+            ->assertSee('Belum ada kontak WhatsApp admin')->assertDontSee('wa.me/', false);
+        $this->get('/profil')->assertOk()->assertSee('Profil saya')->assertSee('hanya tersimpan di browser ini')->assertSee('data-profile-form', false)
+            ->assertSee('WA Admin &amp; Sosmed', false)->assertSee(route('about'), false);
         $this->assertGuest();
 
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
 
-        $this->get('/tentang')->assertOk()->assertSee('https://wa.me/6281234567890', false);
+        $this->get('/tentang')->assertOk()->assertSee('https://wa.me/6281234567890', false)->assertDontSee('Belum ada kontak WhatsApp admin');
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

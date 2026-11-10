@@ -6,6 +6,17 @@ initialiseWishlist();
 initialiseProfile();
 initialiseJokiOrder();
 
+document.querySelectorAll('[data-tabs]').forEach((list) => {
+    const tabs = [...list.querySelectorAll('[role="tab"]')];
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+        tabs.forEach((other) => {
+            const selected = other === tab;
+            other.setAttribute('aria-selected', String(selected));
+            document.getElementById(other.getAttribute('aria-controls')).hidden = !selected;
+        });
+    }));
+});
+
 document.querySelectorAll('[data-confirm]').forEach((form) => {
     form.addEventListener('submit', (event) => {
         if (!window.confirm(form.dataset.confirm)) {
