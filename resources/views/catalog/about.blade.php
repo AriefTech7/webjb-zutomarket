@@ -25,7 +25,7 @@
         <a class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-300 transition hover:text-white" href="{{ route('catalog') }}">← Kembali</a>
         <div class="panel mt-4 p-6 text-center md:p-10">
             <span class="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-lime-300">✓ Tentang {{ $storeName }}</span>
-            <img class="mx-auto mt-6 size-24 rounded-full border-2 border-lime-300/40 bg-[#0b1230] object-cover object-top" src="{{ asset('images/zuto-maskot.webp') }}" alt="Logo {{ $storeName }}" width="96" height="96">
+            <img class="mx-auto mt-6 h-32 w-auto md:h-40" src="{{ asset('images/zuto-logo.webp') }}" alt="Logo {{ $storeName }}" width="480" height="371">
             <h1 class="mt-4 text-2xl font-black uppercase">{{ $storeName }} <span class="text-lime-300" aria-hidden="true">✓</span></h1>
             <p class="muted mx-auto mt-3 max-w-xl">Solusi praktis untuk kebutuhan jual beli akun game. Pilih akun dari katalog atau pesan joki rank Mobile Legends, lalu lanjutkan transaksi langsung dengan admin melalui WhatsApp.</p>
         </div>
