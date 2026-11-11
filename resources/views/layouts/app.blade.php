@@ -109,8 +109,8 @@
         @endif
         @yield('content')
     </main>
-    {{-- The account and sign-in pages stay focused on the card, so they have no footer. --}}
-    @unless (request()->routeIs('profile', 'account.settings', 'account.password', 'account.login', 'account.register', 'password.request', 'password.reset'))
+    {{-- The admin area and the account / sign-in pages have no footer. --}}
+    @unless (request()->is('admin*') || request()->routeIs('profile', 'account.settings', 'account.password', 'account.login', 'account.register', 'password.request', 'password.reset'))
     @php($footerWhatsapp = preg_replace('/\D+/', '', \App\Models\Setting::valueFor('whatsapp_number')))
     @php($footerGames = request()->is('admin*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
     <footer class="mt-16 border-t border-[#a9c3ff]/15 bg-[#050817]/60 pt-12 pb-8">
