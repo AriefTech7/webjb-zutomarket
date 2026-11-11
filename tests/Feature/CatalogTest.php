@@ -554,7 +554,7 @@ class CatalogTest extends TestCase
         $this->get('/')->assertOk()->assertSee(route('about'), false)->assertSee(route('profile'), false);
         $this->get('/tentang')->assertOk()->assertSee('Tentang kami')->assertSee('WA Admin')->assertSee('Instagram')->assertSee('TikTok')->assertSee('Saluran WhatsApp')
             ->assertSee('Belum ada kontak WA Admin')->assertDontSee('wa.me/', false);
-        $this->get('/profil')->assertOk()->assertSee('Profil saya')->assertSee('hanya tersimpan di browser ini')->assertSee('data-profile-form', false)
+        $this->get('/profil')->assertOk()->assertSee('Masuk ke Akunmu')->assertSee('Lupa password?')->assertSee('action="'.route('account.login').'"', false)->assertDontSee('hanya tersimpan di browser ini')->assertDontSee('data-profile-form', false)
             ->assertSee('WA Admin &amp; Sosmed', false)->assertSee(route('about'), false);
         $this->assertGuest();
     }

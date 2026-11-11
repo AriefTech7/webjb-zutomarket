@@ -12,7 +12,7 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate(['username' => ['required', 'string', 'max:50'], 'password' => ['required', 'string']]);
-        if (! Auth::attempt($credentials)) {
+        if (! Auth::attempt([...$credentials, 'is_admin' => true])) {
             throw ValidationException::withMessages(['username' => 'Username atau password tidak sesuai.']);
         }
         $request->session()->regenerate();

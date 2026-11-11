@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,11 +21,27 @@ Route::view('/profil', 'catalog.profile')->name('profile');
 Route::view('/kritik-saran', 'catalog.feedback')->name('feedback');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
+Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
+    Route::get('/masuk', [AccountController::class, 'showLogin'])->name('account.login');
+    Route::post('/masuk', [AccountController::class, 'login'])->middleware('throttle:account-auth');
+    Route::get('/daftar', [AccountController::class, 'showRegister'])->name('account.register');
+    Route::post('/daftar', [AccountController::class, 'register'])->middleware('throttle:account-auth');
+    Route::get('/lupa-password', [AccountController::class, 'showForgot'])->name('password.request');
+    Route::post('/lupa-password', [AccountController::class, 'sendResetLink'])->middleware('throttle:account-auth')->name('password.email');
+    Route::get('/reset-password/{token}', [AccountController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [AccountController::class, 'reset'])->middleware('throttle:account-auth')->name('password.update');
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:account-auth')->name('google.callback');
 });
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware('auth')->group(function () {
+    Route::post('/keluar', [AccountController::class, 'logout'])->name('account.logout');
+    Route::put('/akun/profil', [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::post('/akun/wishlist', [AccountController::class, 'syncWishlist'])->middleware('throttle:60,1')->name('account.wishlist');
+});
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
