@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-accent="{{ \App\Models\Setting::valueFor('accent_color', 'default') }}">
 
 <head>
     <meta charset="utf-8">
@@ -26,7 +26,7 @@
     <meta property="og:image:alt" content="Logo ZutoMarket.id">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <meta name="theme-color" content="#070b1c">
+    <meta name="theme-color" content="{{ \App\Models\Setting::valueFor('accent_color') === 'deepskyblue' ? '#031321' : '#070b1c' }}">
     <link rel="apple-touch-icon" href="{{ asset('images/icons/apple-touch-icon.png') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -71,6 +71,24 @@
             </button>
         </div>
     </header>
+    @unless (request()->is('admin*'))
+        @php($runningText = \App\Models\Setting::runningTextItems())
+        @if ($runningText)
+            {{-- Running text: items are rendered twice so the -50% loop is seamless; the copy is hidden from screen readers. --}}
+            <div class="marquee border-b border-white/10"
+                style="--marquee-duration: {{ max(20, (int) round(mb_strlen(implode(' ', $runningText)) * 0.22)) }}s" aria-label="Pengumuman">
+                <div class="marquee-track">
+                    @foreach ([false, true] as $isCopy)
+                        <ul class="flex shrink-0" @if ($isCopy) aria-hidden="true" @endif>
+                            @foreach ($runningText as $item)
+                                <li class="flex items-center gap-2.5 whitespace-nowrap px-6 py-2 text-xs font-bold md:py-2.5 md:text-sm"><span class="text-white/80" aria-hidden="true">✦</span>{{ $item }}</li>
+                            @endforeach
+                        </ul>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    @endunless
     <main class="flex-1">
         <div data-wishlist-feedback role="status" aria-live="polite"
             class="shell hidden mt-5 rounded-xl border border-rose-300/20 bg-rose-300/5 p-4 text-sm text-slate-200"></div>
@@ -92,7 +110,7 @@
         @yield('content')
     </main>
     {{-- The account and sign-in pages stay focused on the card, so they have no footer. --}}
-    @unless (request()->routeIs('profile', 'account.login', 'account.register', 'password.request', 'password.reset'))
+    @unless (request()->routeIs('profile', 'account.settings', 'account.password', 'account.login', 'account.register', 'password.request', 'password.reset'))
     @php($footerWhatsapp = preg_replace('/\D+/', '', \App\Models\Setting::valueFor('whatsapp_number')))
     @php($footerGames = request()->is('admin*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
     <footer class="mt-16 border-t border-[#a9c3ff]/15 bg-[#050817]/60 pt-12 pb-8">

@@ -81,6 +81,38 @@ class AccountController extends Controller
         return back()->with('success', 'Profil akun tersimpan.');
     }
 
+    public function settings(Request $request): View
+    {
+        abort_if($request->user()->is_admin, 403, 'Admin mengatur akunnya lewat dashboard.');
+
+        return view('account.settings');
+    }
+
+    public function showPassword(Request $request): View
+    {
+        abort_if($request->user()->is_admin, 403, 'Admin mengatur akunnya lewat dashboard.');
+
+        return view('account.password');
+    }
+
+    /**
+     * Google sign-ups got a random password they never saw, so for them the current password is optional.
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if($user->is_admin, 403);
+        $data = $request->validate([
+            'current_password' => [$user->google_id ? 'nullable' : 'required', 'string', 'current_password'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
+        ], ['current_password.current_password' => 'Password saat ini salah.']);
+        $user->forceFill(['password' => $data['password'], 'remember_token' => Str::random(60)])->save();
+        Auth::login($user, remember: true);
+        $request->session()->regenerate();
+
+        return redirect()->route('profile')->with('success', 'Password berhasil diganti.');
+    }
+
     /**
      * Keeps the browser wishlist and the account wishlist in step. With merge=1 (first page load after
      * signing in) the browser's ids are added to the saved ones; otherwise the browser's list replaces them.

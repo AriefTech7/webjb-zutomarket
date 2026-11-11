@@ -354,7 +354,11 @@ class AdminController extends Controller
 
     public function saveSettings(Request $request): RedirectResponse
     {
-        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_rental_number' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'], 'feedback_email' => 'nullable|email|max:120', 'whatsapp_default_message' => 'required|string|max:1000']);
+        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_rental_number' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'], 'feedback_email' => 'nullable|email|max:120', 'whatsapp_default_message' => 'required|string|max:1000', 'running_text' => 'nullable|string|max:1000', 'accent_color' => 'sometimes|in:default,deepskyblue']);
+        // Saved as text (one item per line); an empty value hides the running text instead of restoring the default.
+        if ($request->exists('running_text')) {
+            $data['running_text'] = trim(preg_replace("/\r\n?/", "\n", $data['running_text'] ?? ''));
+        }
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
