@@ -36,9 +36,9 @@ class CatalogTest extends TestCase
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
         $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
         $this->assertSame('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya tertarik dengan akun Mythic & Hero seharga Rp 350.000. Apakah masih tersedia?'), $account->whatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Hubungi admin via WhatsApp');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Tanya Stok');
         $account->update(['status' => 'sold']);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Hubungi admin via WhatsApp')->assertSee('sudah terjual');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Tanya Stok')->assertSee('sudah terjual');
         $this->get('/katalog?available=1')->assertDontSee('Mythic &amp; Hero', false);
     }
 
@@ -49,7 +49,7 @@ class CatalogTest extends TestCase
         $available = GameAccount::factory()->create(['title' => 'Akun ready', 'price' => 555555]);
 
         $this->get('/')->assertOk()->assertSee('Akun laku')->assertSee('Sudah terjual')->assertDontSee('Rp 777.777')->assertSee('Rp 555.555');
-        $this->get('/akun/'.$sold->slug)->assertOk()->assertSee('sudah terjual')->assertSee('Lihat akun lain')->assertDontSee('Rp 777.777')->assertDontSee('Ajukan tukar tambah');
+        $this->get('/akun/'.$sold->slug)->assertOk()->assertSee('sudah terjual')->assertSee('Lihat akun lain')->assertDontSee('Rp 777.777')->assertDontSee('Tukar tambah');
         $this->get('/akun/'.$available->slug)->assertOk()->assertSee('Rp 555.555')->assertDontSee('Lihat akun lain');
 
         $html = $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$sold->id, $available->id]]))->assertOk()->json('html');
@@ -64,9 +64,9 @@ class CatalogTest extends TestCase
         $discounted = GameAccount::factory()->create(['title' => 'Akun diskon', 'price' => 80000, 'original_price' => 100000]);
         $plain = GameAccount::factory()->create(['title' => 'Akun biasa', 'price' => 90000, 'original_price' => 90000]);
 
-        $this->get('/')->assertOk()->assertSee('Rp 100.000')->assertSee('-20%')->assertSee('Rp 80.000');
+        $this->get('/')->assertOk()->assertSee('Rp 100.000')->assertSee('Hemat Rp 20.000')->assertSee('Rp 80.000');
         $this->get('/akun/'.$discounted->slug)->assertOk()->assertSee('line-through', false)->assertSee('Rp 100.000')->assertSee('-20%');
-        $this->get('/akun/'.$plain->slug)->assertOk()->assertDontSee('line-through', false);
+        $this->get('/akun/'.$plain->slug)->assertOk()->assertDontSee('(-', false)->assertSee('Rekomendasi Produk');
         $this->assertStringContainsString('Rp 100.000', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$discounted->id]]))->json('html'));
 
         $discounted->update(['status' => 'sold']);
@@ -138,7 +138,7 @@ class CatalogTest extends TestCase
         Setting::create(['key' => 'whatsapp_rental_number', 'value' => '6287777777777']);
 
         $this->get('/akun/'.$rental->slug)->assertOk()->assertSee('Siap disewa')->assertSee('Paket sewa')->assertSee('https://wa.me/6287777777777?text=', false)
-            ->assertDontSee('Ajukan tukar tambah')->assertDontSee('Ajukan cicilan')->assertDontSee('Simpan ke wishlist');
+            ->assertDontSee('Tukar tambah')->assertDontSee('>Cicilan<', false)->assertDontSee('Simpan ke wishlist');
 
         $rental->update(['status' => 'rented', 'ready_estimate_at' => '2026-11-12 13:30:00']);
 
@@ -224,12 +224,12 @@ class CatalogTest extends TestCase
         $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
 
         $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan tukar tambah untuk akun Mythic & Hero seharga Rp 350.000.'), $account->tradeInWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Ajukan tukar tambah');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Tukar tambah');
 
         $account->update(['status' => 'sold']);
 
         $this->assertNull($account->tradeInWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan tukar tambah');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Tukar tambah');
     }
 
     public function test_installment_button_asks_for_terms_and_follows_the_seller_number(): void
@@ -241,12 +241,12 @@ class CatalogTest extends TestCase
         $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan cicilan untuk akun Mythic & Hero seharga Rp 350.000.'), $account->installmentWhatsappUrl());
         $this->assertStringEndsWith(rawurlencode('Mohon info DP dan tenor yang tersedia.'), $account->installmentWhatsappUrl());
         $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Ajukan cicilan');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Cicilan</a>', false);
 
         $account->update(['status' => 'sold']);
 
         $this->assertNull($account->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Ajukan cicilan');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('>Cicilan</a>', false);
     }
 
     public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void
@@ -256,7 +256,7 @@ class CatalogTest extends TestCase
 
         $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->whatsappUrl());
         $this->assertNull($storeAccount->whatsappUrl());
-        $this->get('/akun/'.$sellerAccount->slug)->assertOk()->assertSee('Hubungi penjual via WhatsApp')->assertSee('https://wa.me/6289999999999?text=', false);
+        $this->get('/akun/'.$sellerAccount->slug)->assertOk()->assertSee('Tanya Stok ke penjual')->assertSee('https://wa.me/6289999999999?text=', false);
 
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
 
@@ -645,7 +645,7 @@ class CatalogTest extends TestCase
         $this->assertSame(['Kilat 0', 'Kilat 1', 'Kilat 2', 'Kilat 3'], $response->viewData('flashSale')->pluck('title')->all());
         $response->assertSee(route('catalog.all', ['available' => 1]), false)->assertSee(route('flash-sale'), false)->assertSee('5 akun · berakhir dalam');
         $response->assertSee('Jelajahi katalog')->assertSee('18 akun ditemukan')->assertSee('<form action="'.route('catalog.all').'#katalog" method="GET"', false)->assertSee('Cari game, rank, hero, skin, atau server...');
-        $this->assertSame(2, substr_count($response->getContent(), 'Lihat semua ›'));
+        $this->assertSame(2, substr_count($response->getContent(), 'Lihat ›'));
     }
 
     public function test_home_hides_empty_sections_and_sends_old_catalog_links_to_the_catalog_page(): void
@@ -674,6 +674,39 @@ class CatalogTest extends TestCase
         $this->put('/admin/settings', ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo', 'feedback_email' => 'cs@zutomarket.id'])->assertSessionHasNoErrors();
 
         $this->get('/kritik-saran')->assertOk()->assertSee('data-email="cs@zutomarket.id"', false);
+    }
+
+    public function test_detail_page_offers_stock_offer_and_buy_messages_and_same_category_recommendations(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $category = Category::factory()->create(['name' => 'FF SULTAN']);
+        $account = GameAccount::factory()->create(['category_id' => $category->id, 'title' => 'FF 5819', 'price' => 1999000, 'original_price' => 2800000]);
+        $sameCategory = GameAccount::factory()->create(['category_id' => $category->id, 'title' => 'FF 5815']);
+        GameAccount::factory()->create(['category_id' => $category->id, 'title' => 'FF laku', 'status' => 'sold']);
+        GameAccount::factory()->create(['title' => 'Akun lain']);
+
+        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin membeli akun FF 5819 seharga Rp 1.999.000.'), $account->buyWhatsappUrl());
+        $this->assertStringEndsWith(rawurlencode('Penawaran saya: Rp ...'), $account->offerWhatsappUrl());
+
+        $response = $this->get('/akun/'.$account->slug);
+
+        $response->assertOk()->assertSee('Tanya Stok')->assertSee('>Tawar</a>', false)->assertSee('>Beli</a>', false)->assertSee('Hemat Rp 801.000 (-29%)')->assertSee('Beranda')->assertSee('Rekomendasi Produk');
+        $this->assertSame(['FF 5815', 'Akun lain'], $response->viewData('recommendations')->pluck('title')->all());
+        $response->assertDontSee('FF laku');
+        $this->assertNotContains($account->id, $response->viewData('recommendations')->modelKeys());
+        $this->assertSame($sameCategory->id, $response->viewData('recommendations')->first()->id);
+    }
+
+    public function test_header_search_and_home_shortcuts_point_to_the_catalog(): void
+    {
+        $category = Category::factory()->create(['name' => 'STOK ML', 'slug' => 'stok-ml']);
+        GameAccount::factory()->count(2)->create(['category_id' => $category->id]);
+
+        $this->get('/')->assertOk()->assertSee('id="header-search"', false)->assertSee('placeholder="Cari produk..."', false)
+            ->assertSee('aria-label="Pintasan"', false)->assertSee(route('rental'), false)->assertSee(route('joki'), false)
+            ->assertSee(route('categories.show', 'stok-ml').'#katalog', false)->assertSee('2 akun tersedia');
+        $this->get('/katalog?q=mythic')->assertOk()->assertSee('id="header-search" type="search" name="q" value="mythic"', false);
+        $this->get('/admin/login')->assertOk()->assertDontSee('id="header-search"', false);
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

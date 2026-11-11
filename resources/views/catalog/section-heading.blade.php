@@ -6,6 +6,6 @@
         @endif
     </div>
     @if (! empty($url))
-        <a class="shrink-0 text-sm font-bold {{ $linkClass ?? 'text-lime-300 hover:text-lime-200' }}" href="{{ $url }}">Lihat semua ›</a>
+        <a class="shrink-0 text-sm font-bold {{ $linkClass ?? 'text-lime-300 hover:text-lime-200' }}" href="{{ $url }}">Lihat ›</a>
     @endif
 </div>

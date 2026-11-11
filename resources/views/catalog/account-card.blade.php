@@ -19,31 +19,21 @@
                 <span class="absolute bottom-2 right-3 z-10 text-[10px] text-white/60">DATA DEMO</span>
             @endif
         </div>
-        <div class="p-3 md:p-5">
-            <p class="mb-1 truncate text-[10px] font-bold uppercase tracking-widest text-lime-300 md:mb-2">{{ $account->category->name }}
-            </p>
-            <h3 class="line-clamp-2 min-h-10 text-sm font-bold leading-5 md:line-clamp-none md:min-h-12 md:text-base md:leading-6">{{ $account->title }}</h3>
-            <p class="muted mt-2 hidden text-xs md:line-clamp-2">{{ $account->specifications }}</p>
-            <div class="mt-2 flex items-center justify-between border-t border-white/10 pt-2 md:mt-5 md:pt-4">
-                <div>
-                    @if ($account->status === 'sold')
-                        <p class="mb-1 hidden text-[10px] text-slate-500 md:block">Status</p>
-                        <p class="text-sm font-bold text-rose-300 md:text-base">Sudah terjual</p>
-                    @else
-                        @if ($account->hasDiscount())
-                            <p class="text-[10px] text-slate-500 line-through md:text-xs">{{ $account->formattedOriginalPrice() }}</p>
-                        @else
-                            <p class="mb-1 hidden text-[10px] text-slate-500 md:block">Harga akun</p>
-                        @endif
-                        <p class="flex flex-wrap items-center gap-1.5 text-sm font-bold text-slate-100 md:text-base">{{ $account->formattedPrice() }}
-                            @if ($account->hasDiscount())
-                                <span class="rounded bg-rose-400/15 px-1.5 text-[10px] font-bold text-rose-300">-{{ $account->discountPercent() }}%</span>
-                            @endif
-                        </p>
+        <div class="p-3 md:p-4">
+            <span class="inline-block max-w-full truncate rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</span>
+            <h3 class="mt-2 line-clamp-2 text-sm font-black leading-5 md:text-base md:leading-6">{{ $account->title }}</h3>
+            <div class="mt-2">
+                @if ($account->status === 'sold')
+                    <p class="text-sm font-black text-rose-300 md:text-lg">Sudah terjual</p>
+                @else
+                    @if ($account->hasDiscount())
+                        <p class="text-[11px] font-semibold text-slate-500 line-through md:text-xs">{{ $account->formattedOriginalPrice() }}</p>
                     @endif
-                </div><span
-                    class="hidden h-10 w-10 items-center justify-center rounded-xl md:flex border border-white/10 bg-white/5 text-lime-300 transition group-hover:border-lime-300 group-hover:bg-lime-300 group-hover:text-black"
-                    aria-hidden="true">↗</span>
+                    <p class="text-base font-black text-lime-300 md:text-xl">{{ $account->formattedPrice() }}</p>
+                    @if ($account->hasDiscount())
+                        <span class="mt-1 inline-block rounded-md bg-emerald-300/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300 md:text-xs">Hemat {{ $account->formattedSavings() }}</span>
+                    @endif
+                @endif
             </div>
         </div>
     </a>

@@ -90,6 +90,21 @@ class GameAccount extends Model
         return $this->hasDiscount() ? (int) round((1 - $this->price / $this->original_price) * 100) : 0;
     }
 
+    public function formattedSavings(): string
+    {
+        return 'Rp '.number_format(max(0, (int) $this->original_price - $this->price), 0, ',', '.');
+    }
+
+    public function buyWhatsappUrl(): ?string
+    {
+        return $this->whatsappLink('Halo admin, saya ingin membeli akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug));
+    }
+
+    public function offerWhatsappUrl(): ?string
+    {
+        return $this->whatsappLink('Halo admin, saya ingin menawar akun '.$this->title.' (harga '.$this->formattedPrice().'). '.route('accounts.show', $this->slug).' Penawaran saya: Rp ...');
+    }
+
     public function formattedOriginalPrice(): string
     {
         return 'Rp '.number_format((int) $this->original_price, 0, ',', '.');
