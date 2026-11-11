@@ -238,7 +238,12 @@ class AccountTest extends TestCase
         foreach (['/profil', '/masuk', '/daftar', '/lupa-password'] as $page) {
             $this->get($page)->assertOk()->assertDontSee('Game Tersedia')->assertDontSee('Sinyal Trust')->assertDontSee('<footer', false);
         }
+        $this->get('/admin/login')->assertOk()->assertDontSee('<footer', false);
         $this->actingAs(User::factory()->buyer()->create());
         $this->get('/profil')->assertOk()->assertDontSee('<footer', false);
+        $this->actingAs(User::factory()->create());
+        foreach (['/admin', '/admin/accounts', '/admin/settings', '/admin/infos'] as $page) {
+            $this->get($page)->assertOk()->assertDontSee('<footer', false)->assertDontSee('Sinyal Trust');
+        }
     }
 }
