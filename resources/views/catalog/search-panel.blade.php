@@ -1,10 +1,10 @@
-<div class="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-1 md:mb-6">
+<div class="mb-6 hidden flex-wrap items-end justify-between gap-x-4 gap-y-1 md:flex">
     <div>
         <h2 class="text-2xl font-bold tracking-tight md:text-3xl">Jelajahi katalog<span
                 class="text-lime-300">.</span></h2>
     </div><span class="muted text-xs md:text-sm">{{ $total }} akun ditemukan</span>
 </div>
-<form action="{{ route('catalog.all') }}#katalog" method="GET" class="panel mb-5 p-4">
+<form action="{{ route('catalog.all') }}#katalog" method="GET" class="panel mb-5 hidden p-4 md:block">
     <div class="grid gap-3 md:grid-cols-[1fr_190px_180px_auto]">
         <div><label class="sr-only" for="search">Cari akun game</label><input id="search" class="field"
                 type="search" name="q" value="{{ request('q') }}" maxlength="100"

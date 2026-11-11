@@ -8,7 +8,7 @@
                 fetchpriority="high">
         </section>
         @include('catalog.home-shortcuts', ['categories' => $categories->sortByDesc('accounts_count')->values(), 'hasFlashSale' => $flashSale->isNotEmpty()])
-        <div class="mt-8">
+        <div class="mt-8 hidden md:block">
             @include('catalog.search-panel', ['categories' => $categories, 'selected' => '', 'total' => $catalogTotal])
         </div>
 
