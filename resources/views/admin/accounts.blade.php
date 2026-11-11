@@ -19,5 +19,15 @@
                 {{ $accounts->total() }} akun dalam katalog
             @endif
         </p><a class="btn w-full sm:w-auto" href="{{ route('admin.accounts.create') }}">+ Tambah akun</a>
-    </div>@include('admin.account-table', ['emptyMessage' => request()->filled('q') ? 'Tidak ada akun yang cocok dengan pencarian ini.' : null])<div class="mt-6">{{ $accounts->links() }}</div>
+    </div>
+    @if ($accounts->isNotEmpty())
+        <form id="bulk-delete" method="POST" action="{{ route('admin.accounts.destroy-many') }}" data-bulk-delete
+            class="panel mb-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            @csrf @method('DELETE')
+            <label class="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" class="size-5" data-bulk-all> Pilih semua di halaman ini</label>
+            <button class="inline-flex min-h-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 px-4 text-xs font-bold text-rose-300 transition hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-40 md:min-h-11 md:text-sm"
+                data-bulk-submit disabled>Hapus terpilih (<span data-bulk-count>0</span>)</button>
+        </form>
+    @endif
+    @include('admin.account-table', ['bulk' => true, 'emptyMessage' => request()->filled('q') ? 'Tidak ada akun yang cocok dengan pencarian ini.' : null])<div class="mt-6">{{ $accounts->links() }}</div>
 @endsection

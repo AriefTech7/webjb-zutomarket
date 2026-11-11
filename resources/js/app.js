@@ -1,5 +1,7 @@
 import { initialiseCountdowns } from './countdown';
+import { initialiseFeedbackForm } from './feedback';
 import { initialiseInstallPrompt } from './install';
+import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
 import { initialiseProfile } from './profile';
 import { initialiseWishlist } from './wishlist';
@@ -8,7 +10,16 @@ initialiseWishlist();
 initialiseProfile();
 initialiseJokiOrder();
 initialiseCountdowns();
+initialiseFeedbackForm();
 initialiseInstallPrompt();
+initialiseThemeToggle();
+
+document.querySelectorAll('[data-chip-row]').forEach((row) => {
+    const active = row.querySelector('[aria-current="page"]');
+    if (active && row.scrollWidth > row.clientWidth) {
+        row.scrollLeft = active.offsetLeft - (row.clientWidth - active.offsetWidth) / 2;
+    }
+});
 
 document.querySelectorAll('[data-tabs]').forEach((list) => {
     const tabs = [...list.querySelectorAll('[role="tab"]')];
@@ -19,6 +30,37 @@ document.querySelectorAll('[data-tabs]').forEach((list) => {
             document.getElementById(other.getAttribute('aria-controls')).hidden = !selected;
         });
     }));
+});
+
+document.querySelectorAll('[data-bulk-delete]').forEach((form) => {
+    const items = [...document.querySelectorAll(`[data-bulk-item][form="${form.id}"]`)];
+    const selectAll = form.querySelector('[data-bulk-all]');
+    const submit = form.querySelector('[data-bulk-submit]');
+    // The table (desktop) and the list (phone) both carry a checkbox per account, so they are kept in sync by id.
+    const selectedIds = () => new Set(items.filter((item) => item.checked).map((item) => item.value));
+    const refresh = () => {
+        const count = selectedIds().size;
+        const total = new Set(items.map((item) => item.value)).size;
+        form.querySelector('[data-bulk-count]').textContent = count;
+        submit.disabled = count === 0;
+        selectAll.checked = count > 0 && count === total;
+        selectAll.indeterminate = count > 0 && count < total;
+    };
+    items.forEach((item) => item.addEventListener('change', () => {
+        items.filter((other) => other.value === item.value).forEach((other) => { other.checked = item.checked; });
+        refresh();
+    }));
+    selectAll.addEventListener('change', () => {
+        items.forEach((item) => { item.checked = selectAll.checked; });
+        refresh();
+    });
+    form.addEventListener('submit', (event) => {
+        const count = selectedIds().size;
+        if (count === 0 || !window.confirm(`Hapus ${count} akun terpilih beserta gambarnya? Tindakan ini tidak bisa dibatalkan.`)) {
+            event.preventDefault();
+        }
+    });
+    refresh();
 });
 
 document.querySelectorAll('[data-confirm]').forEach((form) => {

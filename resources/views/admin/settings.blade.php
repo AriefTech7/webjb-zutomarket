@@ -26,6 +26,12 @@
             <p class="muted mt-2 text-xs">Pesan sewa akun rental dikirim ke nomor ini. Kosongkan untuk memakai nomor WhatsApp di atas.</p>
         </div>
         <div>
+            <label for="feedback_email" class="label">Email kritik &amp; saran</label>
+            <input class="field" id="feedback_email" name="feedback_email" type="email" maxlength="120"
+                value="{{ old('feedback_email', \App\Models\Setting::valueFor('feedback_email', 'zutomarketcs@gmail.com')) }}">
+            <p class="muted mt-2 text-xs">Kritik dan saran dari halaman Akun dikirim ke email ini.</p>
+        </div>
+        <div>
             <label for="whatsapp_default_message" class="label">Pesan otomatis</label>
             <textarea class="field" id="whatsapp_default_message" name="whatsapp_default_message" rows="5" required
                 maxlength="1000">{{ old('whatsapp_default_message', \App\Models\Setting::valueFor('whatsapp_default_message', 'Halo admin, saya tertarik dengan akun {nama_akun} seharga {harga}. Apakah masih tersedia? {url}')) }}</textarea>

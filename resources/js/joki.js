@@ -7,12 +7,14 @@ export const formatRupiah = (amount) => `Rp ${amount.toString().replace(/\B(?=(\
 export const countHeroes = (text) => text.split(/[,\n]/).map((hero) => hero.trim()).filter(Boolean).length;
 
 /** The password is deliberately never part of the message, so it cannot end up in a URL. */
-export function buildOrderMessage({ rank, price, stars, loginVia, userId, loginId, heroes, notes }) {
+export function buildOrderMessage({ rank, price, stars, packageName, packagePrice, loginVia, userId, loginId, heroes, notes }) {
+    const order = packageName
+        ? [`Paket: ${packageName}`, `Total: ${formatRupiah(packagePrice)}`]
+        : [`Rank saat ini: ${rank} (${formatRupiah(price)}/bintang)`, `Jumlah bintang: ${stars}`, `Total: ${formatRupiah(price * stars)}`];
+
     return [
         'Halo admin, saya ingin memesan joki Mobile Legends.',
-        `Rank saat ini: ${rank} (${formatRupiah(price)}/bintang)`,
-        `Jumlah bintang: ${stars}`,
-        `Total: ${formatRupiah(price * stars)}`,
+        ...order,
         `Login via: ${loginVia}`,
         `User ID & Nick Name: ${userId}`,
         `Email/No. HP/Moonton ID: ${loginId}`,
@@ -26,12 +28,18 @@ export function initialiseJokiOrder() {
     const form = document.querySelector('[data-joki-form]');
     if (!form) return;
     const { rank, stars, loginVia, userId, loginId, password, heroes, notes } = form.elements;
+    const packageSelect = form.elements.package;
     const total = form.querySelector('[data-joki-total]');
     const status = form.querySelector('[data-joki-status]');
     const price = () => Number(rank.selectedOptions[0].dataset.price);
+    const packagePrice = () => Number(packageSelect.selectedOptions[0].dataset.price);
     const showTotal = () => {
+        const isPackage = packageSelect.value !== '';
+        form.querySelectorAll('[data-joki-per-star]').forEach((field) => { field.hidden = isPackage; });
+        rank.disabled = isPackage;
+        stars.disabled = isPackage;
         const count = Number(stars.value);
-        total.textContent = count > 0 ? formatRupiah(price() * count) : '-';
+        total.textContent = isPackage ? formatRupiah(packagePrice()) : (count > 0 ? formatRupiah(price() * count) : '-');
     };
     const announce = (message) => {
         status.textContent = message;
@@ -39,11 +47,19 @@ export function initialiseJokiOrder() {
     };
 
     document.addEventListener('click', (event) => {
-        const link = event.target.closest('[data-joki-rank]');
-        if (!link) return;
-        rank.value = link.dataset.jokiRank;
+        const rankLink = event.target.closest('[data-joki-rank]');
+        const packageLink = event.target.closest('[data-joki-package]');
+        if (rankLink) {
+            packageSelect.value = '';
+            rank.value = rankLink.dataset.jokiRank;
+        } else if (packageLink) {
+            packageSelect.value = packageLink.dataset.jokiPackage;
+        } else {
+            return;
+        }
         showTotal();
     });
+    packageSelect.addEventListener('change', showTotal);
     rank.addEventListener('change', showTotal);
     stars.addEventListener('input', showTotal);
     heroes.addEventListener('input', () => heroes.setCustomValidity(''));
@@ -57,6 +73,8 @@ export function initialiseJokiOrder() {
             rank: rank.value,
             price: price(),
             stars: Number(stars.value),
+            packageName: packageSelect.value,
+            packagePrice: packageSelect.value ? packagePrice() : 0,
             loginVia: loginVia.value,
             userId: userId.value.trim(),
             loginId: loginId.value.trim(),

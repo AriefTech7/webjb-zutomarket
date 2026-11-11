@@ -24,11 +24,11 @@ class CatalogTest extends TestCase
         $draft = GameAccount::factory()->create(['category_id' => $category->id, 'status' => 'draft', 'title' => 'Rahasia draft']);
         GameAccount::factory()->create(['title' => 'Tidak cocok', 'specifications' => 'Rank: Gold']);
         foreach (['Mythic', '150', 'Fanny', '60', 'Sword', 'Asia', 'Mobile Mythic', 'pilihan', 'unggulan'] as $keyword) {
-            $this->get('/?'.http_build_query(['q' => $keyword, 'category' => $category->slug]))->assertOk()->assertSee($account->title)->assertDontSee('Rahasia draft')->assertDontSee('Tidak cocok');
+            $this->get('/katalog?'.http_build_query(['q' => $keyword, 'category' => $category->slug]))->assertOk()->assertSee($account->title)->assertDontSee('Rahasia draft')->assertDontSee('Tidak cocok');
         }
         $this->get('/akun/'.$draft->slug)->assertNotFound();
         $this->get('/kategori/mobile-legends')->assertOk()->assertSee($account->title);
-        $this->get('/?q=unknown-keyword')->assertOk()->assertSee('Belum ada akun yang cocok');
+        $this->get('/katalog?q=unknown-keyword')->assertOk()->assertSee('Belum ada akun yang cocok');
     }
 
     public function test_whatsapp_message_is_encoded_and_sold_accounts_have_no_contact_button(): void
@@ -39,7 +39,7 @@ class CatalogTest extends TestCase
         $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Hubungi admin via WhatsApp');
         $account->update(['status' => 'sold']);
         $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Hubungi admin via WhatsApp')->assertSee('sudah terjual');
-        $this->get('/?available=1')->assertDontSee('Mythic &amp; Hero', false);
+        $this->get('/katalog?available=1')->assertDontSee('Mythic &amp; Hero', false);
     }
 
     public function test_sold_accounts_are_marked_and_hide_their_price_in_every_public_view(): void
@@ -120,7 +120,8 @@ class CatalogTest extends TestCase
         GameAccount::factory()->create(['title' => 'Akun sewa draft', 'is_rental' => true, 'status' => 'draft']);
         $sale = GameAccount::factory()->create(['title' => 'Akun jual biasa']);
 
-        $this->get('/')->assertOk()->assertSee('Akun jual biasa')->assertDontSee('Akun sewa FF')->assertSee(route('rental'), false)->assertDontSee('siap disewa');
+        $this->get('/katalog')->assertOk()->assertSee('Akun jual biasa')->assertDontSee('Akun sewa FF');
+        $this->get('/')->assertOk()->assertSee('Rental Akun')->assertSeeInOrder(['Akun sewa FF', 'Akun lagi disewa'])->assertDontSee('Akun sewa draft');
         $this->get('/rental')->assertOk()->assertSeeInOrder(['Akun sewa FF', 'Akun lagi disewa'])->assertSee('Rp 25.000')->assertSee('6 Jam')
             ->assertSee('Ready ± 12 Nov 20:30 WIB')->assertDontSee('Akun sewa draft')->assertDontSee('Akun jual biasa');
         $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$rental->id, $sale->id]]))->assertOk()->assertJsonPath('ids', [$sale->id]);
@@ -158,7 +159,7 @@ class CatalogTest extends TestCase
         $this->assertSame(25000, $account->price);
         $this->assertSame(['1 Hari', '6 Jam'], $account->rentalPackages->pluck('duration')->all());
         $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('value="1 Hari"', false);
-        $this->get('/admin/accounts')->assertOk()->assertSee('· Rental');
+        $this->get('/admin/rentals')->assertOk()->assertSee($account->title)->assertSee('1 Hari Rp 60.000');
 
         $this->put('/admin/accounts/'.$account->id, array_merge($data, ['is_rental' => 1, 'status' => 'rented', 'packages' => [['duration' => '3 Jam', 'price' => 15000]], 'ready_estimate_at' => '2026-11-12T20:30']))->assertSessionHasNoErrors();
         $this->assertSame('rented', $account->fresh()->status);
@@ -174,6 +175,47 @@ class CatalogTest extends TestCase
         $this->assertSame(0, $account->fresh()->rentalPackages()->count());
         $this->assertNull($account->fresh()->ready_estimate_at);
         $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 0])->assertSessionHasErrors('price');
+    }
+
+    public function test_admin_rental_menu_lists_only_rentals_and_toggles_their_status(): void
+    {
+        $this->get('/admin/rentals')->assertRedirect('/admin/login');
+        $this->actingAs(User::factory()->create());
+        $rental = GameAccount::factory()->create(['title' => 'Akun sewa FF', 'is_rental' => true]);
+        $rental->rentalPackages()->create(['duration' => '6 Jam', 'price' => 25000]);
+        $sale = GameAccount::factory()->create(['title' => 'Akun jual ML']);
+
+        $this->get('/admin/rentals')->assertOk()->assertSee('Akun sewa FF')->assertSee('6 Jam Rp 25.000')->assertDontSee('Akun jual ML')->assertSee('1 siap disewa · 0 sedang disewa')
+            ->assertSee(route('admin.accounts.create', ['rental' => 1]), false);
+        $this->get('/admin/accounts')->assertOk()->assertSee('Akun jual ML')->assertDontSee('Akun sewa FF');
+        $this->get('/admin/accounts/create?rental=1')->assertOk()->assertSee('Tambah akun rental')->assertSee('<input type="hidden" name="is_rental" value="1">', false)
+            ->assertSee('Paket sewa')->assertSee('value="rented"', false)->assertDontSee('id="price"', false)->assertDontSee('value="sold"', false);
+        $this->get('/admin/accounts/create')->assertOk()->assertSee('Tambah akun game')->assertSee('<input type="hidden" name="is_rental" value="0">', false)
+            ->assertDontSee('Paket sewa')->assertDontSee('Estimasi ready')->assertDontSee('value="rented"', false)->assertSee('id="price"', false);
+        $this->get('/admin/accounts/'.$rental->id.'/edit')->assertOk()->assertSee('Edit akun rental')->assertSee('value="6 Jam"', false);
+        $this->get('/admin/accounts/'.$sale->id.'/edit')->assertOk()->assertSee('Edit akun game')->assertDontSee('Paket sewa');
+
+        $this->patch('/admin/rentals/'.$rental->id.'/status', ['status' => 'rented', 'ready_estimate_at' => '2026-11-12T20:30'])->assertRedirect()->assertSessionHas('success', 'Akun ditandai sedang disewa.');
+        $this->assertSame('rented', $rental->fresh()->status);
+        $this->assertSame('2026-11-12 13:30:00', $rental->fresh()->ready_estimate_at->utc()->format('Y-m-d H:i:s'));
+
+        $this->patch('/admin/rentals/'.$rental->id.'/status', ['status' => 'available'])->assertRedirect();
+        $this->assertSame('available', $rental->fresh()->status);
+        $this->assertNull($rental->fresh()->ready_estimate_at);
+
+        $this->patch('/admin/rentals/'.$rental->id.'/status', ['status' => 'sold'])->assertSessionHasErrors('status');
+        $this->patch('/admin/rentals/'.$sale->id.'/status', ['status' => 'rented'])->assertNotFound();
+        $this->assertSame('available', $sale->fresh()->status);
+    }
+
+    public function test_saving_a_rental_account_returns_to_the_rental_menu(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $account = GameAccount::factory()->create();
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'description' => 'Deskripsi', 'specifications' => 'Rank', 'status' => 'available'];
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 1, 'packages' => [['duration' => '1 Hari', 'price' => 60000]]])->assertRedirect('/admin/rentals');
+        $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 0, 'price' => 100000])->assertRedirect('/admin/accounts');
     }
 
     public function test_trade_in_button_opens_whatsapp_only_for_available_accounts(): void
@@ -260,7 +302,7 @@ class CatalogTest extends TestCase
         $this->assertSame(300000, $response->viewData('monthRevenue'));
         $this->assertSame(3, $response->viewData('totalCount'));
         $this->assertSame(1200000, $response->viewData('totalRevenue'));
-        $this->get('/admin/sales?month=2026-09')->assertOk()->assertSee('Belum ada akun terjual');
+        $this->get('/admin/sales?month=2026-09')->assertOk()->assertSee('Belum ada penjualan pada bulan ini');
         $this->get('/admin/sales?month=oktober')->assertSessionHasErrors('month');
     }
 
@@ -273,7 +315,7 @@ class CatalogTest extends TestCase
         $this->actingAs(User::factory()->create());
         GameAccount::factory()->create(['title' => 'Akun Oktober', 'status' => 'sold', 'price' => 200000])->forceFill(['sold_at' => '2026-10-10 10:00:00'])->save();
 
-        $this->post('/admin/sales', ['item' => 'Joki Legend 5 bintang', 'amount' => 60000, 'sold_on' => '2026-10-31', 'note' => 'Budi'])
+        $this->post('/admin/sales', ['type' => 'joki', 'item' => 'Joki Legend 5 bintang', 'amount' => 60000, 'sold_on' => '2026-10-31', 'note' => 'Budi'])
             ->assertSessionHasNoErrors()->assertRedirect('/admin/sales?month=2026-10');
 
         $response = $this->get('/admin/sales?month=2026-10');
@@ -292,8 +334,33 @@ class CatalogTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $this->post('/admin/sales', ['amount' => 0, 'sold_on' => 'kemarin'])->assertSessionHasErrors(['item', 'amount', 'sold_on']);
+        $this->post('/admin/sales', ['amount' => 0, 'sold_on' => 'kemarin'])->assertSessionHasErrors(['type', 'item', 'amount', 'sold_on']);
+        $this->post('/admin/sales', ['type' => 'lainnya', 'item' => 'X', 'amount' => 1000, 'sold_on' => '2026-10-01'])->assertSessionHasErrors('type');
         $this->assertDatabaseCount('manual_sales', 0);
+    }
+
+    public function test_sales_page_breaks_down_types_and_lists_one_table_newest_first(): void
+    {
+        $this->actingAs(User::factory()->create());
+        GameAccount::factory()->create(['title' => 'Akun katalog', 'status' => 'sold', 'price' => 300000])->forceFill(['sold_at' => '2026-10-05 10:00:00'])->save();
+        ManualSale::factory()->create(['type' => 'joki', 'item' => 'Joki Epic V – Mythic', 'amount' => 325000, 'sold_on' => '2026-10-20']);
+        ManualSale::factory()->create(['type' => 'rental', 'item' => 'Sewa FF 1 hari', 'amount' => 60000, 'sold_on' => '2026-10-12']);
+        ManualSale::factory()->create(['type' => 'jual_akun', 'item' => 'Akun luar katalog', 'amount' => 150000, 'sold_on' => '2026-10-08']);
+        ManualSale::factory()->create(['type' => 'rekber', 'item' => 'Fee rekber', 'amount' => 25000, 'sold_on' => '2026-10-01']);
+        ManualSale::factory()->create(['type' => 'lainnya', 'item' => 'Catatan lama', 'amount' => 10000, 'sold_on' => '2026-10-02']);
+
+        $response = $this->get('/admin/sales?month=2026-10');
+
+        $response->assertOk()->assertSeeInOrder(['Joki Epic V – Mythic', 'Sewa FF 1 hari', 'Akun luar katalog', 'Akun katalog', 'Catatan lama', 'Fee rekber'])
+            ->assertSee('Katalog')->assertSee('Rekber');
+        $breakdown = $response->viewData('breakdown');
+        $this->assertSame(['count' => 1, 'amount' => 325000], array_intersect_key($breakdown['joki'], ['count' => 0, 'amount' => 0]));
+        $this->assertSame(['count' => 2, 'amount' => 450000], array_intersect_key($breakdown['jual_akun'], ['count' => 0, 'amount' => 0]));
+        $this->assertSame(['count' => 1, 'amount' => 10000], array_intersect_key($breakdown['lainnya'], ['count' => 0, 'amount' => 0]));
+        $this->assertSame(6, $response->viewData('monthCount'));
+        $this->assertSame(870000, $response->viewData('monthRevenue'));
+        $this->assertSame(1, substr_count($response->getContent(), 'aria-label="Hapus Fee rekber"'));
+        $this->assertSame(0, substr_count($response->getContent(), 'aria-label="Hapus Akun katalog"'));
     }
 
     public function test_sold_date_follows_status_changes_and_is_kept_on_unrelated_edits(): void
@@ -355,6 +422,34 @@ class CatalogTest extends TestCase
         $this->assertDatabaseMissing('game_accounts', ['id' => $account->id]);
     }
 
+    public function test_admin_can_delete_several_accounts_with_their_images_at_once(): void
+    {
+        Storage::fake('public');
+        $this->delete('/admin/accounts', ['ids' => [1]])->assertRedirect('/admin/login');
+        $this->actingAs(User::factory()->create());
+        $first = GameAccount::factory()->create(['main_image' => 'accounts/first.png']);
+        $second = GameAccount::factory()->create(['main_image' => 'images/zuto-bg1.webp']);
+        $kept = GameAccount::factory()->create();
+        Storage::disk('public')->put('accounts/first.png', 'x');
+        Storage::disk('public')->put('accounts/gallery.png', 'x');
+        $first->images()->create(['image_path' => 'accounts/gallery.png']);
+
+        $this->get('/admin/accounts')->assertOk()->assertSee('data-bulk-delete', false)->assertSee('name="ids[]" value="'.$first->id.'"', false);
+        $this->get('/admin')->assertOk()->assertDontSee('data-bulk-item', false);
+
+        $this->delete('/admin/accounts', ['ids' => [$first->id, $second->id, $first->id]])->assertRedirect()->assertSessionHas('success', '2 akun berhasil dihapus.');
+
+        $this->assertDatabaseMissing('game_accounts', ['id' => $first->id]);
+        $this->assertDatabaseMissing('game_accounts', ['id' => $second->id]);
+        $this->assertDatabaseHas('game_accounts', ['id' => $kept->id]);
+        Storage::disk('public')->assertMissing('accounts/first.png');
+        Storage::disk('public')->assertMissing('accounts/gallery.png');
+        $this->assertFileExists(public_path('images/zuto-bg1.webp'));
+
+        $this->delete('/admin/accounts', [])->assertSessionHasErrors(['ids' => 'Pilih minimal satu akun untuk dihapus.']);
+        $this->assertDatabaseHas('game_accounts', ['id' => $kept->id]);
+    }
+
     public function test_category_crud_and_used_category_deletion_guard(): void
     {
         $this->actingAs(User::factory()->create());
@@ -382,7 +477,7 @@ class CatalogTest extends TestCase
     {
         $category = Category::factory()->create();
         GameAccount::factory()->count(13)->create(['category_id' => $category->id]);
-        $response = $this->get('/?'.http_build_query(['q' => 'Mythic', 'category' => $category->slug]));
+        $response = $this->get('/katalog?'.http_build_query(['q' => 'Mythic', 'category' => $category->slug]));
         $response->assertOk()->assertSee('page=2', false)->assertSee('q=Mythic', false);
         $this->assertCount(12, $response->viewData('accounts'));
     }
@@ -425,6 +520,21 @@ class CatalogTest extends TestCase
             ->assertSee('data-price="6000"', false)
             ->assertSee('Masukkan Data Akun')->assertSee('Request Hero')
             ->assertSee('type="password"', false);
+    }
+
+    public function test_joki_page_lists_all_packages_with_prices(): void
+    {
+        $this->get('/joki-ml')->assertOk()->assertSee('Paket Joki')->assertDontSee('data-joki-package', false)
+            ->assertSeeInOrder(['Paket Epic', 'Paket Legend', 'Paket Mythic', 'Paket Mythic Honor &amp; Glory'], false)
+            ->assertSee('Epic V – Legend V')->assertSee('Rp 150.000')->assertSee('Legend V – Mythic Immortal')->assertSee('Rp 1.150.000')->assertSee('Glory – Immortal')->assertSee('20 paket');
+
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+
+        $html = $this->get('/joki-ml')->assertOk()->getContent();
+
+        $this->assertSame(20, substr_count($html, 'data-joki-package="'));
+        $this->assertStringContainsString('<option value="Honor – Glory" data-price="225000">', $html);
+        $this->assertStringContainsString('<option value="">Per bintang (isi rank dan jumlah bintang)</option>', $html);
     }
 
     public function test_joki_order_form_cannot_submit_account_data_to_the_server(): void
@@ -507,13 +617,63 @@ class CatalogTest extends TestCase
         $account = GameAccount::factory()->create(['title' => 'Akun spesial']);
 
         $this->get('/')->assertOk()->assertSee('<meta property="og:image" content="'.asset('images/zuto-og.jpg').'">', false)
-            ->assertSee('rel="icon" type="image/png" sizes="48x48"', false)->assertSee('Created By OzinVoid')
+            ->assertSee('rel="icon" type="image/png" sizes="48x48"', false)->assertSee('Created By OzinVoid')->assertDontSee('aria-label="Ikuti', false)->assertSee('Sinyal Trust')->assertSee('Proses cepat setelah pembayaran')
             ->assertSee('<title>ZutoMarket · SHOPGAME ZUTO</title>', false)->assertSee('<meta property="og:title" content="ZutoMarket · SHOPGAME ZUTO">', false)->assertDontSee('ZutoShopGame');
         $this->get('/akun/'.$account->slug)->assertOk()->assertSee('<meta property="og:title" content="Akun spesial', false)
             ->assertSee('<meta property="og:url" content="'.route('accounts.show', $account->slug).'">', false);
         $this->assertSame([1200, 630], array_slice(getimagesize(public_path('images/zuto-og.jpg')), 0, 2));
         $this->assertFileExists(public_path('images/icons/favicon-48.png'));
         $this->assertFileExists(public_path('images/zuto-logo.webp'));
+    }
+
+    public function test_home_shows_limited_sections_with_see_all_links_only_for_available_and_flash_sale(): void
+    {
+        $this->travelTo('2026-11-11 05:00:00');
+        GameAccount::factory()->count(8)->sequence(fn ($sequence) => ['title' => 'Tersedia '.$sequence->index, 'created_at' => now()->subMinutes(10 - $sequence->index)])->create();
+        GameAccount::factory()->count(5)->sequence(fn ($sequence) => ['title' => 'Kilat '.$sequence->index, 'flash_sale_ends_at' => now()->addHours($sequence->index + 1)])->create();
+        GameAccount::factory()->count(5)->sequence(fn ($sequence) => ['title' => 'Laku '.$sequence->index, 'status' => 'sold'])->create();
+        GameAccount::factory()->count(5)->sequence(fn ($sequence) => ['title' => 'Sewa '.$sequence->index, 'is_rental' => true])->create();
+
+        $response = $this->get('/');
+
+        $response->assertOk()->assertSeeInOrder(['Produk Tersedia', 'Flash Sale', 'Rental Akun', 'Produk Terjual']);
+        $this->assertCount(6, $response->viewData('available'));
+        $this->assertCount(4, $response->viewData('flashSale'));
+        $this->assertCount(4, $response->viewData('rentals'));
+        $this->assertCount(4, $response->viewData('sold'));
+        $this->assertSame(13, $response->viewData('availableCount'));
+        $this->assertSame(['Kilat 0', 'Kilat 1', 'Kilat 2', 'Kilat 3'], $response->viewData('flashSale')->pluck('title')->all());
+        $response->assertSee(route('catalog.all', ['available' => 1]), false)->assertSee(route('flash-sale'), false)->assertSee('5 akun · berakhir dalam');
+        $response->assertSee('Jelajahi katalog')->assertSee('18 akun ditemukan')->assertSee('<form action="'.route('catalog.all').'#katalog" method="GET"', false)->assertSee('Cari game, rank, hero, skin, atau server...');
+        $this->assertSame(2, substr_count($response->getContent(), 'Lihat semua ›'));
+    }
+
+    public function test_home_hides_empty_sections_and_sends_old_catalog_links_to_the_catalog_page(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Belum ada akun yang tersedia')->assertDontSee('Flash Sale ⚡')->assertDontSee('Produk Terjual')->assertDontSee('id="home-rental"', false);
+        $this->get('/?q=mythic&page=2')->assertRedirect(route('catalog.all', ['q' => 'mythic', 'page' => 2]));
+        $this->get('/katalog')->assertOk()->assertSee('Katalog akun');
+    }
+
+    public function test_every_page_has_the_theme_toggle_and_sets_the_theme_before_styles_load(): void
+    {
+        foreach (['/', '/joki-ml', '/admin/login'] as $path) {
+            $html = $this->get($path)->assertOk()->assertSee('data-theme-toggle', false)->getContent();
+
+            $this->assertLessThan(strpos($html, '/build/assets/'), strpos($html, "localStorage.getItem('zutomarket-theme')"));
+        }
+    }
+
+    public function test_feedback_page_sends_to_the_store_email_which_admins_can_change(): void
+    {
+        $this->get('/profil')->assertOk()->assertSee(route('feedback'), false)->assertSee('Kritik &amp; saran', false);
+        $this->get('/kritik-saran')->assertOk()->assertSee('data-email="zutomarketcs@gmail.com"', false)->assertSee('mailto:zutomarketcs@gmail.com', false)->assertSee('Laporan masalah');
+
+        $this->actingAs(User::factory()->create());
+        $this->put('/admin/settings', ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo', 'feedback_email' => 'bukan-email'])->assertSessionHasErrors('feedback_email');
+        $this->put('/admin/settings', ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo', 'feedback_email' => 'cs@zutomarket.id'])->assertSessionHasNoErrors();
+
+        $this->get('/kritik-saran')->assertOk()->assertSee('data-email="cs@zutomarket.id"', false);
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

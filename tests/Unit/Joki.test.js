@@ -24,6 +24,15 @@ test('buildOrderMessage includes the order details and calculated total', () => 
     assert.match(message, /Request hero: Layla, Miya, Tigreal/);
 });
 
+test('buildOrderMessage uses the package price instead of stars when a package is chosen', () => {
+    const message = buildOrderMessage({ ...order, packageName: 'Legend V – Mythic Immortal', packagePrice: 1150000 });
+
+    assert.match(message, /Paket: Legend V – Mythic Immortal/);
+    assert.match(message, /Total: Rp 1\.150\.000/);
+    assert.ok(!message.includes('Jumlah bintang'));
+    assert.ok(!message.includes('/bintang'));
+});
+
 test('buildOrderMessage never contains a password value', () => {
     const message = buildOrderMessage({ ...order, password: 'rahasia-sekali' });
 

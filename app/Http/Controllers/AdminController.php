@@ -10,6 +10,7 @@ use App\Models\Setting;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -27,7 +28,36 @@ class AdminController extends Controller
     {
         $data = $request->validate(['q' => 'nullable|string|max:100']);
 
-        return view('admin.accounts', ['accounts' => GameAccount::with('category')->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
+        return view('admin.accounts', ['accounts' => GameAccount::with('category')->forSale()->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
+    }
+
+    public function rentals(Request $request): View
+    {
+        $data = $request->validate(['q' => 'nullable|string|max:100']);
+        $rentals = GameAccount::where('is_rental', true);
+
+        return view('admin.rentals', [
+            'accounts' => (clone $rentals)->with(['category', 'rentalPackages'])->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString(),
+            'readyCount' => (clone $rentals)->where('status', 'available')->count(),
+            'rentedCount' => (clone $rentals)->where('status', 'rented')->count(),
+        ]);
+    }
+
+    public function updateRentalStatus(Request $request, GameAccount $account): RedirectResponse
+    {
+        abort_unless($account->is_rental, 404);
+        $data = $request->validate([
+            'status' => 'required|in:available,rented',
+            'ready_estimate_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
+        ]);
+        $account->update([
+            'status' => $data['status'],
+            'ready_estimate_at' => $data['status'] === 'rented' && ! empty($data['ready_estimate_at'])
+                ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['ready_estimate_at'], GameAccount::LOCAL_TIMEZONE)->utc()
+                : null,
+        ]);
+
+        return back()->with('success', $data['status'] === 'rented' ? 'Akun ditandai sedang disewa.' : 'Akun ditandai siap disewa.');
     }
 
     public function sales(Request $request): View
@@ -38,20 +68,40 @@ class AdminController extends Controller
         $monthSold = (clone $allSold)->where('sold_at', '>=', $month)->where('sold_at', '<', $month->addMonth());
         $monthManual = ManualSale::where('sold_on', '>=', $month->toDateString())->where('sold_on', '<', $month->addMonth()->toDateString());
 
+        $soldAccounts = (clone $monthSold)->with('category')->get();
+        $manualSales = (clone $monthManual)->get();
+        $rows = $soldAccounts->map(fn (GameAccount $account): array => [
+            'date' => $account->sold_at->timezone(GameAccount::LOCAL_TIMEZONE)->startOfDay(), 'order' => $account->sold_at->getTimestamp(),
+            'type' => 'Jual akun', 'source' => 'Katalog', 'item' => $account->title, 'note' => $account->category->name, 'amount' => $account->price, 'sale' => null,
+        ])->concat($manualSales->map(fn (ManualSale $sale): array => [
+            'date' => $sale->sold_on, 'order' => $sale->sold_on->getTimestamp() + $sale->id,
+            'type' => $sale->typeLabel(), 'source' => 'Manual', 'item' => $sale->item, 'note' => $sale->note, 'amount' => $sale->amount, 'sale' => $sale,
+        ]))->sortByDesc(fn (array $row): array => [$row['date']->format('Y-m-d'), $row['order']])->values();
+        $breakdown = collect(ManualSale::TYPES)->map(fn (string $label, string $type): array => [
+            'label' => $label,
+            'count' => $manualSales->where('type', $type)->count() + ($type === 'jual_akun' ? $soldAccounts->count() : 0),
+            'amount' => (int) $manualSales->where('type', $type)->sum('amount') + ($type === 'jual_akun' ? (int) $soldAccounts->sum('price') : 0),
+        ]);
+        $others = $manualSales->whereNotIn('type', array_keys(ManualSale::TYPES));
+        if ($others->isNotEmpty()) {
+            $breakdown->put('lainnya', ['label' => 'Lainnya', 'count' => $others->count(), 'amount' => (int) $others->sum('amount')]);
+        }
+
         return view('admin.sales', [
             'month' => $month,
-            'monthCount' => (clone $monthSold)->count() + (clone $monthManual)->count(),
-            'monthRevenue' => (int) (clone $monthSold)->sum('price') + (int) (clone $monthManual)->sum('amount'),
+            'monthCount' => $rows->count(),
+            'monthRevenue' => (int) $rows->sum('amount'),
             'totalCount' => (clone $allSold)->count() + ManualSale::count(),
             'totalRevenue' => (int) (clone $allSold)->sum('price') + (int) ManualSale::sum('amount'),
-            'accounts' => $monthSold->with('category')->latest('sold_at')->orderByDesc('id')->paginate(20)->withQueryString(),
-            'manualSales' => $monthManual->orderByDesc('sold_on')->orderByDesc('id')->paginate(20, ['*'], 'manual_page')->withQueryString(),
+            'breakdown' => $breakdown,
+            'rows' => $rows,
         ]);
     }
 
     public function storeSale(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'type' => ['required', Rule::in(array_keys(ManualSale::TYPES))],
             'item' => 'required|string|max:150',
             'amount' => 'required|integer|min:1|max:999999999999',
             'sold_on' => 'required|date_format:Y-m-d',
@@ -164,24 +214,46 @@ class AdminController extends Controller
             Storage::disk('public')->delete($oldMain);
         }
 
-        return redirect()->route('admin.accounts')->with('success', 'Akun berhasil disimpan.');
+        return redirect()->route($account->is_rental ? 'admin.rentals' : 'admin.accounts')->with('success', 'Akun berhasil disimpan.');
     }
 
     public function destroy(GameAccount $account): RedirectResponse
     {
-        $paths = DB::transaction(function () use ($account): array {
-            $account->refreshForUpdate();
-            $paths = $account->images->pluck('image_path')->all();
-            if (! str_starts_with($account->main_image, 'demo/') && ! str_starts_with($account->main_image, 'images/')) {
-                $paths[] = $account->main_image;
+        $this->deleteAccounts(collect([$account]));
+
+        return back()->with('success', 'Akun berhasil dihapus.');
+    }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['ids' => 'required|array|max:200', 'ids.*' => 'integer'], ['ids.required' => 'Pilih minimal satu akun untuk dihapus.']);
+        $accounts = GameAccount::whereIn('id', array_unique($data['ids']))->get();
+        $this->deleteAccounts($accounts);
+
+        return back()->with('success', $accounts->count().' akun berhasil dihapus.');
+    }
+
+    /**
+     * Delete the accounts with their rental packages and gallery rows, then remove their uploaded images.
+     *
+     * @param  Collection<int, GameAccount>  $accounts
+     */
+    private function deleteAccounts($accounts): void
+    {
+        $paths = DB::transaction(function () use ($accounts): array {
+            $paths = [];
+            foreach ($accounts as $account) {
+                $account->refreshForUpdate();
+                $paths = [...$paths, ...$account->images->pluck('image_path')->all()];
+                if (! str_starts_with($account->main_image, 'demo/') && ! str_starts_with($account->main_image, 'images/')) {
+                    $paths[] = $account->main_image;
+                }
+                $account->forceDelete();
             }
-            $account->forceDelete();
 
             return $paths;
         });
         Storage::disk('public')->delete($paths);
-
-        return back()->with('success', 'Akun berhasil dihapus.');
     }
 
     public function categories(): View
@@ -245,7 +317,7 @@ class AdminController extends Controller
 
     public function saveSettings(Request $request): RedirectResponse
     {
-        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_rental_number' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_default_message' => 'required|string|max:1000']);
+        $data = $request->validate(['store_name' => 'required|string|max:80', 'whatsapp_number' => ['required', 'regex:/^[1-9][0-9]{7,14}$/'], 'whatsapp_rental_number' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'], 'feedback_email' => 'nullable|email|max:120', 'whatsapp_default_message' => 'required|string|max:1000']);
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }

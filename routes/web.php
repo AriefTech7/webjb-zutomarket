@@ -6,7 +6,8 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [CatalogController::class, 'index'])->name('catalog');
+Route::get('/', [CatalogController::class, 'home'])->name('catalog');
+Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.all');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
@@ -15,6 +16,7 @@ Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-
 Route::get('/rental', [CatalogController::class, 'rental'])->name('rental');
 Route::view('/tentang', 'catalog.about')->name('about');
 Route::view('/profil', 'catalog.profile')->name('profile');
+Route::view('/kritik-saran', 'catalog.feedback')->name('feedback');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
 Route::middleware('guest')->group(function () {
@@ -25,6 +27,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
+    Route::patch('/rentals/{account}/status', [AdminController::class, 'updateRentalStatus'])->name('rentals.status');
     Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
     Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
     Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');
@@ -32,6 +36,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/accounts', [AdminController::class, 'store'])->name('accounts.store');
     Route::get('/accounts/{account}/edit', [AdminController::class, 'form'])->name('accounts.edit');
     Route::put('/accounts/{account}', [AdminController::class, 'update'])->name('accounts.update');
+    Route::delete('/accounts', [AdminController::class, 'destroyMany'])->name('accounts.destroy-many');
     Route::delete('/accounts/{account}', [AdminController::class, 'destroy'])->name('accounts.destroy');
     Route::get('/categories', [AdminController::class, 'categories'])->name('categories');
     Route::post('/categories', [AdminController::class, 'saveCategory'])->name('categories.store');
