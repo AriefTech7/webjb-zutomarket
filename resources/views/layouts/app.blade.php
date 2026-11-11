@@ -43,8 +43,8 @@
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
         <div class="shell flex h-16 items-center gap-3 md:h-20 md:gap-4">
             <a href="{{ route('catalog') }}" class="flex shrink-0 items-center gap-3 {{ request()->is('admin*') ? 'mr-auto' : '' }}"
-                aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
-                    alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark w-24 md:w-40"><span
+                aria-label="{{ $storeName }}"><span class="logo-shine" style="--logo-url: url('{{ asset('images/zuto-wordmark.webp') }}')"><img src="{{ asset('images/zuto-wordmark.webp') }}"
+                    alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark w-24 md:w-40"></span><span
                     class="sr-only">{{ $storeName }}</span></a>
             @unless (request()->is('admin*'))
             <form action="{{ route('catalog.all') }}#katalog" method="GET" role="search" class="relative min-w-0 flex-1 md:max-w-md">
@@ -53,17 +53,12 @@
                 <input id="header-search" type="search" name="q" value="{{ request()->routeIs('catalog.all', 'categories.show') ? request('q') : '' }}" maxlength="100"
                     placeholder="Cari produk..." class="h-10 w-full rounded-full border border-lime-300/30 bg-[#0b1230] pl-10 pr-4 text-sm text-white placeholder:text-slate-400 transition focus:border-lime-300/70 md:h-11">
             </form>
-            <nav class="ml-auto hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
-                    class="nav-link {{ request()->routeIs('catalog', 'catalog.all', 'categories.show') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('catalog') }}">Home</a><a
-                    class="nav-link {{ request()->routeIs('rental') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('rental') }}">Rental Akun</a><a
-                    class="nav-link {{ request()->routeIs('joki') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('joki') }}">Joki ML</a><a
-                    class="nav-link {{ request()->routeIs('about') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('about') }}">Tentang</a><a
-                    class="nav-link {{ request()->routeIs('profile') ? 'text-white bg-white/5' : '' }}"
-                    href="{{ route('profile') }}">Akun</a>
+            <nav class="ml-auto hidden items-center gap-1 rounded-full border border-[#a9c3ff]/15 bg-[#0b1230] p-1 xl:flex" aria-label="Navigasi utama">
+                @foreach ([['catalog', 'Home', ['catalog', 'catalog.all', 'categories.show']], ['rental', 'Rental Akun', ['rental']], ['joki', 'Joki ML', ['joki']], ['about', 'Tentang', ['about']], ['profile', 'Akun', ['profile', 'feedback']]] as [$navRoute, $navLabel, $navActive])
+                    @php($isNavActive = request()->routeIs(...$navActive))
+                    <a href="{{ route($navRoute) }}" @if ($isNavActive) aria-current="page" @endif
+                        class="rounded-full px-4 py-2 text-sm font-bold transition {{ $isNavActive ? 'bg-lime-300 text-slate-950 shadow-lg shadow-lime-300/20' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">{{ $navLabel }}</a>
+                @endforeach
             </nav>
             @endunless
             <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Ganti ke mode terang">

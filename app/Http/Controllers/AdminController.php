@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\ContactLink;
 use App\Models\GameAccount;
+use App\Models\InfoPost;
 use App\Models\ManualSale;
 use App\Models\Setting;
 use Carbon\CarbonImmutable;
@@ -279,6 +280,42 @@ class AdminController extends Controller
         $category->delete();
 
         return back()->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    public function infos(): View
+    {
+        return view('admin.infos', ['infos' => InfoPost::ordered()->get()]);
+    }
+
+    public function saveInfo(Request $request, ?InfoPost $info = null): RedirectResponse
+    {
+        $info ??= new InfoPost;
+        $data = $request->validate([
+            'title' => 'required|string|max:100',
+            'image' => [$info->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'link_url' => 'nullable|url:https|max:500',
+            'sort_order' => 'nullable|integer|min:0|max:999',
+        ], ['link_url.url' => 'Isi tautan lengkap yang diawali https://.']);
+        $oldImage = $info->image_path;
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('info', 'public');
+        }
+        unset($data['image']);
+        $data['sort_order'] ??= 0;
+        $info->fill($data)->save();
+        if ($request->hasFile('image') && $oldImage) {
+            Storage::disk('public')->delete($oldImage);
+        }
+
+        return back()->with('success', 'Info berhasil disimpan.');
+    }
+
+    public function deleteInfo(InfoPost $info): RedirectResponse
+    {
+        Storage::disk('public')->delete($info->image_path);
+        $info->delete();
+
+        return back()->with('success', 'Info berhasil dihapus.');
     }
 
     public function contacts(): View
