@@ -69,7 +69,12 @@ class CatalogController extends Controller
     {
         abort_if($account->status === 'draft', 404);
         $account->load('category', 'images', 'rentalPackages');
+        $others = GameAccount::with('category')->forSale()->where('status', 'available')->whereKeyNot($account->id);
+        $recommendations = $account->is_rental ? collect() : (clone $others)->where('category_id', $account->category_id)->latest()->orderByDesc('id')->limit(4)->get();
+        if (! $account->is_rental && $recommendations->count() < 4) {
+            $recommendations = $recommendations->concat((clone $others)->whereKeyNot($recommendations->modelKeys())->latest()->orderByDesc('id')->limit(4 - $recommendations->count())->get());
+        }
 
-        return view('catalog.show', compact('account'));
+        return view('catalog.show', compact('account', 'recommendations'));
     }
 }

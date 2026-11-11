@@ -41,13 +41,19 @@
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
-        <div class="shell flex h-20 items-center gap-4">
-            <a href="{{ route('catalog') }}" class="mr-auto flex min-w-0 items-center gap-3"
+        <div class="shell flex h-16 items-center gap-3 md:h-20 md:gap-4">
+            <a href="{{ route('catalog') }}" class="flex shrink-0 items-center gap-3 {{ request()->is('admin*') ? 'mr-auto' : '' }}"
                 aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
-                    alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark"><span
+                    alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark w-24 md:w-40"><span
                     class="sr-only">{{ $storeName }}</span></a>
             @unless (request()->is('admin*'))
-            <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
+            <form action="{{ route('catalog.all') }}#katalog" method="GET" role="search" class="relative min-w-0 flex-1 md:max-w-md">
+                <label class="sr-only" for="header-search">Cari produk</label>
+                <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                <input id="header-search" type="search" name="q" value="{{ request()->routeIs('catalog.all', 'categories.show') ? request('q') : '' }}" maxlength="100"
+                    placeholder="Cari produk..." class="h-10 w-full rounded-full border border-lime-300/30 bg-[#0b1230] pl-10 pr-4 text-sm text-white placeholder:text-slate-400 transition focus:border-lime-300/70 md:h-11">
+            </form>
+            <nav class="ml-auto hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
                     class="nav-link {{ request()->routeIs('catalog', 'catalog.all', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Home</a><a
                     class="nav-link {{ request()->routeIs('rental') ? 'text-white bg-white/5' : '' }}"

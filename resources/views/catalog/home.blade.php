@@ -7,12 +7,14 @@
                 alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="1280" height="430"
                 fetchpriority="high">
         </section>
-        @include('catalog.search-panel', ['categories' => $categories, 'selected' => '', 'total' => $catalogTotal])
-        @include('catalog.category-chips', ['categories' => $categories, 'selected' => ''])
+        @include('catalog.home-shortcuts', ['categories' => $categories->sortByDesc('accounts_count')->values(), 'hasFlashSale' => $flashSale->isNotEmpty()])
+        <div class="mt-8">
+            @include('catalog.search-panel', ['categories' => $categories, 'selected' => '', 'total' => $catalogTotal])
+        </div>
 
         <section class="mt-6" aria-labelledby="home-available">
             @include('catalog.section-heading', ['id' => 'home-available', 'title' => 'Produk Tersedia', 'subtitle' => e($availableCount.' akun siap dibeli'), 'url' => route('catalog.all', ['available' => 1]).'#katalog'])
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
                 @forelse ($available as $account)
                     @include('catalog.account-card', ['account' => $account])
                 @empty
