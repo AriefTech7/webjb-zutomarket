@@ -39,6 +39,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/keluar', [AccountController::class, 'logout'])->name('account.logout');
     Route::put('/akun/profil', [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::get('/profil/pengaturan', [AccountController::class, 'settings'])->name('account.settings');
+    Route::get('/profil/password', [AccountController::class, 'showPassword'])->name('account.password');
+    Route::put('/profil/password', [AccountController::class, 'updatePassword'])->middleware('throttle:account-auth');
     Route::post('/akun/wishlist', [AccountController::class, 'syncWishlist'])->middleware('throttle:60,1')->name('account.wishlist');
 });
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

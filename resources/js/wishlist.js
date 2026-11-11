@@ -82,6 +82,7 @@ export function initialiseWishlist() {
             counter.textContent = ids.length;
             counter.hidden = ids.length === 0;
         });
+        document.querySelectorAll('[data-wishlist-total]').forEach(total => { total.textContent = ids.length; });
         document.querySelectorAll('[data-wishlist-toggle]').forEach(button => {
             const saved = ids.includes(Number(button.dataset.wishlistToggle));
             button.disabled = false;

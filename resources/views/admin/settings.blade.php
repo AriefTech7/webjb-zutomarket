@@ -38,6 +38,25 @@
             <p class="muted mt-2 text-xs">Placeholder: {nama_akun}, {harga}, {url}. Pesan diisi otomatis saat pembeli
                 membuka WhatsApp.</p>
         </div>
+        <fieldset>
+            <legend class="label">Warna tema</legend>
+            @php($accent = old('accent_color', \App\Models\Setting::valueFor('accent_color', 'default')))
+            <div class="grid gap-3 sm:grid-cols-2">
+                @foreach (['default' => ['Biru lembut (bawaan)', '#a9c3ff'], 'deepskyblue' => ['DeepSkyBlue', '#00bfff']] as $accentValue => [$accentLabel, $accentHex])
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-[#a9c3ff]/20 bg-[#080f25] p-3 text-sm has-checked:border-lime-300">
+                        <input type="radio" name="accent_color" value="{{ $accentValue }}" class="accent-lime-300" @checked($accent === $accentValue)>
+                        <span class="size-6 shrink-0 rounded-full border border-white/20" style="background: {{ $accentHex }}"></span>{{ $accentLabel }}
+                    </label>
+                @endforeach
+            </div>
+            <p class="muted mt-2 text-xs">Warna tombol, tautan, teks berjalan, dan aksen di seluruh situs.</p>
+        </fieldset>
+        <div>
+            <label for="running_text" class="label">Teks berjalan</label>
+            <textarea class="field" id="running_text" name="running_text" rows="5" maxlength="1000"
+                placeholder="Satu pengumuman per baris">{{ old('running_text', \App\Models\Setting::valueFor('running_text', \App\Models\Setting::DEFAULT_RUNNING_TEXT)) }}</textarea>
+            <p class="muted mt-2 text-xs">Tampil berjalan di bawah menu atas pada semua halaman pengunjung. Tulis satu pengumuman per baris. Kosongkan untuk menyembunyikan teks berjalan.</p>
+        </div>
         <button class="btn">Simpan pengaturan</button>
     </form>
 @endsection

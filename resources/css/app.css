@@ -68,6 +68,13 @@
         .logo-shine > img, .logo-shine::after { animation: none; }
         .logo-shine::after { opacity: 0; }
     }
+    .marquee { overflow: hidden; color: var(--marquee-text, #ffffff); background: linear-gradient(90deg, var(--marquee-from, #2b55d8), var(--marquee-via, #3a74f0), var(--marquee-from, #2b55d8)); }
+    .marquee-track { display: flex; width: max-content; animation: marquee var(--marquee-duration, 30s) linear infinite; }
+    .marquee:hover .marquee-track { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) {
+        .marquee { overflow-x: auto; scrollbar-width: none; }
+        .marquee-track { animation: none; }
+    }
     .theme-toggle { @apply flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#a9c3ff]/20 bg-[#a9c3ff]/10 text-slate-200 transition hover:text-white; }
     @media (min-width: 48rem) {
         .joki-ladder { @apply flex-row items-end border-b-4 border-[#02061f]; }
@@ -82,6 +89,10 @@
     0%, 15% { background-position: 150% 0; }
     55%, 100% { background-position: -50% 0; }
 }
+@keyframes marquee {
+    to { transform: translateX(-50%); }
+}
+
 @keyframes logo-float {
     0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 0 #a9c3ff00); }
     50% { transform: translateY(-2px); filter: drop-shadow(0 0 8px #a9c3ff99); }
@@ -150,3 +161,53 @@ html[data-theme='light'] [class*='from-[#2a2350]'] { background-image: linear-gr
 html[data-theme='light'] [class*='border-[#070b1c]'] { border-color: #f3f5fb; }
 html[data-theme='light'] [class*='border-[#a9c3ff]'] { border-color: #c7d2fe; }
 html[data-theme='light'] [class*='shadow-[#020617]'] { --tw-shadow-color: #0f172a1a; }
+
+/*
+ * Accent "DeepSkyBlue" (Admin > Pengaturan > Warna tema). Swaps the accent palette and the soft lavender
+ * outlines for sky blue; the default soft-blue look is untouched when the setting is "default".
+ */
+html[data-accent='deepskyblue'] {
+    --color-brand-200: #8ae3ff;
+    --color-brand-300: #00bfff;
+    --color-lime-200: #8ae3ff;
+    --color-lime-300: #00bfff;
+    --marquee-from: #0099d6;
+    --marquee-via: #00bfff;
+    --marquee-text: #031424;
+}
+html[data-accent='deepskyblue'][data-theme='light'] {
+    --color-brand-200: #005f87;
+    --color-brand-300: #0077a8;
+    --color-lime-200: #005f87;
+    --color-lime-300: #0077a8;
+}
+html[data-accent='deepskyblue']:not([data-theme='light']) body {
+    background-image: radial-gradient(circle at 10% -10%, #00bfff26, transparent 32%), radial-gradient(circle at 100% 20%, #1e90ff1a, transparent 28%);
+}
+html[data-accent='deepskyblue'][data-theme='light'] body {
+    background-image: radial-gradient(circle at 10% -10%, #b3ecff99, transparent 32%), radial-gradient(circle at 100% 20%, #cfe9ff80, transparent 28%);
+}
+html[data-accent='deepskyblue']:not([data-theme='light']) :is(.panel, .field, .status, .theme-toggle, .btn-secondary, .admin-link, [class*='border-[#a9c3ff]']) { border-color: #00bfff33; }
+html[data-accent='deepskyblue']:not([data-theme='light']) :is(.btn-secondary, .theme-toggle, [class*='bg-[#a9c3ff]']) { background-color: #00bfff14; }
+html[data-accent='deepskyblue'] .btn { box-shadow: 0 6px 20px #00bfff40; }
+
+/* DeepSkyBlue backgrounds: deep ocean navy instead of the default violet navy. */
+html[data-accent='deepskyblue']:not([data-theme='light']) body { background-color: #031321; }
+html[data-accent='deepskyblue']:not([data-theme='light']) .panel { background-color: #0a2236d9; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#101833]'] { background-color: #0a2236; }
+html[data-accent='deepskyblue']:not([data-theme='light']) :is(.field, [class*='bg-[#080f25]']) { background-color: #051a2b; }
+html[data-accent='deepskyblue']:not([data-theme='light']) :is([class*='bg-[#0b1230]'], [class*='bg-[#0b1431]'], .catalog-media) { background-color: #072033; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#16204a]'] { background-color: #0d2c44; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#070b1c]/90'] { background-color: #031321e6; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#070b1c]/80'] { background-color: #031321cc; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#070b1c]/70'] { background-color: #031321b3; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#050817]'] { background-color: #020e19; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='bg-[#34416e]'] { background-color: #12405cb3; }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='border-[#070b1c]'] { border-color: #031321; }
+html[data-accent='deepskyblue']:not([data-theme='light']) .status { background-color: #04182acc; }
+html[data-accent='deepskyblue']:not([data-theme='light']) .store-hero { background: linear-gradient(135deg, #0a2a44 0%, #061b2d 52%, #08243d 100%); }
+html[data-accent='deepskyblue']:not([data-theme='light']) [class*='via-[#101833]'] { --tw-gradient-via: #0a2236; }
+html[data-accent='deepskyblue'][data-theme='light'] body { background-color: #eef8fd; }
+html[data-accent='deepskyblue'][data-theme='light'] :is([class*='bg-[#0b1230]'], [class*='bg-[#0b1431]']) { background-color: #e3f5fc; }
+html[data-accent='deepskyblue'][data-theme='light'] :is(.panel, .joki-card, .joki-icon, [class*='border-[#a9c3ff]']) { border-color: #b8e6f8; }
+html[data-accent='deepskyblue'][data-theme='light'] .store-hero { background: linear-gradient(135deg, #e0f5fd 0%, #f4fbff 52%, #e6f3ff 100%); border-color: #b8e6f8; }

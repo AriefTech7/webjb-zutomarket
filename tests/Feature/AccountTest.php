@@ -81,7 +81,8 @@ class AccountTest extends TestCase
         $this->get('/profil')->assertOk()->assertSee('Masuk')->assertSee('Daftar')->assertDontSee('data-profile-form', false)->assertSee('Wishlist saya');
 
         $this->actingAs($buyer);
-        $this->get('/profil')->assertOk()->assertSee('Halo, Sari')->assertSee('Keluar dari akun')->assertDontSee('data-profile-form', false)
+        $this->get('/profil')->assertOk()->assertSeeInOrder(['Profil', 'SA', 'Sari', $buyer->email, 'via Email', '2', 'Wishlist', 'Bergabung', 'Belum', 'Pengaturan', 'Ubah Password', 'Keluar'])
+            ->assertSee(route('account.settings'), false)->assertSee(route('account.password'), false)->assertDontSee('data-profile-form', false)
             ->assertSee('data-account-wishlist-ids="[5,9]"', false)->assertSee('data-account-profile=', false);
         $this->put('/akun/profil', ['name' => 'Sari Dewi', 'whatsapp' => '0812 3456 7890'])->assertRedirect();
         $this->assertSame('0812 3456 7890', $buyer->fresh()->whatsapp);
@@ -93,11 +94,42 @@ class AccountTest extends TestCase
         $this->postJson('/akun/wishlist', ['ids' => ['x']])->assertUnprocessable();
     }
 
+    public function test_buyer_settings_and_password_pages(): void
+    {
+        $buyer = User::factory()->buyer()->create(['name' => 'Rudi', 'password' => 'lama12345']);
+        $this->actingAs($buyer);
+
+        $this->get('/profil/pengaturan')->assertOk()->assertSee('Pengaturan')->assertSee('value="Rudi"', false);
+        $this->from('/profil/pengaturan')->put('/akun/profil', ['name' => 'Rudi Baru', 'whatsapp' => '081234567890'])->assertRedirect('/profil/pengaturan');
+        $this->get('/profil')->assertSee('Rudi Baru')->assertSee('Ada');
+
+        $this->get('/profil/password')->assertOk()->assertSee('Password saat ini')->assertDontSee('kosongkan');
+        $this->put('/profil/password', ['current_password' => 'salah', 'password' => 'baru12345', 'password_confirmation' => 'baru12345'])->assertSessionHasErrors('current_password');
+        $this->put('/profil/password', ['password' => 'baru12345', 'password_confirmation' => 'baru12345'])->assertSessionHasErrors('current_password');
+        $this->put('/profil/password', ['current_password' => 'lama12345', 'password' => 'baru12345', 'password_confirmation' => 'baru12345'])->assertRedirect(route('profile'));
+        $this->post('/keluar');
+        $this->post('/masuk', ['email' => $buyer->email, 'password' => 'baru12345']);
+        $this->assertAuthenticatedAs($buyer);
+
+        // A Google sign-up never saw its random password, so it may set one without it.
+        $google = User::factory()->buyer()->create();
+        $google->forceFill(['google_id' => 'g-123'])->save();
+        $this->actingAs($google)->get('/profil/password')->assertSee('kosongkan');
+        $this->put('/profil/password', ['password' => 'punyaku123', 'password_confirmation' => 'punyaku123'])->assertRedirect(route('profile'));
+
+        $admin = User::factory()->create(['username' => 'bos']);
+        $this->actingAs($admin)->get('/profil/pengaturan')->assertForbidden();
+        $this->put('/profil/password', ['password' => 'x1234567', 'password_confirmation' => 'x1234567'])->assertForbidden();
+        $this->get('/profil')->assertOk()->assertSee('Admin toko')->assertSee('Dashboard admin')->assertDontSee('Ubah Password');
+    }
+
     public function test_guests_cannot_use_account_endpoints(): void
     {
         $this->postJson('/akun/wishlist', ['ids' => [1]])->assertUnauthorized();
         $this->put('/akun/profil', ['name' => 'x'])->assertRedirect(route('account.login'));
         $this->get('/admin')->assertRedirect(route('login'));
+        $this->get('/profil/pengaturan')->assertRedirect(route('account.login'));
+        $this->get('/profil/password')->assertRedirect(route('account.login'));
     }
 
     public function test_forgot_password_falls_back_to_whatsapp_until_mail_is_configured(): void
@@ -154,6 +186,44 @@ class AccountTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertFalse($user->is_admin);
         $this->assertSame('g-Baru@Example.com', $user->google_id);
+    }
+
+    public function test_admin_sets_the_running_text_shown_under_the_header(): void
+    {
+        $this->get('/')->assertOk()->assertSee('class="marquee', false)->assertSee('Bisa cicil &amp; tukar tambah, tanya admin', false);
+
+        $settings = ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo'];
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin/settings')->assertOk()->assertSee('Teks berjalan')->assertSee('name="running_text"', false);
+        $this->get('/admin')->assertOk()->assertDontSee('class="marquee', false);
+
+        $this->put('/admin/settings', [...$settings, 'running_text' => "PROMO AKHIR TAHUN\r\n\r\n  <b>Diskon</b> rental  \r\n"])->assertSessionHasNoErrors();
+        $this->assertSame(['PROMO AKHIR TAHUN', '<b>Diskon</b> rental'], Setting::runningTextItems());
+        $this->get('/')->assertSeeInOrder(['PROMO AKHIR TAHUN', '&lt;b&gt;Diskon&lt;/b&gt; rental', 'PROMO AKHIR TAHUN'], false)->assertDontSee('<b>Diskon</b>', false)->assertDontSee('tukar tambah, tanya admin');
+
+        // Saving the other settings without the field keeps the text; an empty field hides the bar.
+        $this->put('/admin/settings', $settings)->assertSessionHasNoErrors();
+        $this->get('/')->assertSee('PROMO AKHIR TAHUN');
+        $this->put('/admin/settings', [...$settings, 'running_text' => ''])->assertSessionHasNoErrors();
+        $this->get('/')->assertDontSee('class="marquee', false)->assertDontSee('PROMO AKHIR TAHUN');
+        $this->put('/admin/settings', [...$settings, 'running_text' => str_repeat('a', 1001)])->assertSessionHasErrors('running_text');
+    }
+
+    public function test_admin_picks_the_accent_colour(): void
+    {
+        $this->get('/')->assertSee('data-accent="default"', false);
+        $settings = ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo'];
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin/settings')->assertSee('Warna tema')->assertSee('DeepSkyBlue')->assertSee('value="default" class="accent-lime-300" checked', false);
+
+        $this->put('/admin/settings', [...$settings, 'accent_color' => 'deepskyblue'])->assertSessionHasNoErrors();
+        $this->get('/')->assertSee('data-accent="deepskyblue"', false);
+        $this->get('/admin')->assertSee('data-accent="deepskyblue"', false);
+        $this->put('/admin/settings', $settings)->assertSessionHasNoErrors();
+        $this->get('/')->assertSee('data-accent="deepskyblue"', false);
+        $this->put('/admin/settings', [...$settings, 'accent_color' => 'merah"><script>'])->assertSessionHasErrors('accent_color');
+        $this->put('/admin/settings', [...$settings, 'accent_color' => 'default'])->assertSessionHasNoErrors();
+        $this->get('/')->assertSee('data-accent="default"', false);
     }
 
     public function test_footer_lists_games_menu_and_privacy_page(): void
