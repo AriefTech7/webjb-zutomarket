@@ -16,10 +16,13 @@
                     </form>
                 </div>
                 <nav class="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-1" aria-label="Navigasi admin">
-                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'sales' => 'Data penjualan', 'categories' => 'Kategori', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+                    @php($editedAccount = request()->route('account'))
+                    @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
+                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'categories' => 'Kategori', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+                        @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
                         <a href="{{ route('admin.' . $route) }}"
-                            class="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-xs transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10 lg:gap-3 lg:px-4 lg:py-3 lg:text-sm {{ request()->routeIs('admin.' . $route . '*') ? 'border-lime-300/40 bg-lime-300/10 text-lime-300' : 'border-[#a9c3ff]/15 bg-[#a9c3ff]/5 text-slate-400' }}"
-                            @if (request()->routeIs('admin.' . $route . '*')) aria-current="page" @endif>
+                            class="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-xs transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10 lg:gap-3 lg:px-4 lg:py-3 lg:text-sm {{ $isActiveMenu ? 'border-lime-300/40 bg-lime-300/10 text-lime-300' : 'border-[#a9c3ff]/15 bg-[#a9c3ff]/5 text-slate-400' }}"
+                            @if ($isActiveMenu) aria-current="page" @endif>
                             <span
                                 class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg lg:h-9 lg:w-9 lg:border lg:border-current/15 lg:bg-current/5"
                                 aria-hidden="true">
@@ -39,6 +42,11 @@
                                             <path d="M7.5 10v5M5 12.5h5" />
                                             <circle cx="16" cy="11" r=".75" fill="currentColor" stroke="none" />
                                             <circle cx="18" cy="14" r=".75" fill="currentColor" stroke="none" />
+                                        @break
+
+                                        @case('rentals')
+                                            <circle cx="12" cy="12" r="9" />
+                                            <path d="M12 7v5l3 2" />
                                         @break
 
                                         @case('sales')

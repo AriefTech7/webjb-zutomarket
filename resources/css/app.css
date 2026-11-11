@@ -53,6 +53,7 @@
     .joki-ladder { @apply flex flex-col-reverse gap-3; }
     .joki-rank { @apply flex items-center gap-3 rounded-xl border-2 border-[#a9c3ff]/20 bg-[#0b1230] p-3; box-shadow: 3px 3px 0 #02061f; }
     .joki-bar { width: 100%; height: calc(1.75rem + var(--i) * 2rem); border-radius: 0.75rem 0.75rem 0 0; background: repeating-linear-gradient(135deg, var(--rank) 0 12px, color-mix(in srgb, var(--rank) 70%, #fff) 12px 24px); }
+    .theme-toggle { @apply flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#a9c3ff]/20 bg-[#a9c3ff]/10 text-slate-200 transition hover:text-white; }
     @media (min-width: 48rem) {
         .joki-ladder { @apply flex-row items-end border-b-4 border-[#02061f]; }
         .joki-rank { @apply min-w-0 flex-1 flex-col items-start rounded-none border-0 bg-transparent p-0; box-shadow: none; }
@@ -61,3 +62,66 @@
         .account-image-zoom > [data-main-image] { cursor: zoom-in; }
     }
 }
+
+/*
+ * Light mode. The site is designed dark with many hard-coded colours, so light mode swaps the palette
+ * variables (text and tint colours follow automatically) and then repaints the dark surfaces.
+ * These rules are unlayered on purpose so they win over Tailwind's layered utilities.
+ */
+html:not([data-theme='light']) .theme-icon-moon,
+html[data-theme='light'] .theme-icon-sun { display: none; }
+
+html[data-theme='light'] {
+    color-scheme: light;
+    --color-white: #0f172a;
+    --color-slate-100: #1e293b;
+    --color-slate-200: #334155;
+    --color-slate-300: #475569;
+    --color-slate-400: #556074;
+    --color-slate-500: #64748b;
+    --color-slate-950: #ffffff;
+    --color-brand-200: #1e3fae;
+    --color-brand-300: #2f54d6;
+    --color-lime-200: #1e3fae;
+    --color-lime-300: #2f54d6;
+    --color-amber-200: #92400e;
+    --color-amber-300: #b45309;
+    --color-rose-200: #9f1239;
+    --color-rose-300: #e11d48;
+    --color-rose-400: #f43f5e;
+    --color-emerald-300: #047857;
+    --color-violet-300: #6d28d9;
+}
+html[data-theme='light'] body {
+    background-color: #f3f5fb;
+    background-image: radial-gradient(circle at 10% -10%, #c7d4ff80, transparent 32%), radial-gradient(circle at 100% 20%, #ddd6fe66, transparent 28%);
+}
+html[data-theme='light'] select, html[data-theme='light'] input, html[data-theme='light'] textarea { color-scheme: light; }
+html[data-theme='light'] .panel { background-color: #ffffffe6; border-color: #c7d2fe; box-shadow: 0 10px 30px #0f172a12; }
+html[data-theme='light'] .field { background-color: #ffffff; border-color: #cbd5e1; }
+html[data-theme='light'] .status { background-color: #ffffffe0; border-color: #cbd5e1; }
+html[data-theme='light'] .store-hero { background: linear-gradient(135deg, #e8eeff 0%, #f6f8ff 52%, #efeaff 100%); border-color: #c7d2fe; }
+html[data-theme='light'] .catalog-media { background-color: #e2e8f0; }
+html[data-theme='light'] .catalog-media::after { background: linear-gradient(transparent, #0f172a1f); }
+html[data-theme='light'] .joki-card { background-color: #ffffff; border-color: #c7d2fe; box-shadow: 5px 5px 0 #c7d2fe; }
+html[data-theme='light'] .joki-tinted { background-color: color-mix(in srgb, var(--tint) 16%, #ffffff); border-color: color-mix(in srgb, var(--tint) 65%, transparent); }
+html[data-theme='light'] .joki-icon { background-color: #eef2ff; border-color: #c7d2fe; box-shadow: 3px 3px 0 #c7d2fe; }
+html[data-theme='light'] .joki-mark { box-shadow: 3px 3px 0 #c7d2fe; }
+@media (max-width: 47.99rem) {
+    html[data-theme='light'] .joki-rank { background-color: #f8faff; border-color: #c7d2fe; box-shadow: 3px 3px 0 #c7d2fe; }
+}
+@media (min-width: 48rem) {
+    html[data-theme='light'] .joki-ladder { border-color: #c7d2fe; }
+}
+html[data-theme='light'] [class*='bg-[#101833]'],
+html[data-theme='light'] [class*='bg-[#080f25]'] { background-color: #ffffff; }
+html[data-theme='light'] [class*='bg-[#0b1230]'],
+html[data-theme='light'] [class*='bg-[#0b1431]'] { background-color: #eef2ff; }
+html[data-theme='light'] [class*='bg-[#070b1c]/90'] { background-color: #ffffffe6; }
+html[data-theme='light'] [class*='bg-[#070b1c]/70'] { background-color: #ffffffd9; }
+html[data-theme='light'] [class*='bg-[#070b1c]/45'] { background-color: #ffffff40; }
+html[data-theme='light'] [class*='bg-[#34416e]'] { background-color: #ffffffe0; }
+html[data-theme='light'] [class*='from-[#2a2350]'] { background-image: linear-gradient(to right, #eef2ff, #f8faff); }
+html[data-theme='light'] [class*='border-[#070b1c]'] { border-color: #f3f5fb; }
+html[data-theme='light'] [class*='border-[#a9c3ff]'] { border-color: #c7d2fe; }
+html[data-theme='light'] [class*='shadow-[#020617]'] { --tw-shadow-color: #0f172a1a; }

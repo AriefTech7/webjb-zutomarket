@@ -16,11 +16,17 @@
             ['Mythical Glory', 11000, '#fde047'],
             ['Mythical Immortal', 15000, '#fb7185'],
         ];
+        $packageGroups = [
+            'Paket Epic' => [['Epic V – Legend V', 150000], ['Epic I – Mythic', 205000], ['Epic II – Mythic', 235000], ['Epic III – Mythic', 265000], ['Epic IV – Mythic', 295000], ['Epic V – Mythic', 325000]],
+            'Paket Legend' => [['Legend V – Mythic', 175000], ['Legend IV – Mythic', 140000], ['Legend III – Mythic', 105000], ['Legend II – Mythic', 70000], ['Legend I – Mythic', 35000], ['Legend V – Mythic Honor', 375000], ['Legend V – Mythic Glory', 600000], ['Legend V – Mythic Immortal', 1150000]],
+            'Paket Mythic' => [['Mythic – Mythic Honor', 200000], ['Mythic – Mythic Glory', 425000], ['Mythic – Mythic Immortal', 975000]],
+            'Paket Mythic Honor & Glory' => [['Honor – Glory', 225000], ['Honor – Immortal', 775000], ['Glory – Immortal', 550000]],
+        ];
         $features = [
             ['Sesuai target kamu', 'Pesan berdasarkan rank saat ini dan jumlah bintang yang ingin dicapai.', '#c4b5fd', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'],
             ['Data akun tidak disimpan', 'Formulir hanya menyusun pesan WhatsApp. Data tidak dikirim ke server website.', '#6ee7b7', 'M5 11h14v10H5V11ZM8 11V7a4 4 0 0 1 8 0v4'],
             ['Update lewat WhatsApp', 'Admin mengabari saat pesanan mulai dikerjakan dan ketika sudah selesai.', '#7dd3fc', $chatIcon],
-            ['Harga per bintang jelas', 'Setiap rank punya harga per bintang, jadi total biaya mudah dihitung.', '#fcd34d', 'M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-8.1-8.1a2 2 0 0 1-.5-1.4V4a2 2 0 0 1 2-2h7.1a2 2 0 0 1 1.4.6l8.1 8.1a2 2 0 0 1 0 2.7ZM7.5 7.5h.01'],
+            ['Harga jelas', 'Pilih harga per bintang atau paket dari rank awal sampai rank tujuan.', '#fcd34d', 'M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-8.1-8.1a2 2 0 0 1-.5-1.4V4a2 2 0 0 1 2-2h7.1a2 2 0 0 1 1.4.6l8.1 8.1a2 2 0 0 1 0 2.7ZM7.5 7.5h.01'],
         ];
         $steps = [
             ['Pilih rank', 'Lihat tangga rank dan tentukan jumlah bintang yang ingin dinaikkan.', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', false],
@@ -46,7 +52,20 @@
                             <h2 id="joki-form-title" class="font-bold">Masukkan Data Akun</h2>
                         </div>
                         <div class="grid gap-5 p-5 md:grid-cols-2 md:p-6">
-                            <div>
+                            <div class="md:col-span-2">
+                                <label class="label" for="joki-package">Pilih paket</label>
+                                <select id="joki-package" class="field" name="package">
+                                    <option value="">Per bintang (isi rank dan jumlah bintang)</option>
+                                    @foreach ($packageGroups as $groupName => $packages)
+                                        <optgroup label="{{ $groupName }}">
+                                            @foreach ($packages as [$packageName, $packagePrice])
+                                                <option value="{{ $packageName }}" data-price="{{ $packagePrice }}">{{ $packageName }} ({{ $rupiah($packagePrice) }})</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div data-joki-per-star>
                                 <label class="label" for="joki-rank">Rank saat ini</label>
                                 <select id="joki-rank" class="field" name="rank" required>
                                     @foreach ($ranks as [$name, $price])
@@ -54,7 +73,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div>
+                            <div data-joki-per-star>
                                 <label class="label" for="joki-stars">Jumlah bintang</label>
                                 <input id="joki-stars" class="field" type="number" name="stars" min="1" max="500" required placeholder="Contoh: 10">
                             </div>
@@ -125,8 +144,8 @@
                 <div class="p-6">
                     <span class="joki-icon relative -mt-14 size-20 overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/joki/mobile-legends.webp') }}" alt="Logo Mobile Legends" width="160" height="160"></span>
                     <h3 class="mt-4 text-xl font-bold">Joki Mobile Legends</h3>
-                    <p class="muted mt-2">Joki rank dari Epic sampai Mythical Immortal. Harga menyesuaikan rank saat ini.</p>
-                    <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="status text-slate-300">{{ count($ranks) }} tingkat rank</span><span class="status text-slate-300">Harga per bintang</span></div>
+                    <p class="muted mt-2">Joki rank dari Epic sampai Mythical Immortal. Bayar per bintang atau pilih paket sampai rank tujuan.</p>
+                    <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="status text-slate-300">{{ count($ranks) }} tingkat rank</span><span class="status text-slate-300">Harga per bintang</span><span class="status text-slate-300">{{ collect($packageGroups)->flatten(1)->count() }} paket</span></div>
                     <div class="mt-6 flex flex-wrap items-end justify-between gap-4">
                         <div>
                             <p class="muted">mulai</p>
@@ -138,6 +157,35 @@
                     </div>
                 </div>
             </article>
+        </section>
+
+        <section aria-labelledby="joki-paket">
+            <div class="flex items-center gap-4">
+                <span class="joki-mark"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 8 12 3 3 8l9 5 9-5ZM3 8v8l9 5 9-5V8M12 13v8" /></svg></span>
+                <div>
+                    <h2 id="joki-paket" class="text-2xl font-bold tracking-tight">Paket Joki</h2>
+                    <p class="muted">{{ $whatsappNumber ? 'Sekali bayar dari rank awal sampai rank tujuan. Klik paket untuk memesan.' : 'Sekali bayar dari rank awal sampai rank tujuan.' }}</p>
+                </div>
+            </div>
+            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                @foreach ($packageGroups as $groupName => $packages)
+                    <div class="joki-card p-4 md:p-5">
+                        <h3 class="mb-3 font-bold">{{ $groupName }}</h3>
+                        <ul class="space-y-2">
+                            @foreach ($packages as [$packageName, $packagePrice])
+                                <li>
+                                    @php($tag = $whatsappNumber ? 'a' : 'div')
+                                    <{{ $tag }} class="flex items-center justify-between gap-3 rounded-xl border border-[#a9c3ff]/15 bg-[#0b1230] px-3 py-2.5 text-sm transition hover:border-lime-300/50"
+                                        @if ($whatsappNumber) href="#pesan" data-joki-package="{{ $packageName }}" aria-label="Pesan paket {{ $packageName }}, {{ $rupiah($packagePrice) }}" @endif>
+                                        <span class="min-w-0 font-semibold">{{ $packageName }}</span>
+                                        <span class="shrink-0 font-black text-lime-300">{{ $rupiah($packagePrice) }}</span>
+                                    </{{ $tag }}>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endforeach
+            </div>
         </section>
 
         <section aria-labelledby="joki-cara">

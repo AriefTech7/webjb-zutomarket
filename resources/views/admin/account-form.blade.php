@@ -1,6 +1,7 @@
 @extends('layouts.admin')
-@section('title', $account->exists ? 'Edit akun' : 'Tambah akun')
-@section('admin-title', $account->exists ? 'Edit akun game' : 'Tambah akun game')
+@php($isRentalForm = (bool) old('is_rental', $account->exists ? $account->is_rental : request()->boolean('rental')))
+@section('title', ($account->exists ? 'Edit' : 'Tambah').($isRentalForm ? ' akun rental' : ' akun'))
+@section('admin-title', ($account->exists ? 'Edit' : 'Tambah').($isRentalForm ? ' akun rental' : ' akun game'))
 @section('admin-content')
     <form method="POST" enctype="multipart/form-data"
         action="{{ $account->exists ? route('admin.accounts.update', $account) : route('admin.accounts.store') }}"
@@ -25,9 +26,10 @@
                         terlebih dahulu →</a>
                 @endif
             </div>
-            <div><label class="label" for="price">Harga (Rupiah, kosongkan untuk akun rental)</label><input class="field" id="price"
+            @unless ($isRentalForm)
+            <div><label class="label" for="price">Harga (Rupiah)</label><input class="field" id="price"
                     name="price" type="number" min="0" max="999999999999" step="1"
-                    value="{{ old('price', $account->price) }}"></div>
+                    value="{{ old('price', $account->price) }}" required></div>
             <div><label class="label" for="original_price">Harga coret (opsional)</label><input class="field"
                     id="original_price" name="original_price" type="number" min="0" max="999999999999" step="1"
                     value="{{ old('original_price', $account->original_price) }}" placeholder="Harga sebelum diskon">
@@ -38,6 +40,7 @@
                     value="{{ old('flash_sale_ends_at', $account->flash_sale_ends_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}">
                 <p class="muted mt-2 text-xs">Waktu WIB. Akun tampil di halaman Flash Sale sampai waktu ini. Kosongkan jika tidak ikut flash sale.</p>
             </div>
+            @endunless
         </div>
         <div><label class="label" for="description">Deskripsi</label>
             <textarea class="field" id="description" name="description" rows="4" required>{{ old('description', $account->description) }}</textarea>
@@ -49,15 +52,16 @@
                 pembeli.</p>
         </div>
         <div><label class="label" for="status">Status akun</label><select class="field" id="status" name="status">
-                @foreach (['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia / siap disewa', 'sold' => 'Terjual', 'rented' => 'Sedang disewa (khusus rental)'] as $value => $label)
+                @foreach ($isRentalForm ? ['draft' => 'Draft / disembunyikan', 'available' => 'Siap disewa', 'rented' => 'Sedang disewa'] : ['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia', 'sold' => 'Terjual'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('status', $account->status ?? 'draft') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
         </div>
+        <input type="hidden" name="is_rental" value="{{ $isRentalForm ? 1 : 0 }}">
+        @if ($isRentalForm)
         @php($packageRows = array_pad(array_values(old('packages', $account->rentalPackages->map(fn ($package) => ['duration' => $package->duration, 'price' => $package->price])->all())), 6, ['duration' => '', 'price' => '']))
         <fieldset class="panel space-y-4 p-5">
-            <legend class="sr-only">Rental akun</legend>
-            <label class="flex items-center gap-3 font-semibold"><input type="hidden" name="is_rental" value="0"><input type="checkbox" name="is_rental" value="1" class="size-5" @checked(old('is_rental', $account->is_rental))> Akun rental (disewakan, tidak dijual)</label>
+            <legend class="font-semibold">Paket sewa</legend>
             <p class="muted text-xs">Akun rental tampil di halaman Rental, bukan di katalog jual. Harga akun otomatis memakai paket termurah.</p>
             <div>
                 <p class="label">Paket sewa (maksimal 6)</p>
@@ -74,6 +78,7 @@
                     id="ready_estimate_at" name="ready_estimate_at" type="datetime-local"
                     value="{{ old('ready_estimate_at', $account->ready_estimate_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}"></div>
         </fieldset>
+        @endif
         <div><label class="label" for="seller_whatsapp">Nomor WhatsApp penjual (opsional)</label><input class="field"
                 id="seller_whatsapp" name="seller_whatsapp" inputmode="numeric" maxlength="15"
                 value="{{ old('seller_whatsapp', $account->seller_whatsapp) }}" placeholder="6281234567890">
@@ -103,6 +108,6 @@
             @endif
         </div>
         <div class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap"><button class="btn">Simpan akun</button><a class="btn-secondary"
-                href="{{ route('admin.accounts') }}">Batal</a></div>
+                href="{{ route(($account->exists ? $account->is_rental : request()->boolean('rental')) ? 'admin.rentals' : 'admin.accounts') }}">Batal</a></div>
     </form>
 @endsection

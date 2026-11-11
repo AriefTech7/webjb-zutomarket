@@ -4,6 +4,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem('zutomarket-theme') === 'light' ? 'light' : 'dark';
+        } catch {
+            document.documentElement.dataset.theme = 'dark';
+        }
+    </script>
     <title>@yield('title', 'ZutoMarket') · {{ \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO') }}</title>
     <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/icons/favicon-48.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/icons/icon-192.png') }}">
@@ -34,14 +41,14 @@
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
-        <div class="shell flex h-20 items-center justify-between gap-4">
-            <a href="{{ route('catalog') }}" class="flex min-w-0 items-center gap-3"
+        <div class="shell flex h-20 items-center gap-4">
+            <a href="{{ route('catalog') }}" class="mr-auto flex min-w-0 items-center gap-3"
                 aria-label="{{ $storeName }}"><img src="{{ asset('images/zuto-wordmark.webp') }}"
                     alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark"><span
                     class="sr-only">{{ $storeName }}</span></a>
             @unless (request()->is('admin*'))
             <nav class="hidden items-center gap-4 xl:flex" aria-label="Navigasi utama"><a
-                    class="nav-link {{ request()->routeIs('catalog', 'categories.show') ? 'text-white bg-white/5' : '' }}"
+                    class="nav-link {{ request()->routeIs('catalog', 'catalog.all', 'categories.show') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('catalog') }}">Home</a><a
                     class="nav-link {{ request()->routeIs('rental') ? 'text-white bg-white/5' : '' }}"
                     href="{{ route('rental') }}">Rental Akun</a><a
@@ -53,6 +60,10 @@
                     href="{{ route('profile') }}">Akun</a>
             </nav>
             @endunless
+            <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Ganti ke mode terang">
+                <svg class="theme-icon-sun h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+                <svg class="theme-icon-moon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+            </button>
         </div>
     </header>
     <main class="flex-1">
@@ -75,41 +86,29 @@
         @endif
         @yield('content')
     </main>
-    <footer class="mt-16 border-t border-[#a9c3ff]/15 py-8">
-        <div class="shell flex flex-col justify-between gap-4 sm:flex-row">
-            <div class="flex items-center gap-3">
-                <div><img src="{{ asset('images/zuto-wordmark.webp') }}" alt="{{ $storeName }}" width="1199"
-                        height="422" class="brand-wordmark">
-                    <p class="muted mt-1">Akun pilihan Petualangan baru</p>
-                </div>
+    <footer class="mt-16 border-t border-[#a9c3ff]/15 py-10">
+        <div class="shell grid gap-8 md:grid-cols-[1.5fr_1fr]">
+            <div>
+                <a href="{{ route('catalog') }}" class="inline-flex items-center gap-3">
+                    <img class="size-10 rounded-xl" src="{{ asset('images/icons/icon-192.png') }}" alt="" width="40" height="40">
+                    <span class="text-2xl font-black tracking-tight text-white">Zuto<span class="text-lime-300">Market</span></span>
+                </a>
+                <p class="mt-4 max-w-md leading-7 text-slate-400">Tempat jual beli akun game, rental akun, dan joki rank Mobile Legends, dengan transaksi langsung melalui WhatsApp admin.</p>
             </div>
-            <div class="w-full sm:max-w-md sm:text-right">
-                <p class="muted">© {{ date('Y') }} {{ $storeName }}.</p>
-                <a href="{{ route('how') }}"
-                    class="mt-1 inline-block text-sm text-slate-400 transition hover:text-lime-300">Transaksi
-                    dilanjutkan melalui WhatsApp ↗</a>
-                <p class="mt-1 text-xs text-slate-500">Created By OzinVoid</p>
-                <nav class="mt-4 grid gap-2 sm:grid-cols-2" aria-label="Ikuti {{ $storeName }}">
-                    <a href="https://whatsapp.com/channel/0029VbE83IN3mFXxE4NlTG0L" target="_blank"
-                        rel="noopener noreferrer"
-                        class="group flex items-center gap-3 rounded-xl border border-[#a9c3ff]/15 bg-white/[0.03] p-3 text-left transition hover:border-lime-300/40 hover:bg-lime-300/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300">
-                        <span
-                            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-lime-300/10 text-lime-300"
-                            aria-hidden="true">↗</span>
-                        <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-slate-100">Saluran
-                                WhatsApp</span><span class="block truncate text-xs text-slate-400">Ikuti update
-                                terbaru</span></span>
-                    </a>
-                    <a href="https://www.instagram.com/zutomarket.id" target="_blank" rel="noopener noreferrer"
-                        class="group flex items-center gap-3 rounded-xl border border-[#a9c3ff]/15 bg-white/[0.03] p-3 text-left transition hover:border-lime-300/40 hover:bg-lime-300/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300">
-                        <span
-                            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-lime-300/10 text-lime-300"
-                            aria-hidden="true">◎</span>
-                        <span class="min-w-0 flex-1"><span
-                                class="block text-sm font-semibold text-slate-100">Instagram</span><span
-                                class="block truncate text-xs text-slate-400">@zutomarket.id</span></span>
-                    </a>
-                </nav>
+            <div>
+                <h2 class="font-bold text-white">Sinyal Trust</h2>
+                <ul class="mt-4 space-y-3 text-sm text-slate-400">
+                    @foreach ([['Transaksi aman dan data akun jelas', 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4'], ['Proses cepat setelah pembayaran', 'M13 2 4 14h7l-1 8 9-12h-7l1-8Z'], ['Transaksi langsung dengan admin via WhatsApp', 'M3 14v-2a9 9 0 0 1 18 0v2M3 14a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2v1ZM21 14a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2v1ZM18 16v1a3 3 0 0 1-3 3h-3']] as [$trustText, $trustIcon])
+                        <li class="flex items-center gap-3"><svg class="h-5 w-5 shrink-0 text-lime-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $trustIcon }}" /></svg>{{ $trustText }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+        <div class="shell mt-8">
+            <div class="flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                <p>© {{ date('Y') }} {{ $storeName }}.</p>
+                <a href="{{ route('how') }}" class="transition hover:text-lime-300">Transaksi dilanjutkan melalui WhatsApp ↗</a>
+                <p>Created By OzinVoid</p>
             </div>
         </div>
     </footer>
@@ -143,7 +142,7 @@
         <nav class="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md rounded-2xl border border-white/20 bg-[#34416e]/70 p-1 shadow-xl shadow-[#020617]/50 backdrop-blur-xl xl:hidden"
             aria-label="Navigasi bawah">
             <div class="grid grid-cols-5">
-                @foreach (['catalog' => ['Home', ['catalog', 'categories.show']], 'rental' => ['Rental Akun', ['rental']], 'joki' => ['Joki ML', ['joki']], 'about' => ['Tentang', ['about']], 'profile' => ['Akun', ['profile']]] as $route => [$label, $activeRoutes])
+                @foreach (['catalog' => ['Home', ['catalog', 'catalog.all', 'categories.show']], 'rental' => ['Rental Akun', ['rental']], 'joki' => ['Joki ML', ['joki']], 'about' => ['Tentang', ['about']], 'profile' => ['Akun', ['profile']]] as $route => [$label, $activeRoutes])
                     @php($isActive = request()->routeIs(...$activeRoutes))
                     @php($isCenter = $route === 'joki')
                     <a href="{{ route($route) }}"

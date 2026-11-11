@@ -2,6 +2,9 @@
     @forelse ($accounts as $account)
         <li class="panel min-w-0 p-4">
             <div class="flex items-start gap-3">
+                @if ($bulk ?? false)
+                    <input type="checkbox" class="mt-4 size-5 shrink-0" form="bulk-delete" name="ids[]" value="{{ $account->id }}" data-bulk-item aria-label="Pilih {{ $account->title }}">
+                @endif
                 <img class="h-14 w-16 shrink-0 rounded-lg object-cover" src="{{ $account->imageUrl() }}" alt="" loading="lazy">
                 <div class="min-w-0 flex-1">
                     <p class="break-words text-sm font-semibold">{{ $account->title }}</p>
@@ -30,6 +33,9 @@
     <table class="w-full min-w-[650px] text-left text-sm">
         <thead class="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500">
             <tr>
+                @if ($bulk ?? false)
+                    <th class="w-10 py-5 pl-5"><span class="sr-only">Pilih</span></th>
+                @endif
                 <th class="p-5">Akun game</th>
                 <th class="p-5">Harga</th>
                 <th class="p-5">Status</th>
@@ -39,6 +45,9 @@
         <tbody>
             @forelse($accounts as $account)
                 <tr class="border-b border-white/5">
+                    @if ($bulk ?? false)
+                        <td class="py-5 pl-5"><input type="checkbox" class="size-5" form="bulk-delete" name="ids[]" value="{{ $account->id }}" data-bulk-item aria-label="Pilih {{ $account->title }}"></td>
+                    @endif
                     <td class="p-5">
                         <div class="flex items-center gap-3"><img class="h-12 w-16 rounded-lg object-cover"
                                 src="{{ $account->imageUrl() }}" alt="">
@@ -62,7 +71,7 @@
                         </div>
                     </td>
             </tr>@empty<tr>
-                    <td colspan="4" class="p-10 text-center text-slate-400">{{ $emptyMessage ?? 'Belum ada akun. Tambahkan akun pertamamu.' }}
+                    <td colspan="{{ ($bulk ?? false) ? 5 : 4 }}" class="p-10 text-center text-slate-400">{{ $emptyMessage ?? 'Belum ada akun. Tambahkan akun pertamamu.' }}
                     </td>
                 </tr>
             @endforelse
