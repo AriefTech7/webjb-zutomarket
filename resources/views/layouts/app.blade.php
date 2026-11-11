@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         try {
             document.documentElement.dataset.theme = localStorage.getItem('zutomarket-theme') === 'light' ? 'light' : 'dark';
@@ -37,7 +38,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}">
+@php($buyer = auth()->user()?->is_admin === false ? auth()->user() : null)
+<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}"
+    @if ($buyer) data-account-profile="{{ json_encode(['name' => $buyer->name, 'phone' => (string) $buyer->whatsapp]) }}" data-account-wishlist="{{ route('account.wishlist') }}"
+        data-account-wishlist-ids="{{ json_encode($buyer->wishlistIds()) }}" @if (session('wishlist_merge')) data-account-wishlist-merge="1" @endif @endif>
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
@@ -87,14 +91,38 @@
         @endif
         @yield('content')
     </main>
-    <footer class="mt-16 border-t border-[#a9c3ff]/15 py-10">
-        <div class="shell grid gap-8 md:grid-cols-[1.5fr_1fr]">
+    @php($footerWhatsapp = preg_replace('/\D+/', '', \App\Models\Setting::valueFor('whatsapp_number')))
+    @php($footerGames = request()->is('admin*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
+    <footer class="mt-16 border-t border-[#a9c3ff]/15 bg-[#050817]/60 pt-12 pb-8">
+        <div class="shell grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_0.8fr_1.1fr]">
             <div>
                 <a href="{{ route('catalog') }}" class="inline-flex items-center gap-3">
-                    <img class="size-10 rounded-xl" src="{{ asset('images/icons/icon-192.png') }}" alt="" width="40" height="40">
-                    <span class="text-2xl font-black tracking-tight text-white">Zuto<span class="text-lime-300">Market</span></span>
+                    <img class="size-11 rounded-xl" src="{{ asset('images/icons/icon-192.png') }}" alt="" width="44" height="44">
+                    <span class="leading-none"><span class="block text-xl font-black tracking-tight text-white">ZUTO</span><span class="text-[11px] font-black tracking-[0.3em] text-lime-300">MARKET</span></span>
                 </a>
-                <p class="mt-4 max-w-md leading-7 text-slate-400">Tempat jual beli akun game, rental akun, dan joki rank Mobile Legends, dengan transaksi langsung melalui WhatsApp admin.</p>
+                <p class="mt-4 max-w-sm text-sm leading-7 text-slate-400">Tempat jual beli akun game, rental akun, dan joki rank Mobile Legends, dengan transaksi langsung melalui WhatsApp admin.</p>
+                @if ($footerWhatsapp)
+                    <a class="btn mt-5 rounded-full" href="https://wa.me/{{ $footerWhatsapp }}" target="_blank" rel="noopener noreferrer">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z" /></svg>WhatsApp Admin</a>
+                @endif
+            </div>
+            @if ($footerGames->isNotEmpty())
+                <div>
+                    <h2 class="flex items-center gap-2 font-bold text-white"><svg class="h-5 w-5 text-lime-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.5 7h9a4 4 0 0 1 3.9 3.1l1.1 6.1a2.5 2.5 0 0 1-4.2 2.2L14.5 16h-5l-2.8 2.4a2.5 2.5 0 0 1-4.2-2.2l1.1-6.1A4 4 0 0 1 7.5 7ZM7.5 10v5M5 12.5h5" /></svg>Game Tersedia</h2>
+                    <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
+                        @foreach ($footerGames as $footerGame)
+                            <li><a class="transition hover:text-lime-300" href="{{ route('categories.show', $footerGame->slug) }}">{{ $footerGame->name }}</a></li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <div>
+                <h2 class="font-bold text-white">Menu</h2>
+                <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
+                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['how', 'Cara Transaksi'], ['feedback', 'Kritik & Saran']] as [$footerRoute, $footerLabel])
+                        <li><a class="transition hover:text-lime-300" href="{{ route($footerRoute) }}">{{ $footerLabel }}</a></li>
+                    @endforeach
+                </ul>
             </div>
             <div>
                 <h2 class="font-bold text-white">Sinyal Trust</h2>
@@ -105,11 +133,17 @@
                 </ul>
             </div>
         </div>
-        <div class="shell mt-8">
-            <div class="flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                <p>© {{ date('Y') }} {{ $storeName }}.</p>
-                <a href="{{ route('how') }}" class="transition hover:text-lime-300">Transaksi dilanjutkan melalui WhatsApp ↗</a>
-                <p>Created By OzinVoid</p>
+        <div class="shell mt-10">
+            <div class="flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <p>© {{ date('Y') }} ZutoMarket. Platform jual beli akun game.</p>
+                    <p class="font-bold text-lime-300">Created By OzinVoid</p>
+                </div>
+                <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Tautan footer">
+                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['privacy', 'Kebijakan Privasi']] as [$footerRoute, $footerLabel])
+                        <a class="transition hover:text-lime-300" href="{{ route($footerRoute) }}">{{ $footerLabel }}</a>
+                    @endforeach
+                </nav>
             </div>
         </div>
     </footer>

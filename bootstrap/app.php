@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO);
+        $middleware->alias(['admin' => EnsureUserIsAdmin::class]);
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin*') ? route('login') : route('account.login'));
+        $middleware->redirectUsersTo(fn (Request $request) => $request->user()?->is_admin ? route('admin.dashboard') : route('profile'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (PostTooLargeException $exception, Request $request) {

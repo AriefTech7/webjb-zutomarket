@@ -3,8 +3,8 @@ import { initialiseFeedbackForm } from './feedback';
 import { initialiseInstallPrompt } from './install';
 import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
-import { initialiseProfile } from './profile';
-import { initialiseWishlist } from './wishlist';
+import { initialiseProfile, PROFILE_KEY } from './profile';
+import { initialiseWishlist, WISHLIST_KEY } from './wishlist';
 
 initialiseWishlist();
 initialiseProfile();
@@ -13,6 +13,26 @@ initialiseCountdowns();
 initialiseFeedbackForm();
 initialiseInstallPrompt();
 initialiseThemeToggle();
+
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+    button.addEventListener('click', () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(show));
+        button.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+    });
+});
+
+// Signing out on a shared phone must not leave the account's wishlist or profile behind in this browser.
+document.querySelectorAll('[data-account-logout]').forEach((form) => form.addEventListener('submit', () => {
+    try {
+        localStorage.removeItem(PROFILE_KEY);
+        localStorage.removeItem(WISHLIST_KEY);
+    } catch {
+        // Storage blocked: nothing was stored either.
+    }
+}));
 
 document.querySelectorAll('[data-chip-row]').forEach((row) => {
     const active = row.querySelector('[aria-current="page"]');

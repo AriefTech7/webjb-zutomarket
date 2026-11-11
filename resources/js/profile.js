@@ -31,6 +31,17 @@ export function initialiseProfile() {
         return;
     }
 
+    // Signed-in buyers: mirror the account profile so WhatsApp messages use it.
+    const accountProfile = document.body.dataset.accountProfile;
+    if (accountProfile) {
+        try {
+            const { name, phone } = JSON.parse(accountProfile);
+            storage.setItem(PROFILE_KEY, JSON.stringify({ name: name ?? '', phone: phone ?? '' }));
+        } catch {
+            // Fall back to whatever the browser already has.
+        }
+    }
+
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href^="https://wa.me/"]');
         if (!link) return;

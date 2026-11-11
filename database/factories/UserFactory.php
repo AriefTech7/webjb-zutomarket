@@ -31,7 +31,19 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'is_admin' => true,
         ];
+    }
+
+    /**
+     * A storefront buyer: signs up with an email and has no admin access.
+     */
+    public function buyer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'username' => null,
+            'is_admin' => false,
+        ]);
     }
 
     /**

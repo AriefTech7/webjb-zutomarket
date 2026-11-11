@@ -131,12 +131,40 @@ export function initialiseWishlist() {
         }
     };
 
+    // Signed-in buyers: the account is the source of truth. Right after signing in (merge flag) the
+    // browser's list is added to the account; afterwards every change replaces the account's list.
+    const account = document.body.dataset;
+    const pushToAccount = async (merge = false) => {
+        if (!account.accountWishlist) return;
+        try {
+            const response = await fetch(account.accountWishlist, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                body: JSON.stringify({ ids: store.ids(), merge }),
+            });
+            if (!response.ok) return;
+            const result = await response.json();
+            if (merge && Array.isArray(result.ids)) {
+                store.replace(result.ids);
+                refresh();
+            }
+        } catch {
+            // Offline or blocked: the browser copy is kept and pushed again on the next change.
+        }
+    };
+
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-wishlist-toggle]');
         if (!button || button.disabled) return;
         try {
             const id = Number(button.dataset.wishlistToggle);
             const ids = store.toggle(id);
+            void pushToAccount();
             synchronise();
             announce(ids.includes(id) ? 'Akun ditambahkan ke wishlist.' : 'Akun dihapus dari wishlist.');
             void loadPage();
@@ -159,5 +187,16 @@ export function initialiseWishlist() {
     });
     window.addEventListener('pageshow', (event) => { if (event.persisted) refresh(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+    if (account.accountWishlist) {
+        if (account.accountWishlistMerge) {
+            void pushToAccount(true);
+        } else {
+            try {
+                store.replace(JSON.parse(account.accountWishlistIds ?? '[]'));
+            } catch {
+                // Keep the browser copy if the saved list cannot be read.
+            }
+        }
+    }
     refresh();
 }
