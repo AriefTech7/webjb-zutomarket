@@ -42,6 +42,10 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/categories', [AdminController::class, 'saveCategory'])->name('categories.store');
     Route::put('/categories/{category}', [AdminController::class, 'saveCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [AdminController::class, 'deleteCategory'])->name('categories.destroy');
+    Route::get('/infos', [AdminController::class, 'infos'])->name('infos');
+    Route::post('/infos', [AdminController::class, 'saveInfo'])->name('infos.store');
+    Route::put('/infos/{info}', [AdminController::class, 'saveInfo'])->name('infos.update');
+    Route::delete('/infos/{info}', [AdminController::class, 'deleteInfo'])->name('infos.destroy');
     Route::get('/contacts', [AdminController::class, 'contacts'])->name('contacts');
     Route::post('/contacts', [AdminController::class, 'saveContact'])->name('contacts.store');
     Route::put('/contacts/{contact}', [AdminController::class, 'saveContact'])->name('contacts.update');

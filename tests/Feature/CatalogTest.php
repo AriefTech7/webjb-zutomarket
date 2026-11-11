@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ContactLink;
 use App\Models\GameAccount;
+use App\Models\InfoPost;
 use App\Models\ManualSale;
 use App\Models\Setting;
 use App\Models\User;
@@ -636,14 +637,14 @@ class CatalogTest extends TestCase
 
         $response = $this->get('/');
 
-        $response->assertOk()->assertSeeInOrder(['Produk Tersedia', 'Flash Sale', 'Rental Akun', 'Produk Terjual']);
+        $response->assertOk()->assertSeeInOrder(['Flash Sale', 'Produk Terbaru', 'Rental Akun', 'Produk Terjual']);
         $this->assertCount(6, $response->viewData('available'));
         $this->assertCount(4, $response->viewData('flashSale'));
         $this->assertCount(4, $response->viewData('rentals'));
         $this->assertCount(4, $response->viewData('sold'));
-        $this->assertSame(13, $response->viewData('availableCount'));
+        $response->assertDontSee('akun siap dibeli')->assertDontSee('akun · berakhir');
         $this->assertSame(['Kilat 0', 'Kilat 1', 'Kilat 2', 'Kilat 3'], $response->viewData('flashSale')->pluck('title')->all());
-        $response->assertSee(route('catalog.all', ['available' => 1]), false)->assertSee(route('flash-sale'), false)->assertSee('5 akun · berakhir dalam');
+        $response->assertSee(route('catalog.all', ['available' => 1]), false)->assertSee(route('flash-sale'), false)->assertSee('Berakhir dalam');
         $response->assertSee('Jelajahi katalog')->assertSee('18 akun ditemukan')->assertSee('<form action="'.route('catalog.all').'#katalog" method="GET"', false)->assertSee('Cari game, rank, hero, skin, atau server...');
         $this->assertSame(2, substr_count($response->getContent(), 'Lihat ›'));
     }
@@ -653,6 +654,21 @@ class CatalogTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Belum ada akun yang tersedia')->assertDontSee('Flash Sale ⚡')->assertDontSee('Produk Terjual')->assertDontSee('id="home-rental"', false);
         $this->get('/?q=mythic&page=2')->assertRedirect(route('catalog.all', ['q' => 'mythic', 'page' => 2]));
         $this->get('/katalog')->assertOk()->assertSee('Katalog akun');
+    }
+
+    public function test_catalog_page_has_chips_product_count_and_status_filter(): void
+    {
+        $category = Category::factory()->create(['name' => 'Mobile Legends']);
+        GameAccount::factory()->for($category)->create(['title' => 'Akun siap jual']);
+        GameAccount::factory()->for($category)->create(['title' => 'Akun laku keras', 'status' => 'sold']);
+
+        $this->get('/katalog')->assertOk()
+            ->assertSeeInOrder(['Home', 'Katalog', 'Semua', 'Mobile Legends', 'Produk Terjual', '2 produk', 'Filter', 'Semua status', 'Terbaru'])
+            ->assertSee('Akun siap jual')->assertSee('Akun laku keras')->assertDontSee('Reset filter');
+        $this->get('/katalog?status=sold')->assertOk()->assertSee('1 produk')->assertSee('Akun laku keras')->assertDontSee('Akun siap jual')
+            ->assertSee('<option value="sold" selected', false)->assertSee('Reset filter');
+        $this->get('/katalog?status=available')->assertOk()->assertSee('Akun siap jual')->assertDontSee('Akun laku keras');
+        $this->get('/katalog?status=draft')->assertSessionHasErrors('status');
     }
 
     public function test_every_page_has_the_theme_toggle_and_sets_the_theme_before_styles_load(): void
@@ -707,6 +723,35 @@ class CatalogTest extends TestCase
             ->assertSee(route('categories.show', 'stok-ml').'#katalog', false)->assertSee('2 akun tersedia');
         $this->get('/katalog?q=mythic')->assertOk()->assertSee('id="header-search" type="search" name="q" value="mythic"', false);
         $this->get('/admin/login')->assertOk()->assertDontSee('id="header-search"', false);
+    }
+
+    public function test_admin_manages_info_posters_shown_on_the_home_page(): void
+    {
+        Storage::fake('public');
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        $this->get('/admin/infos')->assertRedirect('/admin/login');
+        $this->get('/')->assertOk()->assertDontSee('Info Terbaru');
+        $this->actingAs(User::factory()->create());
+
+        $this->post('/admin/infos', ['title' => 'Cara beli akun', 'image' => UploadedFile::fake()->createWithContent('cara.png', $png), 'sort_order' => 2])->assertSessionHasNoErrors();
+        $this->post('/admin/infos', ['title' => 'Cek akun FF', 'image' => UploadedFile::fake()->createWithContent('cek.png', $png), 'link_url' => 'https://zutomarket.id/joki-ml', 'sort_order' => 1])->assertSessionHasNoErrors();
+        $first = InfoPost::where('title', 'Cara beli akun')->firstOrFail();
+        Storage::disk('public')->assertExists($first->image_path);
+
+        $this->get('/')->assertOk()->assertSee('Info Terbaru')->assertSeeInOrder(['aria-label="Cek akun FF"', 'aria-label="Cara beli akun"'], false)
+            ->assertSee('href="https://zutomarket.id/joki-ml"', false)->assertSee('href="'.$first->imageUrl().'"', false);
+
+        $this->post('/admin/infos', ['title' => 'Tanpa gambar'])->assertSessionHasErrors('image');
+        $this->post('/admin/infos', ['title' => 'Salah', 'image' => UploadedFile::fake()->createWithContent('x.png', $png), 'link_url' => 'zutomarket.id'])->assertSessionHasErrors(['link_url' => 'Isi tautan lengkap yang diawali https://.']);
+
+        $oldPath = $first->image_path;
+        $this->put('/admin/infos/'.$first->id, ['title' => 'Cara beli akun baru', 'image' => UploadedFile::fake()->createWithContent('baru.png', $png)])->assertSessionHasNoErrors();
+        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertSame('Cara beli akun baru', $first->fresh()->title);
+
+        $this->delete('/admin/infos/'.$first->id)->assertRedirect();
+        Storage::disk('public')->assertMissing($first->fresh()?->image_path ?? 'info/none');
+        $this->assertDatabaseMissing('info_posts', ['id' => $first->id]);
     }
 
     public function test_removed_optional_features_are_not_publicly_reachable(): void

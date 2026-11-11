@@ -32,6 +32,23 @@ document.querySelectorAll('[data-tabs]').forEach((list) => {
     }));
 });
 
+document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector('[data-carousel-track]');
+    const prev = carousel.querySelector('[data-carousel-prev]');
+    const next = carousel.querySelector('[data-carousel-next]');
+    const step = () => Math.max(track.clientWidth * 0.8, 160);
+    // Arrows only make sense when the posters overflow the strip.
+    const toggleArrows = () => {
+        const scrollable = track.scrollWidth > track.clientWidth + 1;
+        [prev, next].forEach((button) => button?.classList.toggle('md:flex', scrollable));
+    };
+    prev?.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    next?.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
+    window.addEventListener('resize', toggleArrows);
+    track.querySelectorAll('img').forEach((image) => image.addEventListener('load', toggleArrows));
+    toggleArrows();
+});
+
 document.querySelectorAll('[data-bulk-delete]').forEach((form) => {
     const items = [...document.querySelectorAll(`[data-bulk-item][form="${form.id}"]`)];
     const selectAll = form.querySelector('[data-bulk-all]');

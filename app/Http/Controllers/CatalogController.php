@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\GameAccount;
+use App\Models\InfoPost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,15 +13,16 @@ class CatalogController extends Controller
 {
     public function index(Request $request, ?Category $category = null): View
     {
-        $data = $request->validate(['q' => 'nullable|string|max:100', 'category' => 'nullable|string|max:255', 'sort' => 'nullable|in:newest,price_low,price_high', 'available' => 'nullable|in:1']);
+        $data = $request->validate(['q' => 'nullable|string|max:100', 'category' => 'nullable|string|max:255', 'sort' => 'nullable|in:newest,price_low,price_high', 'available' => 'nullable|in:1', 'status' => 'nullable|in:available,sold']);
+        $status = $data['status'] ?? ($request->boolean('available') ? 'available' : null);
         $selected = $category?->slug ?? ($data['category'] ?? '');
         $query = GameAccount::with('category')->forSale()->whereIn('status', ['available', 'sold']);
         if ($selected) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $selected));
         }
         $query->search($data['q'] ?? '');
-        if ($request->boolean('available')) {
-            $query->where('status', 'available');
+        if ($status) {
+            $query->where('status', $status);
         }
         match ($data['sort'] ?? 'newest') {
             'price_low' => $query->orderBy('price'),
@@ -32,6 +34,7 @@ class CatalogController extends Controller
             'accounts' => $query->orderByDesc('id')->paginate(12)->withQueryString(),
             'categories' => Category::withCount(['accounts' => fn ($q) => $q->forSale()->where('status', 'available')])->orderBy('name')->get(),
             'selected' => $selected,
+            'status' => $status,
         ]);
     }
 
@@ -45,12 +48,12 @@ class CatalogController extends Controller
         return view('catalog.home', [
             'categories' => Category::withCount(['accounts' => fn ($q) => $q->forSale()->where('status', 'available')])->orderBy('name')->get(),
             'catalogTotal' => GameAccount::forSale()->whereIn('status', ['available', 'sold'])->count(),
-            'availableCount' => (clone $availableForSale)->count(),
             'available' => $availableForSale->latest()->orderByDesc('id')->limit(6)->get(),
             'flashSaleCount' => GameAccount::onFlashSale()->count(),
             'flashSale' => GameAccount::with('category')->onFlashSale()->orderBy('flash_sale_ends_at')->orderByDesc('id')->limit(4)->get(),
             'rentals' => GameAccount::with(['category', 'rentalPackages'])->rental()->orderByRaw("CASE WHEN status = 'available' THEN 0 ELSE 1 END")->latest()->orderByDesc('id')->limit(4)->get(),
             'sold' => GameAccount::with('category')->forSale()->where('status', 'sold')->orderByDesc('sold_at')->orderByDesc('id')->limit(4)->get(),
+            'infos' => InfoPost::ordered()->limit(12)->get(),
         ]);
     }
 

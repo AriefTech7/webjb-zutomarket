@@ -6,10 +6,10 @@
         <nav class="muted mb-5 flex flex-wrap gap-2 text-xs md:text-sm" aria-label="Breadcrumb"><a class="hover:text-white" href="{{ route('catalog') }}">Beranda</a><span>/</span><a
                 class="hover:text-white" href="{{ $account->is_rental ? route('rental') : route('catalog.all') }}">{{ $account->is_rental ? 'Rental' : 'Produk' }}</a><span>/</span><span class="text-slate-300">{{ $account->title }}</span></nav>
         <div class="grid gap-5 lg:grid-cols-[1.1fr_1fr] lg:gap-6">
-            <div class="panel h-fit p-3 md:p-4">
-                <div class="overflow-hidden rounded-xl bg-[#080f25]">
+            <div class="panel flex flex-col p-3 md:p-4">
+                <div class="relative overflow-hidden rounded-xl bg-[#080f25] lg:min-h-[28rem] lg:flex-1">
                     <img data-main-image src="{{ $account->imageUrl() }}" alt="{{ $account->title }}"
-                        class="aspect-[4/5] w-full {{ str_starts_with($account->main_image, 'images/') ? 'object-cover' : 'object-contain' }}">
+                        class="aspect-[4/5] w-full lg:absolute lg:inset-0 lg:aspect-auto lg:h-full {{ str_starts_with($account->main_image, 'images/') ? 'object-cover' : 'object-contain' }}">
                 </div>
                 @if ($account->images->isNotEmpty())
                     <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -29,7 +29,7 @@
                 @endif
             </div>
 
-            <div class="panel h-fit p-5 md:p-6">
+            <div class="panel p-5 md:p-6">
                 <p class="text-xs font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</p>
                 <h1 class="mt-2 text-2xl font-black leading-tight md:text-4xl">{{ $account->title }}</h1>
                 <span class="status mt-3 {{ $account->status === 'available' ? 'text-lime-300' : ($account->is_rental ? 'text-amber-300' : 'text-rose-300') }}">{{ $account->status === 'available' ? ($account->is_rental ? '● Siap disewa' : '● Tersedia') : ($account->is_rental ? 'Sedang disewa' : 'Terjual') }}</span>
