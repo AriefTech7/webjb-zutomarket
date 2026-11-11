@@ -91,6 +91,8 @@
         @endif
         @yield('content')
     </main>
+    {{-- The account and sign-in pages stay focused on the card, so they have no footer. --}}
+    @unless (request()->routeIs('profile', 'account.login', 'account.register', 'password.request', 'password.reset'))
     @php($footerWhatsapp = preg_replace('/\D+/', '', \App\Models\Setting::valueFor('whatsapp_number')))
     @php($footerGames = request()->is('admin*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
     <footer class="mt-16 border-t border-[#a9c3ff]/15 bg-[#050817]/60 pt-12 pb-8">
@@ -147,6 +149,7 @@
             </div>
         </div>
     </footer>
+    @endunless
     @unless (request()->is('admin*'))
         <div data-install-prompt hidden role="dialog" aria-labelledby="install-title"
             class="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md xl:inset-x-auto xl:bottom-6 xl:right-6 xl:w-[26rem]">

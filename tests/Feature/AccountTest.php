@@ -164,6 +164,11 @@ class AccountTest extends TestCase
 
         $this->get('/')->assertOk()->assertSee('Game Tersedia')->assertSee(route('categories.show', 'free-fire'), false)
             ->assertSee('WhatsApp Admin')->assertSee('Sinyal Trust')->assertSee('Created By')->assertSee('OzinVoid')->assertSee(route('privacy'), false);
-        $this->get('/kebijakan-privasi')->assertOk()->assertSee('Data yang kami simpan');
+        $this->get('/kebijakan-privasi')->assertOk()->assertSee('Data yang kami simpan')->assertSee('Game Tersedia');
+        foreach (['/profil', '/masuk', '/daftar', '/lupa-password'] as $page) {
+            $this->get($page)->assertOk()->assertDontSee('Game Tersedia')->assertDontSee('Sinyal Trust')->assertDontSee('<footer', false);
+        }
+        $this->actingAs(User::factory()->buyer()->create());
+        $this->get('/profil')->assertOk()->assertDontSee('<footer', false);
     }
 }
