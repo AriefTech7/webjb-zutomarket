@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
@@ -148,6 +149,22 @@ class AccountController extends Controller
 
         // Same answer whether or not the email exists, so the form cannot be used to look up accounts.
         return back()->with('success', 'Jika email tersebut terdaftar, tautan untuk membuat password baru sudah dikirim. Cek juga folder spam.');
+    }
+
+    /**
+     * While the server cannot send email: open WhatsApp to the admin with the account email already written,
+     * so the admin can issue a temporary password from Admin > Akun pembeli. Says nothing about whether the email exists.
+     */
+    public function requestResetViaWhatsapp(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $number = preg_replace('/\D+/', '', Setting::valueFor('whatsapp_number'));
+        if ($number === '') {
+            return back()->withErrors(['email' => 'Nomor WhatsApp admin belum diatur. Hubungi admin lewat halaman Tentang.']);
+        }
+        $message = "Halo admin, saya lupa password akun ZutoMarket saya.\nEmail akun: ".Str::lower($data['email'])."\nMohon dibantu password sementara. Terima kasih.";
+
+        return redirect()->away('https://wa.me/'.$number.'?text='.rawurlencode($message));
     }
 
     public function showReset(Request $request, string $token): View

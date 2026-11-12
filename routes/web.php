@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -18,7 +20,8 @@ Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-
 Route::get('/rental', [CatalogController::class, 'rental'])->name('rental');
 Route::view('/tentang', 'catalog.about')->name('about');
 Route::view('/profil', 'catalog.profile')->name('profile');
-Route::view('/kritik-saran', 'catalog.feedback')->name('feedback');
+Route::get('/kritik-saran', [FeedbackController::class, 'create'])->name('feedback');
+Route::post('/kritik-saran', [FeedbackController::class, 'store'])->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
@@ -31,6 +34,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/daftar', [AccountController::class, 'register'])->middleware('throttle:account-auth');
     Route::get('/lupa-password', [AccountController::class, 'showForgot'])->name('password.request');
     Route::post('/lupa-password', [AccountController::class, 'sendResetLink'])->middleware('throttle:account-auth')->name('password.email');
+    Route::post('/lupa-password/whatsapp', [AccountController::class, 'requestResetViaWhatsapp'])->middleware('throttle:account-auth')->name('password.whatsapp');
     Route::get('/reset-password/{token}', [AccountController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [AccountController::class, 'reset'])->middleware('throttle:account-auth')->name('password.update');
     Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
@@ -63,6 +67,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/categories', [AdminController::class, 'saveCategory'])->name('categories.store');
     Route::put('/categories/{category}', [AdminController::class, 'saveCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [AdminController::class, 'deleteCategory'])->name('categories.destroy');
+    Route::get('/buyers', [AdminBuyerController::class, 'index'])->name('buyers');
+    Route::post('/buyers/{user}/password', [AdminBuyerController::class, 'resetPassword'])->name('buyers.password');
+    Route::get('/messages', [FeedbackController::class, 'index'])->name('messages');
+    Route::post('/messages/read-all', [FeedbackController::class, 'markAllRead'])->name('messages.read-all');
+    Route::patch('/messages/{message}/read', [FeedbackController::class, 'markRead'])->name('messages.read');
+    Route::delete('/messages/{message}', [FeedbackController::class, 'destroy'])->name('messages.destroy');
     Route::get('/infos', [AdminController::class, 'infos'])->name('infos');
     Route::post('/infos', [AdminController::class, 'saveInfo'])->name('infos.store');
     Route::put('/infos/{info}', [AdminController::class, 'saveInfo'])->name('infos.update');
