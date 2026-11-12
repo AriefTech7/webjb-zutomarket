@@ -132,6 +132,41 @@ class AccountTest extends TestCase
         $this->get('/profil/password')->assertRedirect(route('account.login'));
     }
 
+    public function test_admin_creates_and_removes_admin_accounts(): void
+    {
+        $owner = User::factory()->create(['username' => 'bos', 'password' => 'rahasia123']);
+        $buyer = User::factory()->buyer()->create(['email' => 'pembeli@example.com']);
+        $new = ['name' => 'Admin Rental', 'username' => 'Admin2', 'email' => 'admin2@example.com', 'password' => 'admin2-kuat', 'password_confirmation' => 'admin2-kuat'];
+
+        $this->post('/admin/admins', $new + ['current_password' => 'rahasia123'])->assertRedirect(route('login'));
+        $this->actingAs($buyer)->get('/admin/admins')->assertForbidden();
+        $this->post('/admin/admins', $new + ['current_password' => 'x'])->assertForbidden();
+
+        $this->actingAs($owner)->get('/admin/admins')->assertOk()->assertSee('Buat akun admin')->assertSee('bos')->assertDontSee('pembeli@example.com');
+        $this->post('/admin/admins', $new + ['current_password' => 'salah'])->assertSessionHasErrors('current_password');
+        $this->post('/admin/admins', array_merge($new, ['current_password' => 'rahasia123', 'username' => 'bos', 'email' => 'pembeli@example.com', 'password_confirmation' => 'beda']))
+            ->assertSessionHasErrors(['username', 'email', 'password']);
+        $this->post('/admin/admins', array_merge($new, ['current_password' => 'rahasia123', 'username' => 'ada spasi']))->assertSessionHasErrors('username');
+        $this->assertSame(1, User::where('is_admin', true)->count());
+
+        $this->post('/admin/admins', $new + ['current_password' => 'rahasia123'])->assertRedirect(route('admin.admins'))->assertSessionHas('success');
+        $admin2 = User::where('username', 'admin2')->firstOrFail();
+        $this->assertTrue($admin2->is_admin);
+        $this->assertSame('admin2@example.com', $admin2->email);
+        $this->get('/admin/admins')->assertSee('admin2')->assertSee('Daftar admin (2)');
+
+        $this->post('/keluar');
+        $this->post('/admin/login', ['username' => 'admin2', 'password' => 'admin2-kuat'])->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($admin2);
+
+        $this->delete('/admin/admins/'.$admin2->id, ['current_password' => 'admin2-kuat'])->assertSessionHasErrors('current_password');
+        $this->assertModelExists($admin2);
+        $this->delete('/admin/admins/'.$buyer->id, ['current_password' => 'admin2-kuat'])->assertNotFound();
+        $this->actingAs($owner)->delete('/admin/admins/'.$admin2->id, ['current_password' => 'salah'])->assertSessionHasErrors('current_password');
+        $this->delete('/admin/admins/'.$admin2->id, ['current_password' => 'rahasia123'])->assertSessionHas('success');
+        $this->assertModelMissing($admin2);
+    }
+
     public function test_admin_issues_a_temporary_password_to_a_buyer(): void
     {
         $buyer = User::factory()->buyer()->create(['name' => 'Lupa Sandi', 'email' => 'lupa@example.com', 'whatsapp' => '0812 3456 7890', 'password' => 'lama12345']);

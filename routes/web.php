@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\FeedbackController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/categories', [AdminController::class, 'saveCategory'])->name('categories.store');
     Route::put('/categories/{category}', [AdminController::class, 'saveCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [AdminController::class, 'deleteCategory'])->name('categories.destroy');
+    Route::get('/admins', [AdminUserController::class, 'index'])->name('admins');
+    Route::post('/admins', [AdminUserController::class, 'store'])->middleware('throttle:admin-accounts')->name('admins.store');
+    Route::delete('/admins/{user}', [AdminUserController::class, 'destroy'])->middleware('throttle:admin-accounts')->name('admins.destroy');
     Route::get('/buyers', [AdminBuyerController::class, 'index'])->name('buyers');
     Route::post('/buyers/{user}/password', [AdminBuyerController::class, 'resetPassword'])->name('buyers.password');
     Route::get('/messages', [FeedbackController::class, 'index'])->name('messages');

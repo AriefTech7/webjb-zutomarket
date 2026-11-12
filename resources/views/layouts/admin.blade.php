@@ -19,7 +19,7 @@
                     @php($unreadMessages = \App\Models\FeedbackMessage::whereNull('read_at')->count())
                     @php($editedAccount = request()->route('account'))
                     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
-                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'categories' => 'Kategori', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
                         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
                         <a href="{{ route('admin.' . $route) }}"
                             class="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-xs transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10 lg:gap-3 lg:px-4 lg:py-3 lg:text-sm {{ $isActiveMenu ? 'border-lime-300/40 bg-lime-300/10 text-lime-300' : 'border-[#a9c3ff]/15 bg-[#a9c3ff]/5 text-slate-400' }}"
@@ -58,6 +58,12 @@
                                         @case('messages')
                                             <rect x="3" y="5" width="18" height="14" rx="2" />
                                             <path d="m3 7 9 6 9-6" />
+                                        @break
+
+                                        @case('admins')
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                                            <circle cx="12" cy="10" r="2.5" />
+                                            <path d="M8.5 16a3.5 3.5 0 0 1 7 0" />
                                         @break
 
                                         @case('buyers')

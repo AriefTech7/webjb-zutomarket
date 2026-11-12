@@ -26,5 +26,8 @@ class AppServiceProvider extends ServiceProvider
             ->by($request->ip()));
         RateLimiter::for('account-auth', fn (Request $request): Limit => Limit::perMinute(10)
             ->by($request->ip()));
+        // Creating or removing admins checks the admin's password, so cap guesses per signed-in admin.
+        RateLimiter::for('admin-accounts', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('admin-accounts:'.($request->user()?->id ?? $request->ip())));
     }
 }
