@@ -28,10 +28,10 @@
             </div>
             @unless ($isRentalForm)
             <div><label class="label" for="price">Harga (Rupiah)</label><input class="field" id="price"
-                    name="price" type="number" min="0" max="999999999999" step="1"
-                    value="{{ old('price', $account->price) }}" required></div>
+                    name="price" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money
+                    value="{{ old('price', $account->price) }}" required placeholder="Contoh: 1.000.000"></div>
             <div><label class="label" for="original_price">Harga coret (opsional)</label><input class="field"
-                    id="original_price" name="original_price" type="number" min="0" max="999999999999" step="1"
+                    id="original_price" name="original_price" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money
                     value="{{ old('original_price', $account->original_price) }}" placeholder="Harga sebelum diskon">
                 <p class="muted mt-2 text-xs">Tampil dicoret di atas harga jual, lengkap dengan persentase diskon.</p>
             </div>
@@ -69,7 +69,7 @@
                     @foreach ($packageRows as $index => $package)
                         <div class="grid grid-cols-2 gap-2">
                             <input class="field" name="packages[{{ $index }}][duration]" value="{{ $package['duration'] ?? '' }}" maxlength="50" placeholder="Contoh: 6 Jam" aria-label="Durasi paket {{ $index + 1 }}">
-                            <input class="field" name="packages[{{ $index }}][price]" type="number" min="0" step="1" value="{{ $package['price'] ?? '' }}" placeholder="Harga" aria-label="Harga paket {{ $index + 1 }}">
+                            <input class="field" name="packages[{{ $index }}][price]" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money value="{{ $package['price'] ?? '' }}" placeholder="Harga" aria-label="Harga paket {{ $index + 1 }}">
                         </div>
                     @endforeach
                 </div>

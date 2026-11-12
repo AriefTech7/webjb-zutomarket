@@ -1,1 +1,0 @@
-<p class="my-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-slate-400"><span class="h-px flex-1 bg-white/10"></span>{{ $text }}<span class="h-px flex-1 bg-white/10"></span></p>
