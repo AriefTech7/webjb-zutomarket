@@ -68,6 +68,35 @@
         .logo-shine > img, .logo-shine::after { animation: none; }
         .logo-shine::after { opacity: 0; }
     }
+    /* Home category cards: staggered entrance, light sweep + lift on hover, icon wiggle, press on tap. */
+    .cat-card {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        animation: cat-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+        animation-delay: calc(var(--i, 0) * 70ms);
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .cat-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: linear-gradient(110deg, transparent 30%, color-mix(in srgb, var(--color-lime-300) 22%, transparent) 50%, transparent 70%);
+        transform: translateX(-120%);
+        transition: transform 0.75s ease;
+        pointer-events: none;
+    }
+    .cat-card:hover, .cat-card:focus-visible { transform: translateY(-3px); box-shadow: 0 12px 30px -14px color-mix(in srgb, var(--color-lime-300) 70%, transparent); }
+    .cat-card:hover::before, .cat-card:focus-visible::before { transform: translateX(120%); }
+    .cat-card:active { transform: scale(0.97); transition-duration: 0.1s; }
+    .cat-card:hover .cat-icon, .cat-card:focus-visible .cat-icon { animation: cat-wiggle 0.6s ease; }
+    .cat-card-live .cat-icon { animation: cat-glow 2.8s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 220ms); }
+    @media (prefers-reduced-motion: reduce) {
+        .cat-card, .cat-card .cat-icon, .cat-card-live .cat-icon { animation: none; }
+        .cat-card, .cat-card::before { transition: none; }
+        .cat-card:hover, .cat-card:focus-visible, .cat-card:active { transform: none; }
+    }
     .marquee { overflow: hidden; color: var(--marquee-text, #ffffff); background: linear-gradient(90deg, var(--marquee-from, #2b55d8), var(--marquee-via, #3a74f0), var(--marquee-from, #2b55d8)); }
     .marquee-track { display: flex; width: max-content; animation: marquee var(--marquee-duration, 30s) linear infinite; }
     .marquee:hover .marquee-track { animation-play-state: paused; }
@@ -89,6 +118,21 @@
     0%, 15% { background-position: 150% 0; }
     55%, 100% { background-position: -50% 0; }
 }
+@keyframes cat-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+}
+
+@keyframes cat-wiggle {
+    0%, 100% { transform: rotate(0) scale(1); }
+    30% { transform: rotate(-14deg) scale(1.2); }
+    60% { transform: rotate(9deg) scale(1.1); }
+}
+
+@keyframes cat-glow {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-lime-300) 80%, transparent)); }
+}
+
 @keyframes marquee {
     to { transform: translateX(-50%); }
 }

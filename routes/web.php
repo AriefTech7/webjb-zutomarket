@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdminBannerController;
 use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminUserController;
@@ -77,6 +78,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/messages/read-all', [FeedbackController::class, 'markAllRead'])->name('messages.read-all');
     Route::patch('/messages/{message}/read', [FeedbackController::class, 'markRead'])->name('messages.read');
     Route::delete('/messages/{message}', [FeedbackController::class, 'destroy'])->name('messages.destroy');
+    Route::get('/banner', [AdminBannerController::class, 'edit'])->name('banner');
+    Route::put('/banner', [AdminBannerController::class, 'update'])->name('banner.update');
+    Route::delete('/banner', [AdminBannerController::class, 'reset'])->name('banner.reset');
     Route::get('/infos', [AdminController::class, 'infos'])->name('infos');
     Route::post('/infos', [AdminController::class, 'saveInfo'])->name('infos.store');
     Route::put('/infos/{info}', [AdminController::class, 'saveInfo'])->name('infos.update');

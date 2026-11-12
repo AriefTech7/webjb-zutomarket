@@ -149,6 +149,63 @@ class CatalogTest extends TestCase
             ->assertSee('Tanya jadwal sewa')->assertDontSee('aria-label="Sewa 6 Jam"', false);
     }
 
+    /** A real grayscale PNG of the given size, built without GD so the dimensions rule can read it. */
+    private function pngOfSize(int $width, int $height): string
+    {
+        $chunk = fn (string $type, string $data) => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        $rows = str_repeat("\0".str_repeat("\x80", $width), $height);
+
+        return "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 0, 0, 0, 0)).$chunk('IDAT', gzcompress($rows)).$chunk('IEND', '');
+    }
+
+    public function test_admin_changes_and_resets_the_home_banner(): void
+    {
+        Storage::fake('public');
+        $this->get('/')->assertSee('images/zuto-banner.webp', false)->assertSee('width="1280" height="430"', false);
+        $this->get('/admin/banner')->assertRedirect(route('login'));
+        $this->actingAs(User::factory()->buyer()->create())->get('/admin/banner')->assertForbidden();
+
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin/banner')->assertOk()->assertSee('Banner beranda')->assertSee('(bawaan)')->assertDontSee('Kembalikan banner bawaan');
+        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('kecil.png', $this->pngOfSize(300, 100))])->assertSessionHasErrors('image');
+        $this->put('/admin/banner', ['link_url' => 'http://tidak-aman.example'])->assertSessionHasErrors('link_url');
+
+        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('promo.png', $this->pngOfSize(1500, 500)), 'link_url' => 'https://zutomarket.id/flash-sale'])->assertSessionHasNoErrors();
+        $first = Setting::valueFor('banner_image');
+        Storage::disk('public')->assertExists($first);
+        $this->get('/')->assertSee(Storage::disk('public')->url($first), false)->assertSee('width="1500" height="500"', false)
+            ->assertSee('href="https://zutomarket.id/flash-sale" class="block"', false)->assertDontSee('images/zuto-banner.webp', false);
+
+        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('baru.png', $this->pngOfSize(1280, 430))])->assertSessionHasNoErrors();
+        $second = Setting::valueFor('banner_image');
+        Storage::disk('public')->assertMissing($first);
+        Storage::disk('public')->assertExists($second);
+        $this->get('/')->assertDontSee('href="https://zutomarket.id/flash-sale" class="block"', false);
+
+        $this->get('/admin/banner')->assertSee('Kembalikan banner bawaan');
+        $this->delete('/admin/banner')->assertSessionHas('success');
+        Storage::disk('public')->assertMissing($second);
+        $this->get('/')->assertSee('images/zuto-banner.webp', false);
+    }
+
+    public function test_a_rental_category_shows_its_rental_accounts_and_counts_them(): void
+    {
+        $rentalCategory = Category::factory()->create(['name' => 'JASA RENTAL AKUN', 'slug' => 'rental-akun']);
+        $saleCategory = Category::factory()->create(['name' => 'STOK FF', 'slug' => 'stok-ff']);
+        $ready = GameAccount::factory()->for($rentalCategory)->create(['title' => 'Sewa Mythic Glory', 'is_rental' => true]);
+        $ready->rentalPackages()->create(['duration' => '6 Jam', 'price' => 25000]);
+        GameAccount::factory()->for($rentalCategory)->create(['title' => 'Sewa lagi dipakai', 'is_rental' => true, 'status' => 'rented'])->rentalPackages()->create(['duration' => '3 Jam', 'price' => 15000]);
+        GameAccount::factory()->for($rentalCategory)->create(['title' => 'Sewa draft', 'is_rental' => true, 'status' => 'draft']);
+        GameAccount::factory()->for($saleCategory)->create(['title' => 'Akun FF jual']);
+
+        $this->get('/')->assertOk()->assertSeeInOrder(['JASA RENTAL AKUN', '1 akun tersedia']);
+        $this->get('/kategori/rental-akun')->assertOk()->assertSee('Sewa Mythic Glory')->assertSee('Siap disewa')->assertSee('6 Jam')
+            ->assertSee('Sewa lagi dipakai')->assertDontSee('Sewa draft')->assertDontSee('Akun FF jual')->assertSee('2 produk');
+        $this->get('/kategori/rental-akun?status=available')->assertSee('Sewa Mythic Glory')->assertDontSee('Sewa lagi dipakai');
+        $this->get('/kategori/stok-ff')->assertSee('Akun FF jual')->assertDontSee('Sewa Mythic Glory');
+        $this->get('/katalog')->assertSee('Akun FF jual')->assertDontSee('Sewa Mythic Glory');
+    }
+
     public function test_admin_price_fields_accept_thousand_dots(): void
     {
         $this->actingAs(User::factory()->create());

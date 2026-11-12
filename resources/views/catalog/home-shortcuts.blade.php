@@ -31,9 +31,9 @@
 @if ($categories->isNotEmpty())
     <div class="mt-3 grid grid-cols-2 gap-2 md:mt-4 md:gap-3 lg:grid-cols-3" aria-label="Kategori game">
         @foreach ($categories as $category)
-            <a href="{{ route('categories.show', $category->slug) }}#katalog"
-                class="flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl border border-[#a9c3ff]/15 bg-[#101833]/85 px-3 py-2 transition hover:-translate-y-0.5 hover:border-lime-300/40 md:min-h-16 md:gap-3 md:rounded-2xl md:px-5 {{ $category->accounts_count ? '' : 'opacity-60' }}">
-                <svg class="h-4 w-4 shrink-0 text-lime-300 md:h-5 md:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $categoryIcon($category->name) }}" /></svg>
+            <a href="{{ route('categories.show', $category->slug) }}#katalog" style="--i: {{ $loop->index }}"
+                class="cat-card flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl border border-[#a9c3ff]/15 bg-[#101833]/85 px-3 py-2 hover:border-lime-300/50 md:min-h-16 md:gap-3 md:rounded-2xl md:px-5 {{ $category->accounts_count ? 'cat-card-live' : 'opacity-60' }}">
+                <svg class="cat-icon h-4 w-4 shrink-0 text-lime-300 md:h-5 md:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $categoryIcon($category->name) }}" /></svg>
                 <span class="min-w-0">
                     <span class="line-clamp-2 break-words text-[10px] font-black uppercase leading-tight md:text-sm">{{ $category->name }}</span>
                     <span class="block text-[9px] text-slate-400 md:text-[11px]">{{ $category->accounts_count }} akun tersedia</span>

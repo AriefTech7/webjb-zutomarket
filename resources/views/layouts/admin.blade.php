@@ -19,7 +19,7 @@
                     @php($unreadMessages = \App\Models\FeedbackMessage::whereNull('read_at')->count())
                     @php($editedAccount = request()->route('account'))
                     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
-                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+                    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
                         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
                         <a href="{{ route('admin.' . $route) }}"
                             class="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-xs transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10 lg:gap-3 lg:px-4 lg:py-3 lg:text-sm {{ $isActiveMenu ? 'border-lime-300/40 bg-lime-300/10 text-lime-300' : 'border-[#a9c3ff]/15 bg-[#a9c3ff]/5 text-slate-400' }}"
@@ -70,6 +70,12 @@
                                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                                             <circle cx="9" cy="7" r="4" />
                                             <path d="m16 11 2 2 4-4" />
+                                        @break
+
+                                        @case('banner')
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <circle cx="8.5" cy="10" r="1.5" />
+                                            <path d="m21 16-5-5-8 8" />
                                         @break
 
                                         @case('infos')

@@ -16,9 +16,13 @@ class CatalogController extends Controller
         $data = $request->validate(['q' => 'nullable|string|max:100', 'category' => 'nullable|string|max:255', 'sort' => 'nullable|in:newest,price_low,price_high', 'available' => 'nullable|in:1', 'status' => 'nullable|in:available,sold']);
         $status = $data['status'] ?? ($request->boolean('available') ? 'available' : null);
         $selected = $category?->slug ?? ($data['category'] ?? '');
-        $query = GameAccount::with('category')->forSale()->whereIn('status', ['available', 'sold']);
+        $query = GameAccount::with(['category', 'rentalPackages']);
         if ($selected) {
-            $query->whereHas('category', fn ($q) => $q->where('slug', $selected));
+            // A category page shows everything in that category, rentals included (e.g. "Jasa Rental Akun").
+            $query->whereHas('category', fn ($q) => $q->where('slug', $selected))
+                ->where(fn ($q) => $q->where(fn ($q) => $q->forSale()->whereIn('status', ['available', 'sold']))->orWhere(fn ($q) => $q->rental()));
+        } else {
+            $query->forSale()->whereIn('status', ['available', 'sold']);
         }
         $query->search($data['q'] ?? '');
         if ($status) {
@@ -32,7 +36,7 @@ class CatalogController extends Controller
 
         return view('catalog.index', [
             'accounts' => $query->orderByDesc('id')->paginate(12)->withQueryString(),
-            'categories' => Category::withCount(['accounts' => fn ($q) => $q->forSale()->where('status', 'available')])->orderBy('name')->get(),
+            'categories' => Category::withCount(['accounts' => fn ($q) => $q->where('status', 'available')])->orderBy('name')->get(),
             'selected' => $selected,
             'status' => $status,
         ]);
@@ -46,7 +50,7 @@ class CatalogController extends Controller
         $availableForSale = GameAccount::with('category')->forSale()->where('status', 'available');
 
         return view('catalog.home', [
-            'categories' => Category::withCount(['accounts' => fn ($q) => $q->forSale()->where('status', 'available')])->orderBy('name')->get(),
+            'categories' => Category::withCount(['accounts' => fn ($q) => $q->where('status', 'available')])->orderBy('name')->get(),
             'catalogTotal' => GameAccount::forSale()->whereIn('status', ['available', 'sold'])->count(),
             'available' => $availableForSale->latest()->orderByDesc('id')->limit(6)->get(),
             'flashSaleCount' => GameAccount::onFlashSale()->count(),
