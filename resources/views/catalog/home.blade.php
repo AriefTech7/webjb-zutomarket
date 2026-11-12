@@ -1,14 +1,33 @@
 @extends('layouts.app')
 @section('content')
     <div class="shell">
-        <section class="store-hero my-8 overflow-hidden rounded-3xl border">
+        @php($slides = \App\Models\Banner::slides())
+        <section class="store-hero group/slider relative my-8 overflow-hidden rounded-3xl border" @if (count($slides) > 1) data-slider aria-roledescription="carousel" aria-label="Banner promo" @endif>
             <h1 class="sr-only">Jual beli akun game di ZutoMarket</h1>
-            @php($banner = \App\Http\Controllers\AdminBannerController::current())
-            @if ($banner['link'])<a href="{{ $banner['link'] }}" class="block">@endif
-            <img class="h-auto w-full" src="{{ $banner['url'] }}"
-                alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="{{ $banner['width'] }}" height="{{ $banner['height'] }}"
-                fetchpriority="high">
-            @if ($banner['link'])</a>@endif
+            <div class="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-slider-track>
+                @foreach ($slides as $slide)
+                    <div class="w-full shrink-0 snap-center" @if (count($slides) > 1) role="group" aria-roledescription="slide" aria-label="{{ $loop->iteration }} dari {{ count($slides) }}" @endif>
+                        @if ($slide['link'])<a href="{{ $slide['link'] }}" class="block">@endif
+                        <img class="aspect-[1280/430] h-auto w-full object-cover" src="{{ $slide['url'] }}" width="{{ $slide['width'] }}" height="{{ $slide['height'] }}"
+                            alt="{{ $loop->first ? 'Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id' : 'Banner promo ZutoMarket '.$loop->iteration }}"
+                            @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                        @if ($slide['link'])</a>@endif
+                    </div>
+                @endforeach
+            </div>
+            @if (count($slides) > 1)
+                <button type="button" class="absolute left-3 top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#020617]/60 text-white opacity-0 backdrop-blur transition group-hover/slider:opacity-100 focus-visible:opacity-100 md:flex" data-slider-prev aria-label="Banner sebelumnya">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
+                <button type="button" class="absolute right-3 top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#020617]/60 text-white opacity-0 backdrop-blur transition group-hover/slider:opacity-100 focus-visible:opacity-100 md:flex" data-slider-next aria-label="Banner berikutnya">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6" /></svg>
+                </button>
+                <div class="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 md:bottom-3">
+                    @foreach ($slides as $slide)
+                        <button type="button" class="h-1.5 w-1.5 rounded-full bg-white/50 transition-all aria-[current=true]:w-5 aria-[current=true]:bg-white md:h-2 md:w-2 md:aria-[current=true]:w-6" data-slider-dot="{{ $loop->index }}" aria-label="Tampilkan banner {{ $loop->iteration }}" @if ($loop->first) aria-current="true" @endif></button>
+                    @endforeach
+                </div>
+            @endif
         </section>
         @include('catalog.home-shortcuts', ['categories' => $categories->sortByDesc('accounts_count')->values(), 'hasFlashSale' => $flashSale->isNotEmpty()])
         @if ($infos->isNotEmpty())

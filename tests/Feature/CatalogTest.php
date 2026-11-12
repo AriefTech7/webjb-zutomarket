@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\AdminBannerController;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\ContactLink;
 use App\Models\FeedbackMessage;
@@ -158,34 +160,55 @@ class CatalogTest extends TestCase
         return "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 0, 0, 0, 0)).$chunk('IDAT', gzcompress($rows)).$chunk('IEND', '');
     }
 
-    public function test_admin_changes_and_resets_the_home_banner(): void
+    public function test_admin_manages_several_home_banners_shown_as_a_slider(): void
     {
         Storage::fake('public');
-        $this->get('/')->assertSee('images/zuto-banner.webp', false)->assertSee('width="1280" height="430"', false);
+        $this->get('/')->assertSee('images/zuto-banner.webp', false)->assertDontSee('data-slider ', false);
         $this->get('/admin/banner')->assertRedirect(route('login'));
         $this->actingAs(User::factory()->buyer()->create())->get('/admin/banner')->assertForbidden();
 
         $this->actingAs(User::factory()->create());
-        $this->get('/admin/banner')->assertOk()->assertSee('Banner beranda')->assertSee('(bawaan)')->assertDontSee('Kembalikan banner bawaan');
-        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('kecil.png', $this->pngOfSize(300, 100))])->assertSessionHasErrors('image');
-        $this->put('/admin/banner', ['link_url' => 'http://tidak-aman.example'])->assertSessionHasErrors('link_url');
+        $this->get('/admin/banner')->assertOk()->assertSee('Tambah banner')->assertSee('Banner aktif (0)')->assertSee('banner bawaan');
+        $this->post('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('kecil.png', $this->pngOfSize(300, 100))])->assertSessionHasErrors('image');
+        $this->post('/admin/banner', [])->assertSessionHasErrors('image');
 
-        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('promo.png', $this->pngOfSize(1500, 500)), 'link_url' => 'https://zutomarket.id/flash-sale'])->assertSessionHasNoErrors();
-        $first = Setting::valueFor('banner_image');
-        Storage::disk('public')->assertExists($first);
-        $this->get('/')->assertSee(Storage::disk('public')->url($first), false)->assertSee('width="1500" height="500"', false)
-            ->assertSee('href="https://zutomarket.id/flash-sale" class="block"', false)->assertDontSee('images/zuto-banner.webp', false);
+        $this->post('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('a.png', $this->pngOfSize(1500, 500)), 'link_url' => 'https://zutomarket.id/flash-sale', 'sort_order' => 2])->assertSessionHasNoErrors();
+        $one = Banner::sole();
+        $this->get('/')->assertSee($one->imageUrl(), false)->assertDontSee('images/zuto-banner.webp', false)->assertDontSee('data-slider-dot', false)
+            ->assertSee('href="https://zutomarket.id/flash-sale" class="block"', false);
 
-        $this->put('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('baru.png', $this->pngOfSize(1280, 430))])->assertSessionHasNoErrors();
-        $second = Setting::valueFor('banner_image');
-        Storage::disk('public')->assertMissing($first);
-        Storage::disk('public')->assertExists($second);
-        $this->get('/')->assertDontSee('href="https://zutomarket.id/flash-sale" class="block"', false);
+        $this->post('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('b.png', $this->pngOfSize(1280, 430)), 'sort_order' => 1])->assertSessionHasNoErrors();
+        $two = Banner::where('sort_order', 1)->sole();
+        $this->get('/')->assertSee('data-slider', false)->assertSeeInOrder([$two->imageUrl(), $one->imageUrl(), 'data-slider-dot="0"', 'data-slider-dot="1"'], false)
+            ->assertSee('aria-label="1 dari 2"', false);
+        $this->get('/admin/banner')->assertSee('Banner aktif (2)');
 
-        $this->get('/admin/banner')->assertSee('Kembalikan banner bawaan');
-        $this->delete('/admin/banner')->assertSessionHas('success');
-        Storage::disk('public')->assertMissing($second);
+        $oldPath = $one->image_path;
+        $this->put('/admin/banner/'.$one->id, ['image' => UploadedFile::fake()->createWithContent('c.png', $this->pngOfSize(1280, 430)), 'link_url' => '', 'sort_order' => 0])->assertSessionHasNoErrors();
+        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertNull($one->fresh()->link_url);
+        $this->get('/')->assertSeeInOrder([$one->fresh()->imageUrl(), $two->imageUrl()], false);
+        $this->put('/admin/banner/'.$one->id, ['link_url' => 'http://tidak-aman.example'])->assertSessionHasErrors('link_url');
+
+        $this->delete('/admin/banner/'.$two->id)->assertSessionHas('success');
+        Storage::disk('public')->assertMissing($two->image_path);
+        $this->delete('/admin/banner/'.$one->id);
         $this->get('/')->assertSee('images/zuto-banner.webp', false);
+
+        Banner::insert(array_fill(0, AdminBannerController::MAX_BANNERS, ['image_path' => 'banner/x.png', 'width' => 1280, 'height' => 430, 'sort_order' => 0]));
+        $this->post('/admin/banner', ['image' => UploadedFile::fake()->createWithContent('d.png', $this->pngOfSize(1280, 430))])->assertSessionHasErrors('image');
+    }
+
+    public function test_the_banner_migration_moves_the_old_single_banner_into_the_list(): void
+    {
+        $migration = require database_path('migrations/2026_11_12_202721_create_banners_table.php');
+        $migration->down();
+        Setting::insert([['key' => 'banner_image', 'value' => 'banner/lama.jpg'], ['key' => 'banner_size', 'value' => '3200x1074'], ['key' => 'banner_link', 'value' => '']]);
+        $migration->up();
+
+        $banner = Banner::sole();
+        $this->assertSame(['banner/lama.jpg', 3200, 1074, null], [$banner->image_path, $banner->width, $banner->height, $banner->link_url]);
+        $this->assertSame(0, Setting::where('key', 'like', 'banner%')->count());
     }
 
     public function test_a_rental_category_shows_its_rental_accounts_and_counts_them(): void
