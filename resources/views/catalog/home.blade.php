@@ -3,9 +3,12 @@
     <div class="shell">
         <section class="store-hero my-8 overflow-hidden rounded-3xl border">
             <h1 class="sr-only">Jual beli akun game di ZutoMarket</h1>
-            <img class="w-full" src="{{ asset('images/zuto-banner.webp') }}"
-                alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="1280" height="430"
+            @php($banner = \App\Http\Controllers\AdminBannerController::current())
+            @if ($banner['link'])<a href="{{ $banner['link'] }}" class="block">@endif
+            <img class="h-auto w-full" src="{{ $banner['url'] }}"
+                alt="Solusi praktis untuk kebutuhan jual beli akun, hanya di zutomarket.id" width="{{ $banner['width'] }}" height="{{ $banner['height'] }}"
                 fetchpriority="high">
+            @if ($banner['link'])</a>@endif
         </section>
         @include('catalog.home-shortcuts', ['categories' => $categories->sortByDesc('accounts_count')->values(), 'hasFlashSale' => $flashSale->isNotEmpty()])
         @if ($infos->isNotEmpty())

@@ -43,7 +43,7 @@
             </details>
             <div class="grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3 xl:grid-cols-4">
                 @forelse($accounts as $account)
-                    @include('catalog.account-card', ['account' => $account])
+                    @include($account->is_rental ? 'catalog.rental-card' : 'catalog.account-card', ['account' => $account])
                 @empty
                     <div class="panel col-span-full p-14 text-center">
                         <p class="text-4xl text-lime-300">⌕</p>
