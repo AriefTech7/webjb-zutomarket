@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\ContactLink;
+use App\Models\FeedbackMessage;
 use App\Models\GameAccount;
 use App\Models\InfoPost;
 use App\Models\ManualSale;
@@ -705,16 +706,37 @@ class CatalogTest extends TestCase
         }
     }
 
-    public function test_feedback_page_sends_to_the_store_email_which_admins_can_change(): void
+    public function test_feedback_is_stored_and_read_in_the_admin_inbox(): void
     {
-        $this->get('/profil')->assertOk()->assertSee(route('feedback'), false)->assertSee('Kritik &amp; saran', false);
-        $this->get('/kritik-saran')->assertOk()->assertSee('data-email="zutomarketcs@gmail.com"', false)->assertSee('mailto:zutomarketcs@gmail.com', false)->assertSee('Laporan masalah');
+        $this->get('/kritik-saran')->assertOk()->assertSee('action="'.route('feedback.store').'"', false)->assertSee('Laporan masalah')->assertSee('Kirim ke admin')->assertDontSee('mailto:', false);
+
+        $this->post('/kritik-saran', ['type' => 'Saran', 'name' => 'Budi', 'contact' => '0812 3456 7890', 'message' => "Tambah game Valorant\ndan PUBG"])
+            ->assertRedirect(route('feedback'))->assertSessionHas('success');
+        $this->post('/kritik-saran', ['type' => 'Spam', 'message' => 'x'])->assertSessionHasErrors(['type', 'message']);
+        $this->post('/kritik-saran', ['type' => 'Kritik', 'message' => 'Iklan murah sekali', 'website' => 'http://spam.example'])->assertRedirect(route('feedback'));
+        $this->assertSame(1, FeedbackMessage::count());
+
+        $buyer = User::factory()->buyer()->create(['name' => 'Sari', 'email' => 'sari@example.com']);
+        $this->actingAs($buyer)->get('/kritik-saran')->assertSee('value="Sari"', false)->assertSee('value="sari@example.com"', false);
+        $this->post('/kritik-saran', ['type' => 'Laporan masalah', 'name' => 'Sari', 'contact' => 'sari@example.com', 'message' => 'Gambar tidak muncul']);
+        $this->assertSame($buyer->id, FeedbackMessage::latest('id')->first()->user_id);
+        $this->get('/admin/messages')->assertForbidden();
+        $this->post('/keluar');
+        $this->get('/admin/messages')->assertRedirect(route('login'));
 
         $this->actingAs(User::factory()->create());
-        $this->put('/admin/settings', ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo', 'feedback_email' => 'bukan-email'])->assertSessionHasErrors('feedback_email');
-        $this->put('/admin/settings', ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo', 'feedback_email' => 'cs@zutomarket.id'])->assertSessionHasNoErrors();
+        $this->get('/admin')->assertSee('Pesan masuk')->assertSee('2 pesan belum dibaca');
+        $this->get('/admin/messages')->assertOk()->assertSeeInOrder(['akun sari@example.com', 'Gambar tidak muncul', 'Budi', 'Tambah game Valorant'])
+            ->assertSee('https://wa.me/6281234567890', false)->assertSee('mailto:sari@example.com', false)->assertSee('2 pesan belum dibaca.');
 
-        $this->get('/kritik-saran')->assertOk()->assertSee('data-email="cs@zutomarket.id"', false);
+        $first = FeedbackMessage::where('name', 'Budi')->first();
+        $this->patch('/admin/messages/'.$first->id.'/read')->assertRedirect();
+        $this->assertNotNull($first->fresh()->read_at);
+        $this->get('/admin/messages')->assertSee('1 pesan belum dibaca.');
+        $this->post('/admin/messages/read-all')->assertSessionHas('success');
+        $this->get('/admin/messages')->assertSee('Semua pesan sudah dibaca.')->assertDontSee('pesan belum dibaca"', false);
+        $this->delete('/admin/messages/'.$first->id)->assertSessionHas('success');
+        $this->assertModelMissing($first);
     }
 
     public function test_detail_page_offers_stock_offer_and_buy_messages_and_same_category_recommendations(): void

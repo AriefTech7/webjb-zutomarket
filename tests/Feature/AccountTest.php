@@ -132,12 +132,42 @@ class AccountTest extends TestCase
         $this->get('/profil/password')->assertRedirect(route('account.login'));
     }
 
+    public function test_admin_issues_a_temporary_password_to_a_buyer(): void
+    {
+        $buyer = User::factory()->buyer()->create(['name' => 'Lupa Sandi', 'email' => 'lupa@example.com', 'whatsapp' => '0812 3456 7890', 'password' => 'lama12345']);
+        $other = User::factory()->buyer()->create(['email' => 'lain@example.com']);
+        $admin = User::factory()->create();
+
+        $this->get('/admin/buyers')->assertRedirect(route('login'));
+        $this->actingAs($buyer)->get('/admin/buyers')->assertForbidden();
+        $this->post('/admin/buyers/'.$other->id.'/password')->assertForbidden();
+
+        $this->actingAs($admin)->get('/admin/buyers')->assertOk()->assertSee('Akun pembeli')->assertSee('lupa@example.com')->assertSee('lain@example.com')->assertDontSee($admin->email);
+        $this->get('/admin/buyers?q=lupa')->assertSee('lupa@example.com')->assertDontSee('lain@example.com');
+        $this->post('/admin/buyers/'.$admin->id.'/password')->assertForbidden();
+
+        $response = $this->post('/admin/buyers/'.$buyer->id.'/password')->assertRedirect()->assertSessionHas('temporary_password');
+        $temporary = $response->getSession()->get('temporary_password')['password'];
+        $this->assertMatchesRegularExpression('/^[a-hjkmnp-z2-9]{10}$/', $temporary);
+        $this->get('/admin/buyers')->assertSee($temporary)->assertSee('https://wa.me/6281234567890', false);
+        $this->get('/admin/buyers')->assertDontSee($temporary);
+
+        $this->post('/keluar');
+        $this->post('/masuk', ['email' => 'lupa@example.com', 'password' => 'lama12345'])->assertSessionHasErrors('email');
+        $this->post('/masuk', ['email' => 'lupa@example.com', 'password' => $temporary]);
+        $this->assertAuthenticatedAs($buyer);
+    }
+
     public function test_forgot_password_falls_back_to_whatsapp_until_mail_is_configured(): void
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
         config(['mail.default' => 'log']);
-        $this->get('/lupa-password')->assertOk()->assertSee('belum aktif')->assertSee('https://wa.me/6281234567890', false);
+        $this->get('/lupa-password')->assertOk()->assertSeeInOrder(['Lupa Password', 'placeholder="Email akun"', 'Minta bantuan via WhatsApp', 'Ingat password?'], false)
+            ->assertSee('action="'.route('password.whatsapp').'"', false)->assertDontSee('dengan Google');
         $this->post('/lupa-password', ['email' => 'a@example.com'])->assertNotFound();
+        $this->post('/lupa-password/whatsapp', ['email' => 'Siapa@Example.com'])
+            ->assertRedirect('https://wa.me/6281234567890?text='.rawurlencode("Halo admin, saya lupa password akun ZutoMarket saya.\nEmail akun: siapa@example.com\nMohon dibantu password sementara. Terima kasih."));
+        $this->post('/lupa-password/whatsapp', ['email' => 'bukan-email'])->assertSessionHasErrors('email');
 
         config(['mail.default' => 'smtp']);
         Notification::fake();

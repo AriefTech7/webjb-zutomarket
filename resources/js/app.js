@@ -1,5 +1,4 @@
 import { initialiseCountdowns } from './countdown';
-import { initialiseFeedbackForm } from './feedback';
 import { initialiseInstallPrompt } from './install';
 import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
@@ -11,7 +10,6 @@ initialiseWishlist();
 initialiseProfile();
 initialiseJokiOrder();
 initialiseCountdowns();
-initialiseFeedbackForm();
 initialiseInstallPrompt();
 initialiseThemeToggle();
 initialiseMoneyInputs();
