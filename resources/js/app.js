@@ -3,6 +3,7 @@ import { initialiseFeedbackForm } from './feedback';
 import { initialiseInstallPrompt } from './install';
 import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
+import { initialiseMoneyInputs } from './money';
 import { initialiseProfile, PROFILE_KEY } from './profile';
 import { initialiseWishlist, WISHLIST_KEY } from './wishlist';
 
@@ -13,6 +14,7 @@ initialiseCountdowns();
 initialiseFeedbackForm();
 initialiseInstallPrompt();
 initialiseThemeToggle();
+initialiseMoneyInputs();
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {
     const input = document.getElementById(button.dataset.passwordToggle);

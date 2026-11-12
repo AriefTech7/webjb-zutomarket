@@ -20,7 +20,7 @@ class AccountTest extends TestCase
     public function test_buyer_can_register_and_is_never_an_admin(): void
     {
         config(['services.google.client_id' => null, 'services.google.client_secret' => null]);
-        $this->get('/daftar')->assertOk()->assertSee('Daftar Akun Baru')->assertSee('Kebijakan Privasi')->assertDontSee('Daftar dengan Google');
+        $this->get('/daftar')->assertOk()->assertSeeInOrder(['Daftar', 'placeholder="Nama"', 'placeholder="Email"', 'Konfirmasi password', 'Kebijakan Privasi', 'Sudah punya akun?'], false)->assertDontSee('Daftar dengan Google')->assertDontSee('>atau<', false);
 
         $this->post('/daftar', ['name' => 'Budi', 'email' => 'Budi@Example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
             ->assertRedirect(route('profile'))->assertSessionHas('wishlist_merge', true);
@@ -50,7 +50,7 @@ class AccountTest extends TestCase
         $buyer = User::factory()->buyer()->create(['email' => 'pembeli@example.com', 'password' => 'rahasia123']);
         $admin = User::factory()->create(['username' => 'bos', 'email' => 'bos@example.com', 'password' => 'rahasia123']);
 
-        $this->get('/masuk')->assertOk()->assertSee('Masuk ke Akunmu')->assertSee('Lupa password?');
+        $this->get('/masuk')->assertOk()->assertSeeInOrder(['>Masuk</h1>', 'placeholder="Email"', 'placeholder="Password"', 'Lupa password?', 'Belum punya akun?'], false);
         // Admin credentials do not work on the buyer form, and buyer credentials do not open the admin login.
         $this->post('/masuk', ['email' => 'bos@example.com', 'password' => 'rahasia123'])->assertSessionHasErrors('email');
         $this->assertGuest();
@@ -165,7 +165,7 @@ class AccountTest extends TestCase
         $this->get('/masuk')->assertDontSee('Masuk dengan Google');
 
         config(['services.google.client_id' => 'id', 'services.google.client_secret' => 'secret']);
-        $this->get('/masuk')->assertSee('Masuk dengan Google');
+        $this->get('/masuk')->assertSeeInOrder(['>Masuk</h1>', 'Masuk dengan Google', 'atau', 'placeholder="Email"'], false);
         $this->get('/daftar')->assertSee('Daftar dengan Google');
 
         User::factory()->create(['email' => 'admin@example.com']);

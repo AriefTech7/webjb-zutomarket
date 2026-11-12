@@ -99,8 +99,28 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Price fields are typed as "1.000.000" (the admin form adds the dots). Turn plain rupiah text back
+     * into digits before validation; anything else is left alone so the integer rule still rejects it.
+     */
+    private function normaliseMoney(Request $request, array $keys): void
+    {
+        $clean = fn ($value) => is_string($value) && preg_match('/^\s*(rp\.?)?\s*\d{1,3}([.\s]?\d{3})*\s*$/i', $value)
+            ? preg_replace('/\D/', '', $value) : $value;
+        foreach ($keys as $key) {
+            if ($request->has($key)) {
+                $request->merge([$key => $clean($request->input($key))]);
+            }
+        }
+        if (is_array($packages = $request->input('packages'))) {
+            $request->merge(['packages' => array_map(fn ($package) => is_array($package) && array_key_exists('price', $package)
+                ? [...$package, 'price' => $clean($package['price'])] : $package, $packages)]);
+        }
+    }
+
     public function storeSale(Request $request): RedirectResponse
     {
+        $this->normaliseMoney($request, ['amount']);
         $data = $request->validate([
             'type' => ['required', Rule::in(array_keys(ManualSale::TYPES))],
             'item' => 'required|string|max:150',
@@ -138,6 +158,7 @@ class AdminController extends Controller
     private function saveAccount(Request $request, GameAccount $account): RedirectResponse
     {
         $request->merge(['slug' => Str::slug($request->input('slug') ?: $request->input('title', ''))]);
+        $this->normaliseMoney($request, ['price', 'original_price']);
         $data = $request->validate([
             'title' => 'required|string|max:150', 'slug' => ['required', 'max:180', Rule::unique('game_accounts')->ignore($account->id)],
             'category_id' => 'required|exists:categories,id', 'price' => 'required_unless:is_rental,1|nullable|integer|min:0|max:999999999999',

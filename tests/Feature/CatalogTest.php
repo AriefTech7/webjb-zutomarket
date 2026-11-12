@@ -148,6 +148,31 @@ class CatalogTest extends TestCase
             ->assertSee('Tanya jadwal sewa')->assertDontSee('aria-label="Sewa 6 Jam"', false);
     }
 
+    public function test_admin_price_fields_accept_thousand_dots(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $account = GameAccount::factory()->create();
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
+
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('name="price" type="text" inputmode="numeric"', false)->assertSee('data-money', false);
+        $this->put('/admin/accounts/'.$account->id, $data + ['price' => '1.000.000', 'original_price' => 'Rp 1.250.000'])->assertSessionHasNoErrors();
+        $this->assertSame(1000000, $account->fresh()->price);
+        $this->assertSame(1250000, $account->fresh()->original_price);
+        $this->put('/admin/accounts/'.$account->id, $data + ['price' => '350000'])->assertSessionHasNoErrors();
+        $this->assertSame(350000, $account->fresh()->price);
+        foreach (['12.5', '1.00.000', 'satu juta', '-5.000'] as $wrong) {
+            $this->put('/admin/accounts/'.$account->id, $data + ['price' => $wrong])->assertSessionHasErrors('price');
+        }
+        $this->assertSame(350000, $account->fresh()->price);
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 1, 'packages' => [['duration' => '1 Hari', 'price' => '60.000']]])->assertSessionHasNoErrors();
+        $this->assertSame([60000], $account->fresh()->rentalPackages->pluck('price')->all());
+
+        $this->get('/admin/sales')->assertOk()->assertSee('name="amount" type="text" inputmode="numeric"', false);
+        $this->post('/admin/sales', ['type' => 'joki', 'item' => 'Joki Mythic', 'amount' => '1.250.000', 'sold_on' => '2026-11-12'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('manual_sales', ['item' => 'Joki Mythic', 'amount' => 1250000]);
+    }
+
     public function test_admin_saves_rental_packages_and_rejects_invalid_rental_input(): void
     {
         $this->actingAs(User::factory()->create());
@@ -554,7 +579,7 @@ class CatalogTest extends TestCase
         $this->get('/')->assertOk()->assertSee(route('about'), false)->assertSee(route('profile'), false);
         $this->get('/tentang')->assertOk()->assertSee('Tentang kami')->assertSee('WA Admin')->assertSee('Instagram')->assertSee('TikTok')->assertSee('Saluran WhatsApp')
             ->assertSee('Belum ada kontak WA Admin')->assertDontSee('wa.me/', false);
-        $this->get('/profil')->assertOk()->assertSee('Masuk ke Akunmu')->assertSee('Lupa password?')->assertSee('action="'.route('account.login').'"', false)->assertDontSee('hanya tersimpan di browser ini')->assertDontSee('data-profile-form', false)
+        $this->get('/profil')->assertOk()->assertSee('>Masuk</h1>', false)->assertSee('Lupa password?')->assertSee('action="'.route('account.login').'"', false)->assertDontSee('hanya tersimpan di browser ini')->assertDontSee('data-profile-form', false)
             ->assertSee('WA Admin &amp; Sosmed', false)->assertSee(route('about'), false);
         $this->assertGuest();
     }

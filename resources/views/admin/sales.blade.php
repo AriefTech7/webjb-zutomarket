@@ -47,7 +47,7 @@
                 @endforeach
             </select></div>
         <div><label class="label" for="item">Barang atau layanan</label><input id="item" class="field" name="item" value="{{ old('item') }}" maxlength="150" required placeholder="Contoh: Joki Epic V – Mythic"></div>
-        <div><label class="label" for="amount">Nilai penjualan (Rupiah)</label><input id="amount" class="field" name="amount" type="number" min="1" max="999999999999" step="1" value="{{ old('amount') }}" required placeholder="325000"></div>
+        <div><label class="label" for="amount">Nilai penjualan (Rupiah)</label><input id="amount" class="field" name="amount" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money value="{{ old('amount') }}" required placeholder="325.000"></div>
         <div><label class="label" for="sold_on">Tanggal</label><input id="sold_on" class="field" name="sold_on" type="date" value="{{ old('sold_on', now('Asia/Jakarta')->toDateString()) }}" required></div>
         <div class="md:col-span-2"><label class="label" for="note">Catatan (opsional)</label><input id="note" class="field" name="note" value="{{ old('note') }}" maxlength="255" placeholder="Contoh: nama pembeli"></div>
         <div class="md:col-span-2"><button class="btn w-full sm:w-auto">Simpan penjualan</button></div>
