@@ -3,7 +3,11 @@
     <a href="{{ route('accounts.show', $account->slug) }}" class="block">
         <div class="catalog-media"><img src="{{ $account->imageUrl() }}" alt="{{ $account->title }}"
                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
-            <span class="status absolute left-2 top-2 z-10 md:left-3 md:top-3 {{ $account->status === 'available' ? 'text-lime-300' : 'text-amber-300' }}">{{ $account->status === 'available' ? '● Siap disewa' : 'Sedang disewa' }}</span>
+            @if ($account->status === 'available')
+                <span class="status status-live absolute left-2 top-2 z-10 text-lime-300 md:left-3 md:top-3">@include('catalog.live-dot')Siap disewa</span>
+            @else
+                <span class="status absolute left-2 top-2 z-10 text-amber-300 md:left-3 md:top-3">Sedang disewa</span>
+            @endif
         </div>
         <div class="p-3 md:p-5">
             <p class="mb-1 truncate text-[10px] font-bold uppercase tracking-widest text-lime-300 md:mb-2">{{ $account->category->name }}</p>

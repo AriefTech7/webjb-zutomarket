@@ -14,7 +14,7 @@
             </div>
             <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
                 <p class="text-sm font-bold text-lime-300">{{ $account->formattedPrice() }}</p>
-                <span class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft', 'rented' => 'Disewa'][$account->status] }}</span>
+                <span class="status {{ ['available' => 'text-lime-300', 'dp' => 'text-amber-300', 'cicil' => 'text-violet-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] ?? 'text-slate-400' }}">{{ $account->statusLabel() }}</span>@include('admin.booking-note')
             </div>
             <div class="mt-3 grid grid-cols-2 gap-3">
                 <a class="btn-secondary px-3" href="{{ route('admin.accounts.edit', $account) }}" aria-label="Edit {{ $account->title }}">Edit akun</a>
@@ -60,7 +60,7 @@
                     </td>
                     <td class="p-5 whitespace-nowrap">{{ $account->formattedPrice() }}</td>
                     <td class="p-5"><span
-                            class="status {{ ['available' => 'text-lime-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] }}">{{ ['available' => 'Tersedia', 'sold' => 'Terjual', 'draft' => 'Draft', 'rented' => 'Disewa'][$account->status] }}</span>
+                            class="status {{ ['available' => 'text-lime-300', 'dp' => 'text-amber-300', 'cicil' => 'text-violet-300', 'sold' => 'text-rose-300', 'draft' => 'text-slate-400', 'rented' => 'text-amber-300'][$account->status] ?? 'text-slate-400' }}">{{ $account->statusLabel() }}</span>@include('admin.booking-note')
                     </td>
                     <td class="p-5">
                         <div class="flex items-center gap-4"><a class="py-3 text-lime-300"

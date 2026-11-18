@@ -311,4 +311,22 @@ class AccountTest extends TestCase
             $this->get($page)->assertOk()->assertDontSee('<footer', false)->assertDontSee('Sinyal Trust');
         }
     }
+
+    public function test_admin_dashboard_shows_stock_chart_category_progress_and_sales_donut(): void
+    {
+        $category = Category::factory()->create(['name' => 'Stok ML']);
+        GameAccount::factory()->count(2)->create(['category_id' => $category->id]);
+        GameAccount::factory()->create(['category_id' => $category->id, 'status' => 'sold', 'sold_at' => now(), 'price' => 1500000]);
+        GameAccount::factory()->create(['status' => 'draft']);
+        $this->actingAs(User::factory()->create());
+
+        $this->get('/admin')->assertOk()
+            ->assertSee('Ringkasan stok')->assertSee('14 hari terakhir')
+            ->assertSee('<td>4</td><td>1</td>', false)
+            ->assertSee('Stok ML')->assertSee('1 dari 3 terjual · 2 tersedia')
+            ->assertSee('Progres penjualan')->assertSee('25%')->assertSee('Draft')
+            ->assertSee('Rp 1,5 jt')->assertSee('Belum ada flash sale yang berjalan.')
+            ->assertSee('Admin workspace')->assertSee('Cari akun game...')->assertSee('data-theme-toggle', false);
+        $this->get('/admin?periode=bulanan')->assertOk()->assertSee('6 bulan terakhir')->assertSee('aria-current="page" >Bulanan</a>', false);
+    }
 }

@@ -1,5 +1,7 @@
+import { initialiseCart, initialiseShare } from './cart';
 import { initialiseCountdowns } from './countdown';
 import { initialiseInstallPrompt } from './install';
+import { initialiseInstallmentSimulator } from './installment';
 import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
 import { initialiseMoneyInputs } from './money';
@@ -8,12 +10,15 @@ import { initialiseSliders } from './slider';
 import { initialiseWishlist, WISHLIST_KEY } from './wishlist';
 
 initialiseWishlist();
+initialiseCart();
+initialiseShare();
 initialiseProfile();
 initialiseJokiOrder();
 initialiseCountdowns();
 initialiseInstallPrompt();
 initialiseThemeToggle();
 initialiseMoneyInputs();
+initialiseInstallmentSimulator();
 initialiseSliders();
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {
@@ -35,6 +40,31 @@ document.querySelectorAll('[data-account-logout]').forEach((form) => form.addEve
         // Storage blocked: nothing was stored either.
     }
 }));
+
+// Account form: the DP / due-date fields only apply to "Sudah DP" and "Sudah dicicil".
+document.querySelectorAll('[data-booking-fields]').forEach((box) => {
+    const status = box.closest('form').elements.status;
+    const toggle = () => {
+        const booked = ['dp', 'cicil'].includes(status.value);
+        box.hidden = !booked;
+        box.querySelectorAll('input').forEach((input) => { input.disabled = !booked; });
+    };
+    status.addEventListener('change', toggle);
+    toggle();
+});
+
+// Admin "⋮" menu on phones: close it on a tap outside or on Escape.
+document.querySelectorAll('[data-admin-menu]').forEach((menu) => {
+    document.addEventListener('click', (event) => {
+        if (menu.open && !menu.contains(event.target)) menu.open = false;
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && menu.open) {
+            menu.open = false;
+            menu.querySelector('summary').focus();
+        }
+    });
+});
 
 document.querySelectorAll('[data-chip-row]').forEach((row) => {
     const active = row.querySelector('[aria-current="page"]');

@@ -30,9 +30,19 @@
             </div>
 
             <div class="panel p-5 md:p-6">
-                <p class="text-xs font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</p>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <p class="text-xs font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</p>
+                    @if ($account->isBooked())
+                        <span class="status {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->statusLabel() }}</span>
+                    @else
+                        @if ($account->status === 'available')
+                            <span class="status status-live text-lime-300">@include('catalog.live-dot'){{ $account->is_rental ? 'Siap disewa' : 'Tersedia' }}</span>
+                        @else
+                            <span class="status {{ $account->is_rental ? 'text-amber-300' : 'text-rose-300' }}">{{ $account->is_rental ? 'Sedang disewa' : 'Terjual' }}</span>
+                        @endif
+                    @endif
+                </div>
                 <h1 class="mt-2 text-2xl font-black leading-tight md:text-4xl">{{ $account->title }}</h1>
-                <span class="status mt-3 {{ $account->status === 'available' ? 'text-lime-300' : ($account->is_rental ? 'text-amber-300' : 'text-rose-300') }}">{{ $account->status === 'available' ? ($account->is_rental ? '● Siap disewa' : '● Tersedia') : ($account->is_rental ? 'Sedang disewa' : 'Terjual') }}</span>
 
                 @if ($account->is_rental)
                     <div class="mt-5">@include('catalog.rental-panel', ['account' => $account])</div>
@@ -42,6 +52,10 @@
                             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Status akun</p>
                             <p class="mt-1 text-3xl font-black uppercase tracking-widest text-rose-300">Terjual</p>
                             <p class="muted mt-1">Akun ini sudah terjual. Lihat akun lain yang masih tersedia di katalog.</p>
+                        @elseif ($account->isBooked())
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Status akun</p>
+                            <p class="mt-1 text-3xl font-black uppercase tracking-widest {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->statusLabel() }}</p>
+                            <p class="muted mt-1">{{ $account->status === 'dp' ? 'Akun ini sudah di-DP pembeli' : 'Akun ini sedang dicicil pembeli' }} dan tidak bisa dipesan lagi. Harga: {{ $account->formattedPrice() }}.</p>
                         @else
                             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Harga</p>
                             <p class="mt-1 text-3xl font-black text-lime-300 md:text-4xl">{{ $account->formattedPrice() }}</p>
@@ -52,6 +66,21 @@
                             @if ($account->isOnFlashSale())
                                 <p class="mt-3 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-300/15 px-3 py-1.5 text-sm font-bold text-amber-300">⚡ Flash sale berakhir dalam <span
                                         data-countdown="{{ $account->flash_sale_ends_at->toIso8601ZuluString() }}">{{ $account->flashSaleCountdown() }}</span></p>
+                            @endif
+                            {{-- Instalment offer: the account's own DP % / days, else the store rules. --}}
+                            @if ($account->status === 'available' && ($installmentPercent = $account->installmentPercent()))
+                                @php($installmentDays = $account->installmentDays())
+                                <div class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 md:p-4" aria-label="Bisa dicicil">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="text-sm font-black text-amber-300">Bisa dicicil</p>
+                                        <a class="text-xs font-bold text-lime-300 hover:underline" href="{{ route('installment', ['harga' => $account->price]) }}">Ketentuan cicilan ↗</a>
+                                    </div>
+                                    <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
+                                        <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">DP {{ $installmentPercent }}%</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">Rp {{ number_format($account->installmentDownPayment(), 0, ',', '.') }}</dd></div>
+                                        <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">Sisa bayar</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">Rp {{ number_format($account->price - $account->installmentDownPayment(), 0, ',', '.') }}</dd></div>
+                                        <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">Jangka waktu</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">{{ $installmentDays ? $installmentDays.' hari' : 'Tanya admin' }}</dd></div>
+                                    </dl>
+                                </div>
                             @endif
                         @endif
                     </div>
@@ -78,12 +107,21 @@
                                 <a class="btn-secondary w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Tukar tambah</a>
                                 <a class="btn-secondary w-full" href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Cicilan</a>
                             </div>
-                        @elseif ($account->status === 'sold')
+                        @elseif ($account->status === 'sold' || $account->isBooked())
                             <a class="btn w-full" href="{{ route('catalog.all') }}">Lihat akun lain ↗</a>
                         @else
                             <p class="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-400">Kontak WhatsApp belum diatur oleh admin.</p>
                         @endif
-                        <div class="grid">@include('catalog.wishlist-button', ['account' => $account])</div>
+                        <div class="grid gap-3 {{ $account->status === 'available' ? 'sm:grid-cols-2' : '' }}">
+                            @if ($account->status === 'available')
+                                <button type="button" class="btn-secondary aria-pressed:border-lime-300/60 aria-pressed:text-lime-300" data-cart-toggle="{{ $account->id }}" data-account-title="{{ $account->title }}"
+                                    aria-pressed="false" aria-label="Tambahkan {{ $account->title }} ke keranjang" disabled>
+                                    <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2.5 3h2.6l2.4 12h11l2-8H6.3" /></svg>
+                                    <span data-cart-label-long>Tambah ke keranjang</span>
+                                </button>
+                            @endif
+                            @include('catalog.wishlist-button', ['account' => $account])
+                        </div>
                     </div>
                 @endunless
             </div>

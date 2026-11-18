@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\ContactLink;
+use App\Models\FeedbackMessage;
 use App\Models\GameAccount;
 use App\Models\InfoPost;
 use App\Models\ManualSale;
@@ -20,9 +21,71 @@ use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    public function dashboard(): View
+    public function dashboard(Request $request): View
     {
-        return view('admin.dashboard', ['total' => GameAccount::count(), 'categories' => Category::count(), 'available' => GameAccount::where('status', 'available')->count(), 'sold' => GameAccount::where('status', 'sold')->count(), 'accounts' => GameAccount::with('category')->latest()->limit(5)->get()]);
+        $period = $request->query('periode') === 'bulanan' ? 'bulanan' : 'harian';
+        $monthStart = CarbonImmutable::now(GameAccount::LOCAL_TIMEZONE)->startOfMonth();
+        $statusCounts = GameAccount::query()->selectRaw('status, is_rental, count(*) as total')->groupBy('status', 'is_rental')->get();
+        $countWhere = fn (callable $match): int => (int) $statusCounts->filter($match)->sum('total');
+        $total = (int) $statusCounts->sum('total');
+        $sold = $countWhere(fn ($row): bool => $row->status === 'sold');
+
+        return view('admin.dashboard', [
+            'total' => $total,
+            'categories' => Category::count(),
+            'available' => GameAccount::where('status', 'available')->count(),
+            'sold' => $sold,
+            'soldPercent' => $total ? (int) round($sold / $total * 100) : 0,
+            'stockSegments' => [
+                ['label' => 'Tersedia', 'value' => $countWhere(fn ($row): bool => $row->status === 'available' && ! $row->is_rental), 'color' => 'var(--viz-available)'],
+                ['label' => 'DP / cicil', 'value' => $countWhere(fn ($row): bool => in_array($row->status, GameAccount::BOOKED_STATUSES, true)), 'color' => 'var(--viz-booked)'],
+                ['label' => 'Terjual', 'value' => $sold, 'color' => 'var(--viz-sold)'],
+                ['label' => 'Rental', 'value' => $countWhere(fn ($row): bool => $row->is_rental && $row->status !== 'sold'), 'color' => 'var(--viz-rental)'],
+                ['label' => 'Draft', 'value' => $countWhere(fn ($row): bool => $row->status === 'draft' && ! $row->is_rental), 'color' => 'var(--viz-draft)'],
+            ],
+            'monthRevenue' => (int) GameAccount::where('status', 'sold')->where('sold_at', '>=', $monthStart->utc())->sum('price')
+                + (int) ManualSale::where('sold_on', '>=', $monthStart->toDateString())->sum('amount'),
+            'period' => $period,
+            'chart' => $this->dashboardChart($period),
+            'categoryStock' => Category::withCount(['accounts', 'accounts as sold_count' => fn ($query) => $query->where('status', 'sold'), 'accounts as available_count' => fn ($query) => $query->where('status', 'available'), 'accounts as booked_count' => fn ($query) => $query->whereIn('status', GameAccount::BOOKED_STATUSES)])
+                ->orderByDesc('accounts_count')->limit(5)->get(),
+            'flashSales' => GameAccount::onFlashSale()->orderBy('flash_sale_ends_at')->limit(4)->get(),
+            // Booked accounts, nearest due date first; those without a due date last.
+            'bookings' => GameAccount::with('category')->whereIn('status', GameAccount::BOOKED_STATUSES)
+                ->orderByRaw('payment_due_on IS NULL')->orderBy('payment_due_on')->orderBy('id')->get(),
+            'latestMessages' => FeedbackMessage::latest()->limit(4)->get(),
+            'accounts' => GameAccount::with('category')->latest()->limit(5)->get(),
+        ]);
+    }
+
+    /**
+     * Accounts listed vs sold per bucket (last 14 days or last 6 months, Jakarta time) for the dashboard chart.
+     *
+     * @return list<array{label: string, title: string, added: int, sold: int}>
+     */
+    private function dashboardChart(string $period): array
+    {
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $today = CarbonImmutable::now(GameAccount::LOCAL_TIMEZONE)->startOfDay();
+        $monthly = $period === 'bulanan';
+        $start = $monthly ? $today->startOfMonth()->subMonths(5) : $today->subDays(13);
+        $keyFormat = $monthly ? 'Y-m' : 'Y-m-d';
+        $countPer = fn (string $column): Collection => GameAccount::where($column, '>=', $start->utc())->pluck($column)
+            ->countBy(fn ($date): string => CarbonImmutable::parse($date)->timezone(GameAccount::LOCAL_TIMEZONE)->format($keyFormat));
+        $added = $countPer('created_at');
+        $sold = $countPer('sold_at');
+
+        return collect(range(0, $monthly ? 5 : 13))->map(function (int $step) use ($monthly, $start, $months, $keyFormat, $added, $sold): array {
+            $bucket = $monthly ? $start->addMonths($step) : $start->addDays($step);
+            $key = $bucket->format($keyFormat);
+
+            return [
+                'label' => $monthly ? $months[$bucket->month - 1] : $bucket->format('j/n'),
+                'title' => $monthly ? $months[$bucket->month - 1].' '.$bucket->year : $bucket->day.' '.$months[$bucket->month - 1],
+                'added' => (int) $added->get($key, 0),
+                'sold' => (int) $sold->get($key, 0),
+            ];
+        })->all();
     }
 
     public function accounts(Request $request): View
@@ -42,6 +105,55 @@ class AdminController extends Controller
             'readyCount' => (clone $rentals)->where('status', 'available')->count(),
             'rentedCount' => (clone $rentals)->where('status', 'rented')->count(),
         ]);
+    }
+
+    /**
+     * Store-wide instalment terms: DP %, payoff days per price tier and (from the settings page) the rule texts.
+     * Shared by the dashboard panel and Admin > Pengaturan.
+     */
+    public function saveDownPaymentTerms(Request $request): RedirectResponse
+    {
+        // Tier prices are typed as "100.000" like the other rupiah fields.
+        $request->merge(['tiers' => collect($request->input('tiers', []))->map(fn ($tier): array => [
+            'max' => is_string($tier['max'] ?? null) && preg_match('/^(Rp\s*)?[\d.\s]+$/i', trim($tier['max'])) ? preg_replace('/\D/', '', $tier['max']) : ($tier['max'] ?? null),
+            'days' => $tier['days'] ?? null,
+        ])->all()]);
+        $data = $request->validate([
+            'dp_min_percent' => 'nullable|integer|min:1|max:100',
+            'tiers' => 'sometimes|array|max:8',
+            'tiers.*.max' => 'nullable|integer|min:1000|max:999999999999',
+            'tiers.*.days' => 'nullable|integer|min:1|max:365|required_with:tiers.*.max',
+            'dp_rules' => 'sometimes|nullable|string|max:3000',
+            'dp_cancel_rules' => 'sometimes|nullable|string|max:3000',
+        ], ['tiers.*.days.required_with' => 'Isi jumlah hari untuk setiap batas harga.']);
+
+        $tiers = collect($data['tiers'] ?? [])->filter(fn (array $tier): bool => filled($tier['days']))
+            ->map(fn (array $tier): array => ['max' => filled($tier['max']) ? (int) $tier['max'] : null, 'days' => (int) $tier['days']]);
+        if ($tiers->whereNull('max')->count() > 1 || $tiers->whereNotNull('max')->pluck('max')->duplicates()->isNotEmpty()) {
+            return back()->withErrors(['tiers' => 'Setiap batas harga harus berbeda, dan hanya satu baris boleh "ke atas" (batas harga kosong).'])->withInput();
+        }
+
+        Setting::updateOrCreate(['key' => 'dp_min_percent'], ['value' => (string) ($data['dp_min_percent'] ?? '')]);
+        if ($request->has('tiers')) {
+            Setting::updateOrCreate(['key' => 'dp_due_tiers'], ['value' => $tiers->sortBy(fn (array $tier): int => $tier['max'] ?? PHP_INT_MAX)->values()->toJson()]);
+        }
+        foreach (['dp_rules', 'dp_cancel_rules'] as $key) {
+            if ($request->exists($key)) {
+                Setting::updateOrCreate(['key' => $key], ['value' => trim(preg_replace("/\r\n?/", "\n", $data[$key] ?? ''))]);
+            }
+        }
+
+        return back()->with('success', 'Aturan DP & cicilan disimpan.');
+    }
+
+    /** Paid share and due date of one booked account, edited inline on the dashboard. */
+    public function updatePayment(Request $request, GameAccount $account): RedirectResponse
+    {
+        abort_unless($account->isBooked(), 404);
+        $data = $request->validate(['dp_percent' => 'nullable|integer|min:1|max:100', 'payment_due_on' => 'nullable|date_format:Y-m-d']);
+        $account->update(['dp_percent' => $data['dp_percent'] ?? null, 'payment_due_on' => $data['payment_due_on'] ?? null]);
+
+        return back()->with('success', 'Pembayaran '.$account->title.' diperbarui.');
     }
 
     public function updateRentalStatus(Request $request, GameAccount $account): RedirectResponse
@@ -168,7 +280,11 @@ class AdminController extends Controller
             'packages.*.price' => 'nullable|integer|min:0|max:999999999999|required_with:packages.*.duration',
             'ready_estimate_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
-            'status' => 'required|in:available,sold,draft,rented',
+            'status' => 'required|in:available,dp,cicil,sold,draft,rented',
+            'dp_percent' => 'nullable|integer|min:1|max:100',
+            'payment_due_on' => 'nullable|date_format:Y-m-d',
+            'installment_dp_percent' => 'nullable|integer|min:1|max:100',
+            'installment_days' => 'nullable|integer|min:1|max:365',
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
             'flash_sale_ends_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
@@ -190,8 +306,18 @@ class AdminController extends Controller
         if ($data['status'] === 'rented' && ! $data['is_rental']) {
             return back()->withErrors(['status' => 'Status "Sedang disewa" hanya untuk akun rental.'])->withInput();
         }
+        if ($data['is_rental'] && in_array($data['status'], GameAccount::BOOKED_STATUSES, true)) {
+            return back()->withErrors(['status' => 'Status "Sudah DP" dan "Sudah dicicil" hanya untuk akun jual, bukan rental.'])->withInput();
+        }
         if ($data['is_rental']) {
             $data['price'] = (int) $packages->min('price');
+        }
+        // Booked accounts start from the store's default terms when the admin leaves the fields empty.
+        if (in_array($data['status'], GameAccount::BOOKED_STATUSES, true)) {
+            $days = ($data['installment_days'] ?? null) ?: Setting::dueDaysFor((int) $data['price']);
+            $data['dp_percent'] = $data['dp_percent'] ?? (($data['installment_dp_percent'] ?? null) ?: Setting::downPaymentPercent());
+            $data['payment_due_on'] = $data['payment_due_on']
+                ?? ($days ? now(GameAccount::LOCAL_TIMEZONE)->addDays($days)->toDateString() : null);
         }
         $data['ready_estimate_at'] = $data['is_rental'] && ! empty($data['ready_estimate_at'])
             ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['ready_estimate_at'], GameAccount::LOCAL_TIMEZONE)->utc()

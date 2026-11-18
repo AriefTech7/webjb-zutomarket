@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
@@ -26,6 +27,9 @@ Route::get('/kritik-saran', [FeedbackController::class, 'create'])->name('feedba
 Route::post('/kritik-saran', [FeedbackController::class, 'store'])->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
+Route::view('/cicilan', 'catalog.installment')->name('installment');
+Route::get('/keranjang', [CartController::class, 'index'])->name('cart');
+Route::get('/keranjang/accounts', [CartController::class, 'accounts'])->middleware('throttle:60,1')->name('cart.accounts');
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
@@ -56,6 +60,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
     Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
     Route::patch('/rentals/{account}/status', [AdminController::class, 'updateRentalStatus'])->name('rentals.status');
+    Route::put('/dp-terms', [AdminController::class, 'saveDownPaymentTerms'])->name('dp-terms.update');
+    Route::patch('/accounts/{account}/payment', [AdminController::class, 'updatePayment'])->name('accounts.payment');
     Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
     Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
     Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');

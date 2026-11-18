@@ -31,7 +31,10 @@
     .label { @apply mb-2 block text-sm font-medium text-slate-200; }
     .eyebrow { @apply text-xs font-bold uppercase tracking-[0.2em] text-lime-300; }
     .muted { @apply text-sm leading-6 text-slate-400; }
-    .status { @apply inline-flex rounded-full border border-[#a9c3ff]/20 bg-[#070d20]/80 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm; }
+    /* Available badge: pulsing dot (live-dot partial) plus a soft ring that breathes out from the pill. */
+    .status-live { @apply gap-1.5; animation: status-glow 2.2s ease-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .status-live { animation: none; } }
+    .status { @apply inline-flex items-center rounded-full border border-[#a9c3ff]/20 bg-[#070d20]/80 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm; }
     .nav-link { @apply rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-[#a9c3ff]/10 hover:text-white; }
     .admin-link { @apply rounded-xl border border-[#a9c3ff]/15 bg-[#a9c3ff]/5 px-4 py-3 text-sm transition hover:border-lime-300/50 hover:bg-[#a9c3ff]/10; }
     .brand-wordmark { @apply h-auto w-32 max-w-[42vw] shrink-0 md:w-40; }
@@ -104,6 +107,11 @@
         .marquee { overflow-x: auto; scrollbar-width: none; }
         .marquee-track { animation: none; }
     }
+    /* Share / Suka / Keranjang row on product cards: icon over label when narrow, side by side from 15rem. */
+    .card-action { @apply flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-white/10 bg-white/5 px-0.5 py-1.5 text-[10px] font-semibold leading-tight tracking-tight text-slate-300 transition hover:border-white/20 hover:text-white disabled:cursor-wait @[15rem]:flex-row @[15rem]:gap-1.5 @[15rem]:rounded-xl @[15rem]:px-1 @[15rem]:text-xs @[15rem]:tracking-normal; }
+    .card-action > span { @apply max-w-full truncate; }
+    /* Admin dashboard charts. Series colours validated for colour-blind separation on the dark and light panels. */
+    .viz { --viz-added: #9085e9; --viz-sold: #d95926; --viz-available: #3987e5; --viz-booked: #199e70; --viz-rental: #9085e9; --viz-draft: #64748b; --viz-track: #a9c3ff1a; }
     .theme-toggle { @apply flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#a9c3ff]/20 bg-[#a9c3ff]/10 text-slate-200 transition hover:text-white; }
     @media (min-width: 48rem) {
         .joki-ladder { @apply flex-row items-end border-b-4 border-[#02061f]; }
@@ -131,6 +139,11 @@
 @keyframes cat-glow {
     0%, 100% { filter: drop-shadow(0 0 0 transparent); }
     50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-lime-300) 80%, transparent)); }
+}
+
+@keyframes status-glow {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
+    70%, 100% { box-shadow: 0 0 0 7px transparent; }
 }
 
 @keyframes marquee {
@@ -178,6 +191,7 @@ html[data-theme='light'] body {
 html[data-theme='light'] select, html[data-theme='light'] input, html[data-theme='light'] textarea { color-scheme: light; }
 html[data-theme='light'] .panel { background-color: #ffffffe6; border-color: #c7d2fe; box-shadow: 0 10px 30px #0f172a12; }
 html[data-theme='light'] .field { background-color: #ffffff; border-color: #cbd5e1; }
+html[data-theme='light'] .viz { --viz-added: #6250d6; --viz-sold: #eb6834; --viz-available: #2a78d6; --viz-booked: #1baf7a; --viz-rental: #6250d6; --viz-draft: #94a3b8; --viz-track: #e2e8f0; }
 html[data-theme='light'] .status { background-color: #ffffffe0; border-color: #cbd5e1; }
 html[data-theme='light'] .store-hero { background: linear-gradient(135deg, #e8eeff 0%, #f6f8ff 52%, #efeaff 100%); border-color: #c7d2fe; }
 html[data-theme='light'] .catalog-media { background-color: #e2e8f0; }

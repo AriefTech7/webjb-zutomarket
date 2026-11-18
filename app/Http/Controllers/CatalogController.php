@@ -20,9 +20,9 @@ class CatalogController extends Controller
         if ($selected) {
             // A category page shows everything in that category, rentals included (e.g. "Jasa Rental Akun").
             $query->whereHas('category', fn ($q) => $q->where('slug', $selected))
-                ->where(fn ($q) => $q->where(fn ($q) => $q->forSale()->whereIn('status', ['available', 'sold']))->orWhere(fn ($q) => $q->rental()));
+                ->where(fn ($q) => $q->where(fn ($q) => $q->forSale()->whereIn('status', GameAccount::PUBLIC_SALE_STATUSES))->orWhere(fn ($q) => $q->rental()));
         } else {
-            $query->forSale()->whereIn('status', ['available', 'sold']);
+            $query->forSale()->whereIn('status', GameAccount::PUBLIC_SALE_STATUSES);
         }
         $query->search($data['q'] ?? '');
         if ($status) {
@@ -51,7 +51,7 @@ class CatalogController extends Controller
 
         return view('catalog.home', [
             'categories' => Category::withCount(['accounts' => fn ($q) => $q->where('status', 'available')])->orderBy('name')->get(),
-            'catalogTotal' => GameAccount::forSale()->whereIn('status', ['available', 'sold'])->count(),
+            'catalogTotal' => GameAccount::forSale()->whereIn('status', GameAccount::PUBLIC_SALE_STATUSES)->count(),
             'available' => $availableForSale->latest()->orderByDesc('id')->limit(6)->get(),
             'flashSaleCount' => GameAccount::onFlashSale()->count(),
             'flashSale' => GameAccount::with('category')->onFlashSale()->orderBy('flash_sale_ends_at')->orderByDesc('id')->limit(4)->get(),
