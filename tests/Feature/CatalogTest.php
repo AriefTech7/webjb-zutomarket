@@ -214,6 +214,36 @@ class CatalogTest extends TestCase
         $this->get('/akun/'.$account->slug)->assertOk()->assertSeeInOrder(['DP 30%', 'Rp 135.000', '23 hari']);
     }
 
+    public function test_product_cards_show_the_instalment_badge_and_the_admins_card_note(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $this->actingAs(User::factory()->create());
+        $account = GameAccount::factory()->create(['title' => 'Akun Catatan']);
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 350000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
+        $badge = '>Bisa cicil</span>';
+
+        $this->get('/katalog')->assertOk()->assertSee($badge, false);
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('Akun ini bisa dicicil')->assertSee('name="card_note"', false);
+
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT'])->assertSessionHasNoErrors();
+        $account->refresh();
+        $this->get('/katalog')->assertOk()->assertSee($badge, false)->assertSee('>Bisa TT</span>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Bisa TT</span>', false)->assertSee('Bisa dicicil')->assertSee('>Cicilan</a>', false);
+        $this->assertStringContainsString('Bisa TT', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+
+        // Switched off: no badge, no instalment box, no Cicilan button; the note stays.
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT', 'installment_enabled' => '0'])->assertSessionHasNoErrors();
+        $this->assertFalse($account->refresh()->installment_enabled);
+        $this->get('/katalog')->assertOk()->assertDontSee($badge, false)->assertSee('>Bisa TT</span>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('>Cicilan</a>', false);
+        $this->assertStringNotContainsString($badge, $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => str_repeat('x', 31)])->assertSessionHasErrors('card_note');
+
+        // Sold accounts never show the badge.
+        $this->put('/admin/accounts/'.$account->id, [...$data, 'installment_enabled' => '1', 'status' => 'sold'])->assertSessionHasNoErrors();
+        $this->get('/katalog?status=sold')->assertOk()->assertSee('Akun Catatan')->assertDontSee($badge, false);
+    }
+
     public function test_down_payment_and_instalment_accounts_stay_listed_but_cannot_be_ordered(): void
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);

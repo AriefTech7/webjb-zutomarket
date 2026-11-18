@@ -285,6 +285,8 @@ class AdminController extends Controller
             'payment_due_on' => 'nullable|date_format:Y-m-d',
             'installment_dp_percent' => 'nullable|integer|min:1|max:100',
             'installment_days' => 'nullable|integer|min:1|max:365',
+            'installment_enabled' => 'sometimes|boolean',
+            'card_note' => 'nullable|string|max:30',
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
             'flash_sale_ends_at' => ['nullable', 'date_format:Y-m-d\TH:i'],

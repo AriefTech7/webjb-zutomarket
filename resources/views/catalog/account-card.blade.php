@@ -22,7 +22,7 @@
             @endif
         </div>
         <div class="p-3 md:p-4">
-            <span class="inline-block max-w-full truncate rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</span>
+            <div class="flex flex-wrap items-center gap-1"><span class="inline-block max-w-full truncate rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</span>@include('catalog.card-badges')</div>
             <h3 class="mt-2 line-clamp-2 text-sm font-black leading-5 md:text-base md:leading-6">{{ $account->title }}</h3>
             <div class="mt-2">
                 @if ($account->status === 'sold')

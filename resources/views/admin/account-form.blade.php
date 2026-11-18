@@ -45,6 +45,11 @@
             <div class="rounded-2xl border border-amber-300/25 bg-amber-300/5 p-4 md:col-span-2">
                 <p class="text-sm font-bold text-amber-300">Cicilan untuk pengunjung</p>
                 <p class="muted mt-1 text-xs">Tampil di halaman akun (DP, sisa bayar, jangka waktu) dan di pesan WhatsApp "Cicilan". Kosongkan untuk mengikuti <a class="text-lime-300 hover:underline" href="{{ route('admin.settings') }}#dp-terms">aturan toko</a>.</p>
+                <label class="mt-3 flex cursor-pointer items-center gap-3 text-sm font-semibold text-white">
+                    <input type="hidden" name="installment_enabled" value="0">
+                    <input type="checkbox" name="installment_enabled" value="1" class="size-4 accent-lime-300" @checked(old('installment_enabled', $account->installment_enabled ?? true))>
+                    Akun ini bisa dicicil <span class="font-normal text-slate-400">(label "Bisa cicil" di kartu, kotak cicilan &amp; tombol Cicilan)</span>
+                </label>
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="label" for="installment_dp_percent">DP cicilan (%)</label>
@@ -57,6 +62,11 @@
                             value="{{ old('installment_days', $account->installment_days) }}" placeholder="{{ $storeDays ? 'Kosong = '.$storeDays.' hari (sesuai harga)' : 'Kosong = sesuai harga akun' }}">
                     </div>
                 </div>
+            </div>
+            <div class="md:col-span-2">
+                <label class="label" for="card_note">Catatan di kartu (opsional)</label>
+                <input class="field" id="card_note" name="card_note" maxlength="30" value="{{ old('card_note', $account->card_note) }}" placeholder="Contoh: Bisa TT, Nego, Full skin">
+                <p class="muted mt-2 text-xs">Label pendek di samping nama kategori pada kartu produk dan halaman akun. Maksimal 30 karakter.</p>
             </div>
             @endunless
         </div>

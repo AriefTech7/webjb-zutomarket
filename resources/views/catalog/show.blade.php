@@ -32,6 +32,7 @@
             <div class="panel p-5 md:p-6">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <p class="text-xs font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</p>
+                    @include('catalog.card-badges')
                     @if ($account->isBooked())
                         <span class="status {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->statusLabel() }}</span>
                     @else
@@ -68,7 +69,7 @@
                                         data-countdown="{{ $account->flash_sale_ends_at->toIso8601ZuluString() }}">{{ $account->flashSaleCountdown() }}</span></p>
                             @endif
                             {{-- Instalment offer: the account's own DP % / days, else the store rules. --}}
-                            @if ($account->status === 'available' && ($installmentPercent = $account->installmentPercent()))
+                            @if ($account->offersInstallment() && ($installmentPercent = $account->installmentPercent()))
                                 @php($installmentDays = $account->installmentDays())
                                 <div class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 md:p-4" aria-label="Bisa dicicil">
                                     <div class="flex items-center justify-between gap-3">
@@ -103,9 +104,11 @@
                                 <a class="btn-secondary w-full border-lime-300/50 bg-transparent text-lime-300" href="{{ $account->offerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Tawar</a>
                                 <a class="btn w-full" href="{{ $account->buyWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Beli</a>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid gap-3 {{ $account->offersInstallment() ? 'grid-cols-2' : '' }}">
                                 <a class="btn-secondary w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Tukar tambah</a>
-                                <a class="btn-secondary w-full" href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Cicilan</a>
+                                @if ($account->offersInstallment())
+                                    <a class="btn-secondary w-full" href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Cicilan</a>
+                                @endif
                             </div>
                         @elseif ($account->status === 'sold' || $account->isBooked())
                             <a class="btn w-full" href="{{ route('catalog.all') }}">Lihat akun lain ↗</a>

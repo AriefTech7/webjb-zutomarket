@@ -15,7 +15,7 @@ class GameAccount extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'dp_percent', 'payment_due_on', 'seller_whatsapp', 'original_price', 'installment_dp_percent', 'installment_days', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'dp_percent', 'payment_due_on', 'seller_whatsapp', 'original_price', 'installment_dp_percent', 'installment_days', 'installment_enabled', 'card_note', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at'];
 
     /** Admins type flash sale times in Indonesian Western time. */
     public const LOCAL_TIMEZONE = 'Asia/Jakarta';
@@ -50,6 +50,12 @@ class GameAccount extends Model
         return $this->installment_days ?: Setting::dueDaysFor($this->price);
     }
 
+    /** Visitors see the "Bisa cicil" badge and the Cicilan button; the DP/balance box also needs a DP percentage. */
+    public function offersInstallment(): bool
+    {
+        return $this->status === 'available' && ! $this->is_rental && $this->installment_enabled !== false;
+    }
+
     public function installmentDownPayment(): int
     {
         return (int) ceil($this->price * ($this->installmentPercent() ?? 0) / 100);
@@ -79,7 +85,7 @@ class GameAccount extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
+        return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
     }
 
     public function rentalPackages(): HasMany
