@@ -2,7 +2,10 @@
 <nav class="grid gap-1" aria-label="{{ $navLabel }}">
     @php($editedAccount = request()->route('account'))
     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
+    {{-- Regular admins only manage their own accounts; the store-wide menus are for the super admin. --}}
+    @php($superOnly = ['sales', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
     @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+        @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"
             class="flex min-h-11 min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition {{ $isActiveMenu ? 'bg-lime-300 text-slate-950 shadow-lg shadow-lime-300/20' : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"

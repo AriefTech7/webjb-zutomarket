@@ -8,7 +8,7 @@
                 <img class="h-14 w-16 shrink-0 rounded-lg object-cover" src="{{ $account->imageUrl() }}" alt="" loading="lazy">
                 <div class="min-w-0 flex-1">
                     <p class="break-words text-sm font-semibold">{{ $account->title }}</p>
-                    <p class="muted mt-1 break-words text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif</p>
+                    <p class="muted mt-1 break-words text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif @if (auth()->user()->is_super_admin && $account->owner) · milik {{ $account->owner->username }} @endif</p>
                     <p class="mt-1 text-xs text-slate-500">{{ $account->created_at->format('d M Y') }}</p>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                                 src="{{ $account->imageUrl() }}" alt="">
                             <div>
                                 <p class="font-semibold">{{ $account->title }}</p>
-                                <p class="muted text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif ·
+                                <p class="muted text-xs">{{ $account->category->name }}@if ($account->is_rental) · Rental @endif @if (auth()->user()->is_super_admin && $account->owner) · milik {{ $account->owner->username }} @endif ·
                                     {{ $account->created_at->format('d M Y') }}</p>
                             </div>
                         </div>

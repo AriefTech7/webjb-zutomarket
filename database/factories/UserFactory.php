@@ -32,7 +32,16 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'is_admin' => true,
+            'is_super_admin' => true,
         ];
+    }
+
+    /**
+     * An admin who only manages the game accounts they own.
+     */
+    public function regularAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => ['is_super_admin' => false]);
     }
 
     /**
@@ -43,6 +52,7 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'username' => null,
             'is_admin' => false,
+            'is_super_admin' => false,
         ]);
     }
 

@@ -1,7 +1,8 @@
 @extends('layouts.admin')
 @section('title', 'Dashboard admin')
 @section('admin-content')
-    @if (!\App\Models\Setting::valueFor('whatsapp_number'))
+    @php($isSuperAdmin = auth()->user()->is_super_admin)
+    @if ($isSuperAdmin && !\App\Models\Setting::valueFor('whatsapp_number'))
         <div class="panel mb-5 p-5 text-sm text-amber-200">Nomor WhatsApp belum diatur. <a class="underline"
                 href="{{ route('admin.settings') }}">Atur sekarang</a> agar pembeli dapat menghubungi toko.</div>
     @endif
@@ -131,6 +132,7 @@
                     </div>
                 </div>
 
+                @if ($isSuperAdmin)
                 <details class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3" @if ($errors->has('tiers') || $errors->has('tiers.*') || $errors->has('dp_min_percent')) open @endif>
                     <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
                         <span class="text-xs font-bold text-amber-300">Aturan toko <span class="font-normal text-slate-300">· DP {{ \App\Models\Setting::downPaymentPercent() ?? '-' }}% · {{ collect(\App\Models\Setting::dueTiers())->pluck('days')->implode('/') ?: '-' }} hari</span></span>
@@ -146,6 +148,9 @@
                         </div>
                     </form>
                 </details>
+                @else
+                    <p class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 text-xs text-slate-300"><span class="font-bold text-amber-300">Aturan toko</span> · DP {{ \App\Models\Setting::downPaymentPercent() ?? '-' }}% · {{ collect(\App\Models\Setting::dueTiers())->pluck('days')->implode('/') ?: '-' }} hari (diatur super admin)</p>
+                @endif
 
                 <ul class="mt-4 space-y-3">
                     @forelse ($bookings as $booking)
@@ -239,7 +244,7 @@
             <section class="panel p-5" aria-labelledby="category-title">
                 <div class="flex items-center justify-between gap-3">
                     <h2 id="category-title" class="font-black">Stok per kategori</h2>
-                    <a href="{{ route('admin.categories') }}" class="rounded-full bg-lime-300/15 px-3 py-1 text-xs font-bold text-lime-300 hover:bg-lime-300/25">{{ $categories }} kategori</a>
+                    @if ($isSuperAdmin)<a href="{{ route('admin.categories') }}" class="rounded-full bg-lime-300/15 px-3 py-1 text-xs font-bold text-lime-300 hover:bg-lime-300/25">{{ $categories }} kategori</a>@endif
                 </div>
                 <ul class="mt-4 space-y-4">
                     @forelse ($categoryStock as $category)

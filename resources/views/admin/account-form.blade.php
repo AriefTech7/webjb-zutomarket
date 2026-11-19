@@ -22,10 +22,24 @@
                     @endforeach
                 </select>
                 @if ($categories->isEmpty())
-                    <a class="mt-2 block text-sm text-lime-300" href="{{ route('admin.categories') }}">Tambahkan kategori
-                        terlebih dahulu →</a>
+                    @if (auth()->user()->is_super_admin)
+                        <a class="mt-2 block text-sm text-lime-300" href="{{ route('admin.categories') }}">Tambahkan kategori
+                            terlebih dahulu →</a>
+                    @else
+                        <p class="muted mt-2 text-xs">Belum ada kategori. Minta super admin menambahkannya.</p>
+                    @endif
                 @endif
             </div>
+            @if ($admins->isNotEmpty())
+                {{-- Only the super admin sees this: who owns (and may edit) the account. --}}
+                <div><label class="label" for="owner_id">Pemilik akun</label><select class="field" id="owner_id" name="owner_id">
+                        @foreach ($admins as $admin)
+                            <option value="{{ $admin->id }}" @selected((int) old('owner_id', $account->owner_id ?? auth()->id()) === $admin->id)>{{ $admin->username }} · {{ $admin->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="muted mt-2 text-xs">Hanya pemilik dan super admin yang bisa mengedit atau menghapus akun ini.</p>
+                </div>
+            @endif
             @unless ($isRentalForm)
             <div><label class="label" for="price">Harga (Rupiah)</label><input class="field" id="price"
                     name="price" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money
@@ -44,7 +58,7 @@
             @php($storeDays = $account->exists ? \App\Models\Setting::dueDaysFor($account->price) : null)
             <div class="rounded-2xl border border-amber-300/25 bg-amber-300/5 p-4 md:col-span-2">
                 <p class="text-sm font-bold text-amber-300">Cicilan untuk pengunjung</p>
-                <p class="muted mt-1 text-xs">Tampil di halaman akun (DP, sisa bayar, jangka waktu) dan di pesan WhatsApp "Cicilan". Kosongkan untuk mengikuti <a class="text-lime-300 hover:underline" href="{{ route('admin.settings') }}#dp-terms">aturan toko</a>.</p>
+                <p class="muted mt-1 text-xs">Tampil di halaman akun (DP, sisa bayar, jangka waktu) dan di pesan WhatsApp "Cicilan". Kosongkan untuk mengikuti @if (auth()->user()->is_super_admin)<a class="text-lime-300 hover:underline" href="{{ route('admin.settings') }}#dp-terms">aturan toko</a>@else aturan toko @endif.</p>
                 <label class="mt-3 flex cursor-pointer items-center gap-3 text-sm font-semibold text-white">
                     <input type="hidden" name="installment_enabled" value="0">
                     <input type="checkbox" name="installment_enabled" value="1" class="size-4 accent-lime-300" @checked(old('installment_enabled', $account->installment_enabled ?? true))>

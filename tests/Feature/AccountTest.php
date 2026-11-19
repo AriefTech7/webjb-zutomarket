@@ -159,10 +159,14 @@ class AccountTest extends TestCase
         $this->post('/admin/login', ['username' => 'admin2', 'password' => 'admin2-kuat'])->assertRedirect(route('admin.dashboard'));
         $this->assertAuthenticatedAs($admin2);
 
-        $this->delete('/admin/admins/'.$admin2->id, ['current_password' => 'admin2-kuat'])->assertSessionHasErrors('current_password');
-        $this->assertModelExists($admin2);
-        $this->delete('/admin/admins/'.$buyer->id, ['current_password' => 'admin2-kuat'])->assertNotFound();
-        $this->actingAs($owner)->delete('/admin/admins/'.$admin2->id, ['current_password' => 'salah'])->assertSessionHasErrors('current_password');
+        // A new admin is a regular admin: the admin team is managed by the super admin only.
+        $this->assertFalse($admin2->is_super_admin);
+        $this->get('/admin/admins')->assertForbidden();
+        $this->delete('/admin/admins/'.$owner->id, ['current_password' => 'admin2-kuat'])->assertForbidden();
+        $this->actingAs($owner)->delete('/admin/admins/'.$owner->id, ['current_password' => 'rahasia123'])->assertSessionHasErrors('current_password');
+        $this->assertModelExists($owner);
+        $this->delete('/admin/admins/'.$buyer->id, ['current_password' => 'rahasia123'])->assertNotFound();
+        $this->delete('/admin/admins/'.$admin2->id, ['current_password' => 'salah'])->assertSessionHasErrors('current_password');
         $this->delete('/admin/admins/'.$admin2->id, ['current_password' => 'rahasia123'])->assertSessionHas('success');
         $this->assertModelMissing($admin2);
     }

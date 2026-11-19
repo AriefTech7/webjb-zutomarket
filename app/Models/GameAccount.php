@@ -88,6 +88,24 @@ class GameAccount extends Model
         return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Accounts this admin may see and edit in the admin area: all for the super admin, otherwise their own.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeManageableBy(Builder $query, User $admin): void
+    {
+        if (! $admin->is_super_admin) {
+            $query->where('owner_id', $admin->id);
+        }
+    }
+
     public function rentalPackages(): HasMany
     {
         return $this->hasMany(RentalPackage::class)->orderBy('sort_order')->orderBy('id');

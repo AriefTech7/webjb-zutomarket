@@ -9,6 +9,7 @@ use App\Models\GameAccount;
 use App\Models\InfoPost;
 use App\Models\ManualSale;
 use App\Models\Setting;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,10 @@ class AdminController extends Controller
     {
         $period = $request->query('periode') === 'bulanan' ? 'bulanan' : 'harian';
         $monthStart = CarbonImmutable::now(GameAccount::LOCAL_TIMEZONE)->startOfMonth();
-        $statusCounts = GameAccount::query()->selectRaw('status, is_rental, count(*) as total')->groupBy('status', 'is_rental')->get();
+        // A regular admin's dashboard counts only their own accounts; the super admin sees the whole store.
+        $admin = $request->user();
+        $mine = fn () => GameAccount::query()->manageableBy($admin);
+        $statusCounts = $mine()->selectRaw('status, is_rental, count(*) as total')->groupBy('status', 'is_rental')->get();
         $countWhere = fn (callable $match): int => (int) $statusCounts->filter($match)->sum('total');
         $total = (int) $statusCounts->sum('total');
         $sold = $countWhere(fn ($row): bool => $row->status === 'sold');
@@ -33,7 +37,7 @@ class AdminController extends Controller
         return view('admin.dashboard', [
             'total' => $total,
             'categories' => Category::count(),
-            'available' => GameAccount::where('status', 'available')->count(),
+            'available' => $mine()->where('status', 'available')->count(),
             'sold' => $sold,
             'soldPercent' => $total ? (int) round($sold / $total * 100) : 0,
             'stockSegments' => [
@@ -43,18 +47,23 @@ class AdminController extends Controller
                 ['label' => 'Rental', 'value' => $countWhere(fn ($row): bool => $row->is_rental && $row->status !== 'sold'), 'color' => 'var(--viz-rental)'],
                 ['label' => 'Draft', 'value' => $countWhere(fn ($row): bool => $row->status === 'draft' && ! $row->is_rental), 'color' => 'var(--viz-draft)'],
             ],
-            'monthRevenue' => (int) GameAccount::where('status', 'sold')->where('sold_at', '>=', $monthStart->utc())->sum('price')
-                + (int) ManualSale::where('sold_on', '>=', $monthStart->toDateString())->sum('amount'),
+            'monthRevenue' => (int) $mine()->where('status', 'sold')->where('sold_at', '>=', $monthStart->utc())->sum('price')
+                + ($admin->is_super_admin ? (int) ManualSale::where('sold_on', '>=', $monthStart->toDateString())->sum('amount') : 0),
             'period' => $period,
-            'chart' => $this->dashboardChart($period),
-            'categoryStock' => Category::withCount(['accounts', 'accounts as sold_count' => fn ($query) => $query->where('status', 'sold'), 'accounts as available_count' => fn ($query) => $query->where('status', 'available'), 'accounts as booked_count' => fn ($query) => $query->whereIn('status', GameAccount::BOOKED_STATUSES)])
-                ->orderByDesc('accounts_count')->limit(5)->get(),
-            'flashSales' => GameAccount::onFlashSale()->orderBy('flash_sale_ends_at')->limit(4)->get(),
+            'chart' => $this->dashboardChart($period, $admin),
+            'categoryStock' => Category::withCount([
+                'accounts' => fn ($query) => $query->manageableBy($admin),
+                'accounts as sold_count' => fn ($query) => $query->manageableBy($admin)->where('status', 'sold'),
+                'accounts as available_count' => fn ($query) => $query->manageableBy($admin)->where('status', 'available'),
+                'accounts as booked_count' => fn ($query) => $query->manageableBy($admin)->whereIn('status', GameAccount::BOOKED_STATUSES),
+            ])
+                ->orderByDesc('accounts_count')->get()->where('accounts_count', '>', 0)->take(5)->values(),
+            'flashSales' => GameAccount::onFlashSale()->manageableBy($request->user())->orderBy('flash_sale_ends_at')->limit(4)->get(),
             // Booked accounts, nearest due date first; those without a due date last.
-            'bookings' => GameAccount::with('category')->whereIn('status', GameAccount::BOOKED_STATUSES)
+            'bookings' => GameAccount::with('category')->manageableBy($request->user())->whereIn('status', GameAccount::BOOKED_STATUSES)
                 ->orderByRaw('payment_due_on IS NULL')->orderBy('payment_due_on')->orderBy('id')->get(),
             'latestMessages' => FeedbackMessage::latest()->limit(4)->get(),
-            'accounts' => GameAccount::with('category')->latest()->limit(5)->get(),
+            'accounts' => GameAccount::with(['category', 'owner'])->manageableBy($request->user())->latest()->limit(5)->get(),
         ]);
     }
 
@@ -63,14 +72,14 @@ class AdminController extends Controller
      *
      * @return list<array{label: string, title: string, added: int, sold: int}>
      */
-    private function dashboardChart(string $period): array
+    private function dashboardChart(string $period, User $admin): array
     {
         $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         $today = CarbonImmutable::now(GameAccount::LOCAL_TIMEZONE)->startOfDay();
         $monthly = $period === 'bulanan';
         $start = $monthly ? $today->startOfMonth()->subMonths(5) : $today->subDays(13);
         $keyFormat = $monthly ? 'Y-m' : 'Y-m-d';
-        $countPer = fn (string $column): Collection => GameAccount::where($column, '>=', $start->utc())->pluck($column)
+        $countPer = fn (string $column): Collection => GameAccount::manageableBy($admin)->where($column, '>=', $start->utc())->pluck($column)
             ->countBy(fn ($date): string => CarbonImmutable::parse($date)->timezone(GameAccount::LOCAL_TIMEZONE)->format($keyFormat));
         $added = $countPer('created_at');
         $sold = $countPer('sold_at');
@@ -92,13 +101,13 @@ class AdminController extends Controller
     {
         $data = $request->validate(['q' => 'nullable|string|max:100']);
 
-        return view('admin.accounts', ['accounts' => GameAccount::with('category')->forSale()->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
+        return view('admin.accounts', ['accounts' => GameAccount::with(['category', 'owner'])->manageableBy($request->user())->forSale()->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString()]);
     }
 
     public function rentals(Request $request): View
     {
         $data = $request->validate(['q' => 'nullable|string|max:100']);
-        $rentals = GameAccount::where('is_rental', true);
+        $rentals = GameAccount::where('is_rental', true)->manageableBy($request->user());
 
         return view('admin.rentals', [
             'accounts' => (clone $rentals)->with(['category', 'rentalPackages'])->search($data['q'] ?? '')->latest()->paginate(15)->withQueryString(),
@@ -149,6 +158,7 @@ class AdminController extends Controller
     /** Paid share and due date of one booked account, edited inline on the dashboard. */
     public function updatePayment(Request $request, GameAccount $account): RedirectResponse
     {
+        $this->authorizeAccount($request, $account);
         abort_unless($account->isBooked(), 404);
         $data = $request->validate(['dp_percent' => 'nullable|integer|min:1|max:100', 'payment_due_on' => 'nullable|date_format:Y-m-d']);
         $account->update(['dp_percent' => $data['dp_percent'] ?? null, 'payment_due_on' => $data['payment_due_on'] ?? null]);
@@ -158,6 +168,7 @@ class AdminController extends Controller
 
     public function updateRentalStatus(Request $request, GameAccount $account): RedirectResponse
     {
+        $this->authorizeAccount($request, $account);
         abort_unless($account->is_rental, 404);
         $data = $request->validate([
             'status' => 'required|in:available,rented',
@@ -252,9 +263,17 @@ class AdminController extends Controller
         return back()->with('success', 'Catatan penjualan berhasil dihapus.');
     }
 
-    public function form(?GameAccount $account = null): View
+    public function form(Request $request, ?GameAccount $account = null): View
     {
-        return view('admin.account-form', ['account' => $account ?? new GameAccount, 'categories' => Category::orderBy('name')->get()]);
+        if ($account) {
+            $this->authorizeAccount($request, $account);
+        }
+
+        return view('admin.account-form', [
+            'account' => $account ?? new GameAccount,
+            'categories' => Category::orderBy('name')->get(),
+            'admins' => $request->user()->is_super_admin ? User::where('is_admin', true)->orderBy('username')->get(['id', 'name', 'username']) : collect(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -264,6 +283,8 @@ class AdminController extends Controller
 
     public function update(Request $request, GameAccount $account): RedirectResponse
     {
+        $this->authorizeAccount($request, $account);
+
         return $this->saveAccount($request, $account);
     }
 
@@ -287,6 +308,7 @@ class AdminController extends Controller
             'installment_days' => 'nullable|integer|min:1|max:365',
             'installment_enabled' => 'sometimes|boolean',
             'card_note' => 'nullable|string|max:30',
+            'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('is_admin', true)],
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
             'flash_sale_ends_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
@@ -329,11 +351,15 @@ class AdminController extends Controller
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
             return back()->withErrors(['images' => 'Maksimal 6 gambar tambahan per akun.'])->withInput();
         }
-        unset($data['images'], $data['remove_images'], $data['main_image']);
+        unset($data['images'], $data['remove_images'], $data['main_image'], $data['owner_id']);
+        // New accounts belong to the admin who adds them; only the super admin can hand an account to someone else.
+        $ownerId = $request->user()->is_super_admin && $request->filled('owner_id')
+            ? (int) $request->input('owner_id')
+            : ($account->owner_id ?? $request->user()->id);
         $newPaths = [];
         $oldMain = $account->main_image;
         try {
-            DB::transaction(function () use ($request, $account, $data, $deletedImages, $packages, &$newPaths) {
+            DB::transaction(function () use ($request, $account, $data, $deletedImages, $packages, $ownerId, &$newPaths) {
                 if ($account->exists) {
                     $account->refreshForUpdate();
                 }
@@ -341,7 +367,7 @@ class AdminController extends Controller
                     $data['main_image'] = $request->file('main_image')->store('accounts', 'public');
                     $newPaths[] = $data['main_image'];
                 }
-                $account->fill($data)->save();
+                $account->forceFill(['owner_id' => $ownerId])->fill($data)->save();
                 foreach ($request->file('images', []) as $image) {
                     $path = $image->store('accounts', 'public');
                     $newPaths[] = $path;
@@ -367,8 +393,9 @@ class AdminController extends Controller
         return redirect()->route($account->is_rental ? 'admin.rentals' : 'admin.accounts')->with('success', 'Akun berhasil disimpan.');
     }
 
-    public function destroy(GameAccount $account): RedirectResponse
+    public function destroy(Request $request, GameAccount $account): RedirectResponse
     {
+        $this->authorizeAccount($request, $account);
         $this->deleteAccounts(collect([$account]));
 
         return back()->with('success', 'Akun berhasil dihapus.');
@@ -378,9 +405,16 @@ class AdminController extends Controller
     {
         $data = $request->validate(['ids' => 'required|array|max:200', 'ids.*' => 'integer'], ['ids.required' => 'Pilih minimal satu akun untuk dihapus.']);
         $accounts = GameAccount::whereIn('id', array_unique($data['ids']))->get();
+        abort_if($accounts->contains(fn (GameAccount $account): bool => ! $request->user()->canManage($account)), 403, 'Sebagian akun yang dipilih milik admin lain.');
         $this->deleteAccounts($accounts);
 
         return back()->with('success', $accounts->count().' akun berhasil dihapus.');
+    }
+
+    /** Admins only touch accounts they own; the super admin may touch all of them. */
+    private function authorizeAccount(Request $request, GameAccount $account): void
+    {
+        abort_unless($request->user()->canManage($account), 403, 'Akun ini milik admin lain.');
     }
 
     /**
