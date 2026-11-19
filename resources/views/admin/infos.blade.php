@@ -2,15 +2,18 @@
 @section('title', 'Info terbaru')
 @section('admin-title', 'Info terbaru')
 @section('admin-content')
-    <p class="muted mb-5">Poster di sini tampil di bagian <strong>Info Terbaru</strong> pada halaman utama, bisa digeser oleh pembeli. Ukuran yang disarankan 600 × 800 px (rasio 3:4). Urutan kecil tampil lebih dulu.</p>
+    <p class="muted mb-5">Poster di sini tampil di bagian <strong>Info Terbaru</strong> pada halaman utama, bisa digeser oleh pembeli. Ukuran yang disarankan 600 × 800 px (rasio 3:4). Urutan kecil tampil lebih dulu. Saat diklik, poster terbuka besar bersama keterangannya.</p>
     <form action="{{ route('admin.infos.store') }}" method="POST" enctype="multipart/form-data" class="panel mb-8 grid gap-4 p-5 md:grid-cols-2 md:p-6">
         @csrf
         <h2 class="text-lg font-bold md:col-span-2">Tambah info</h2>
         <div><label class="label" for="new-info-title">Judul</label><input class="field" id="new-info-title" name="title" value="{{ old('title') }}" maxlength="100" required placeholder="Contoh: Cara beli akun"></div>
         <div><label class="label" for="new-info-image">Gambar poster</label><input class="field" id="new-info-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" required>
             <p class="muted mt-2 text-xs">JPG, PNG, atau WebP. Maksimal 4 MB.</p></div>
-        <div><label class="label" for="new-info-link">Tautan (opsional)</label><input class="field" id="new-info-link" name="link_url" value="{{ old('link_url') }}" maxlength="500" placeholder="https://...">
-            <p class="muted mt-2 text-xs">Kosongkan agar poster dibuka dalam ukuran penuh saat diklik.</p></div>
+        <div class="md:col-span-2"><label class="label" for="new-info-caption">Keterangan (opsional)</label>
+            <textarea class="field" id="new-info-caption" name="caption" rows="3" maxlength="1000" placeholder="Contoh: nomor dan grup admin yang real di sini https://zutomarket.id/tentang">{{ old('caption') }}</textarea>
+            <p class="muted mt-2 text-xs">Tampil di bawah poster saat pembeli membukanya. Link yang diawali https:// otomatis bisa diklik. Kosong = memakai judul.</p></div>
+        <div><label class="label" for="new-info-link">Tautan tombol (opsional)</label><input class="field" id="new-info-link" name="link_url" value="{{ old('link_url') }}" maxlength="500" placeholder="https://...">
+            <p class="muted mt-2 text-xs">Muncul sebagai tombol "Buka tautan" di bawah poster.</p></div>
         <div><label class="label" for="new-info-order">Urutan</label><input class="field" id="new-info-order" name="sort_order" type="number" min="0" max="999" value="{{ old('sort_order', 0) }}"></div>
         <div class="md:col-span-2"><button class="btn w-full sm:w-auto">+ Tambah info</button></div>
     </form>
@@ -22,7 +25,8 @@
                 <form action="{{ route('admin.infos.update', $info) }}" method="POST" enctype="multipart/form-data" class="space-y-3 p-4">
                     @csrf @method('PUT')
                     <div><label class="label" for="info-title-{{ $info->id }}">Judul</label><input class="field" id="info-title-{{ $info->id }}" name="title" value="{{ $info->title }}" maxlength="100" required></div>
-                    <div><label class="label" for="info-link-{{ $info->id }}">Tautan</label><input class="field" id="info-link-{{ $info->id }}" name="link_url" value="{{ $info->link_url }}" maxlength="500" placeholder="Kosong = buka gambar"></div>
+                    <div><label class="label" for="info-caption-{{ $info->id }}">Keterangan</label><textarea class="field" id="info-caption-{{ $info->id }}" name="caption" rows="3" maxlength="1000" placeholder="Kosong = memakai judul">{{ $info->caption }}</textarea></div>
+                    <div><label class="label" for="info-link-{{ $info->id }}">Tautan tombol</label><input class="field" id="info-link-{{ $info->id }}" name="link_url" value="{{ $info->link_url }}" maxlength="500" placeholder="Opsional, https://..."></div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="label" for="info-order-{{ $info->id }}">Urutan</label><input class="field" id="info-order-{{ $info->id }}" name="sort_order" type="number" min="0" max="999" value="{{ $info->sort_order }}"></div>
                         <div><label class="label" for="info-image-{{ $info->id }}">Ganti gambar</label><input class="field" id="info-image-{{ $info->id }}" name="image" type="file" accept="image/jpeg,image/png,image/webp"></div>

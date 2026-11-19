@@ -1041,6 +1041,26 @@ class CatalogTest extends TestCase
         $this->assertDatabaseMissing('info_posts', ['id' => $first->id]);
     }
 
+    public function test_info_posters_open_in_a_viewer_with_thumbnails_and_a_linked_caption(): void
+    {
+        Storage::fake('public');
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin/infos')->assertOk()->assertSee('name="caption"', false);
+        $this->post('/admin/infos', ['title' => 'Cek keaslian', 'caption' => "nomor dan grup admin yang real disini https://zutomarket.id/tentang\n<b>jangan tertipu</b>",
+            'image' => UploadedFile::fake()->createWithContent('cek.png', $png), 'sort_order' => 1])->assertSessionHasNoErrors();
+        $this->post('/admin/infos', ['title' => 'Promo', 'image' => UploadedFile::fake()->createWithContent('promo.png', $png), 'link_url' => 'https://zutomarket.id/flash-sale', 'sort_order' => 2])->assertSessionHasNoErrors();
+        $this->post('/admin/infos', ['title' => 'Terlalu panjang', 'caption' => str_repeat('x', 1001), 'image' => UploadedFile::fake()->createWithContent('x.png', $png)])->assertSessionHasErrors('caption');
+        auth()->logout();
+
+        $this->get('/')->assertOk()
+            ->assertSee('data-info-open="0"', false)->assertSee('data-info-open="1"', false)->assertSee('<dialog class="info-viewer" data-info-viewer', false)
+            ->assertSee('data-info-goto="1"', false)
+            ->assertSee('nomor dan grup admin yang real disini <a href="https://zutomarket.id/tentang" target="_blank" rel="noopener noreferrer"', false)
+            ->assertSeeInOrder(['https://zutomarket.id/tentang</a><br>', '&lt;b&gt;jangan tertipu&lt;/b&gt;'], false)->assertDontSee('<b>jangan tertipu</b>', false)
+            ->assertSee('>Promo</p>', false)->assertSee('href="https://zutomarket.id/flash-sale" target="_blank" rel="noopener noreferrer">Buka tautan', false);
+    }
+
     public function test_removed_optional_features_are_not_publicly_reachable(): void
     {
         foreach (['/tukar-tambah', '/admin/finance', '/admin/trade-requests'] as $path) {

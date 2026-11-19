@@ -141,6 +141,63 @@
     50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-lime-300) 80%, transparent)); }
 }
 
+/* "Info Terbaru" poster viewer (<dialog>): transparent shell, the box carries the look; dims and blurs the page. */
+.info-viewer { margin: auto; padding: 0; border: 0; background: transparent; color: inherit; max-width: none; max-height: none; overflow: visible; }
+.info-viewer::backdrop { background: #020617c7; backdrop-filter: blur(4px); }
+.info-viewer-box { width: min(92vw, 34rem); max-height: 92vh; overflow-y: auto; }
+.info-viewer[open] .info-viewer-box { animation: info-viewer-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) { .info-viewer[open] .info-viewer-box { animation: none; } }
+@keyframes info-viewer-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+}
+
+/*
+ * About page (/tentang): the card rises in, the logo floats in front of a slowly turning glow, the badge breathes,
+ * the tabs and contact rows arrive one after another (rows replay when a tab is opened, since they were hidden).
+ */
+.about-hero { animation: about-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.about-rise { animation: about-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(0.15s + var(--d, 0) * 0.12s); }
+.about-badge { animation: about-breathe 2.8s ease-in-out infinite; }
+.about-logo { position: relative; display: block; width: fit-content; isolation: isolate; }
+.about-logo > img { animation: about-float 4.5s ease-in-out infinite; }
+.about-logo::before {
+    content: ''; position: absolute; inset: 8% 4%; z-index: -1; border-radius: 9999px; filter: blur(28px); opacity: 0.55;
+    background: conic-gradient(from 0deg, var(--color-lime-300), #8e7bff, #f06bb4, var(--color-lime-300));
+    animation: about-spin 9s linear infinite;
+}
+.about-check { animation: about-pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 0.6s backwards; }
+.about-tab { animation: about-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(0.35s + var(--i, 0) * 0.1s); }
+.about-tab:hover, .about-tab:focus-visible { transform: translateY(-3px); }
+.about-tab:hover .about-tab-icon, .about-tab:focus-visible .about-tab-icon { animation: cat-wiggle 0.6s ease; }
+/* The theme rules repaint every bg-[#101833] surface; the open tab must keep its bright accent so its dark text stays readable. */
+.about-tab[aria-selected='true'] { background-color: var(--color-lime-300) !important; border-color: var(--color-lime-300) !important; box-shadow: 0 12px 30px -14px color-mix(in srgb, var(--color-lime-300) 80%, transparent); }
+.about-item { animation: about-slide 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.07s); }
+@media (prefers-reduced-motion: reduce) {
+    .about-hero, .about-rise, .about-badge, .about-logo > img, .about-logo::before, .about-check, .about-tab, .about-item { animation: none; }
+    .about-tab:hover, .about-tab:focus-visible { transform: none; }
+}
+
+@keyframes about-rise {
+    from { opacity: 0; transform: translateY(18px); }
+}
+@keyframes about-slide {
+    from { opacity: 0; transform: translateX(-14px); }
+}
+@keyframes about-float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-8px) rotate(-1.5deg); }
+}
+@keyframes about-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes about-breathe {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-lime-300) 0%, transparent); }
+    50% { box-shadow: 0 0 22px 2px color-mix(in srgb, var(--color-lime-300) 35%, transparent); }
+}
+@keyframes about-pop {
+    from { opacity: 0; transform: scale(0.2) rotate(-25deg); }
+}
+
 @keyframes status-glow {
     0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
     70%, 100% { box-shadow: 0 0 0 7px transparent; }
