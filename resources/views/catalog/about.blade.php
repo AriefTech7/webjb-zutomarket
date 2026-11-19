@@ -23,18 +23,19 @@
     @endphp
     <section class="shell max-w-3xl py-8">
         <a class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-300 transition hover:text-white" href="{{ route('catalog') }}">← Kembali</a>
-        <div class="panel mt-4 p-6 text-center md:p-10">
-            <span class="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-lime-300">✓ Tentang {{ $storeName }}</span>
-            <img class="mx-auto mt-6 h-32 w-auto md:h-40" src="{{ asset('images/zuto-logo.webp') }}" alt="Logo {{ $storeName }}" width="480" height="371">
-            <h1 class="mt-4 text-2xl font-black uppercase">{{ $storeName }} <span class="text-lime-300" aria-hidden="true">✓</span></h1>
-            <p class="muted mx-auto mt-3 max-w-xl">Solusi praktis untuk kebutuhan jual beli akun game. Pilih akun dari katalog atau pesan joki rank Mobile Legends, lalu lanjutkan transaksi langsung dengan admin melalui WhatsApp.</p>
+        <div class="panel about-hero mt-4 p-6 text-center md:p-10">
+            <span class="about-badge inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-lime-300">✓ Tentang {{ $storeName }}</span>
+            <span class="about-logo mx-auto mt-6"><img class="mx-auto h-32 w-auto md:h-40" src="{{ asset('images/zuto-logo.webp') }}" alt="Logo {{ $storeName }}" width="480" height="371"></span>
+            <h1 class="about-rise mt-4 text-2xl font-black uppercase" style="--d: 1">{{ $storeName }} <span class="about-check inline-block text-lime-300" aria-hidden="true">✓</span></h1>
+            <p class="about-rise muted mx-auto mt-3 max-w-xl" style="--d: 2">Solusi praktis untuk kebutuhan jual beli akun game. Pilih akun dari katalog atau pesan joki rank Mobile Legends, lalu lanjutkan transaksi langsung dengan admin melalui WhatsApp.</p>
         </div>
 
         <div class="mt-6 grid grid-cols-3 gap-3" role="tablist" aria-label="Kontak {{ $storeName }}" data-tabs>
             @foreach ($groups as $key => [$label, $icon, $items])
                 <button type="button" role="tab" id="tab-{{ $key }}" aria-controls="panel-{{ $key }}" aria-selected="{{ $loop->first ? 'true' : 'false' }}"
-                    class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border border-[#a9c3ff]/15 bg-[#101833]/85 p-3 text-sm font-bold text-slate-300 transition hover:text-white aria-selected:border-lime-300 aria-selected:bg-lime-300 aria-selected:text-slate-950">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $icon }}" /></svg>
+                    style="--i: {{ $loop->index }}"
+                    class="about-tab flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border border-[#a9c3ff]/15 bg-[#101833]/85 p-3 text-sm font-bold text-slate-300 transition hover:text-white aria-selected:border-lime-300 aria-selected:bg-lime-300 aria-selected:text-slate-950">
+                    <svg class="about-tab-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $icon }}" /></svg>
                     {{ $label }}
                     <span class="text-xs font-semibold opacity-80">{{ count($items) }}</span>
                 </button>
@@ -44,7 +45,7 @@
         @foreach ($groups as $key => [$label, $groupIcon, $items])
             <ul id="panel-{{ $key }}" role="tabpanel" aria-labelledby="tab-{{ $key }}" class="mt-5 space-y-3" @unless ($loop->first) hidden @endunless>
                 @forelse ($items as [$title, $subtitle, $badge, $url, $icon])
-                    <li>
+                    <li class="about-item" style="--i: {{ $loop->index }}">
                         <a class="group flex items-center gap-4 rounded-2xl border border-[#a9c3ff]/15 bg-[#101833]/85 p-4 transition hover:border-lime-300/40" href="{{ $url }}" target="_blank" rel="noopener noreferrer">
                             <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $icon }}" /></svg></span>
                             <span class="min-w-0 flex-1">

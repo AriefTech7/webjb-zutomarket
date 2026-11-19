@@ -475,6 +475,7 @@ class AdminController extends Controller
         $info ??= new InfoPost;
         $data = $request->validate([
             'title' => 'required|string|max:100',
+            'caption' => 'nullable|string|max:1000',
             'image' => [$info->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'link_url' => 'nullable|url:https|max:500',
             'sort_order' => 'nullable|integer|min:0|max:999',

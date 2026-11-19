@@ -40,7 +40,7 @@
                     <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none]" data-carousel-track>
                         @foreach ($infos as $info)
                             <a class="w-36 shrink-0 snap-start overflow-hidden rounded-2xl border border-[#a9c3ff]/15 bg-[#101833] transition hover:-translate-y-0.5 hover:border-lime-300/40 md:w-52"
-                                href="{{ $info->targetUrl() }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $info->title }}">
+                                href="{{ $info->targetUrl() }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $info->title }}" aria-haspopup="dialog" data-info-open="{{ $loop->index }}">
                                 <img class="aspect-[3/4] w-full object-cover" src="{{ $info->imageUrl() }}" alt="{{ $info->title }}" loading="lazy">
                             </a>
                         @endforeach
@@ -49,6 +49,7 @@
                     <button type="button" class="absolute right-2 top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#070b1c]/80 text-white backdrop-blur md:flex" data-carousel-next aria-label="Info berikutnya">›</button>
                 </div>
             </section>
+            @include('catalog.info-viewer', ['infos' => $infos])
         @endif
         <div class="mt-8 hidden md:block">
             @include('catalog.search-panel', ['categories' => $categories, 'selected' => '', 'total' => $catalogTotal])
