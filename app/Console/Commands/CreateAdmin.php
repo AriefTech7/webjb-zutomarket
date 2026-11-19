@@ -21,8 +21,10 @@ class CreateAdmin extends Command
 
             return self::FAILURE;
         }
-        User::create($data);
-        $this->info('Admin berhasil dibuat. Login melalui /admin/login.');
+        // is_admin is not fillable, so it is set explicitly. The first admin of a fresh store is its super admin.
+        $isFirst = ! User::where('is_super_admin', true)->exists();
+        User::create($data)->forceFill(['is_admin' => true, 'is_super_admin' => $isFirst])->save();
+        $this->info(($isFirst ? 'Super admin' : 'Admin').' berhasil dibuat. Login melalui /admin/login.');
 
         return self::SUCCESS;
     }

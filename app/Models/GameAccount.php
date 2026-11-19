@@ -15,14 +15,95 @@ class GameAccount extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'seller_whatsapp', 'original_price', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'dp_percent', 'payment_due_on', 'seller_whatsapp', 'original_price', 'installment_dp_percent', 'installment_days', 'installment_enabled', 'card_note', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at'];
 
     /** Admins type flash sale times in Indonesian Western time. */
     public const LOCAL_TIMEZONE = 'Asia/Jakarta';
 
+    /** Booked by a buyer who paid a down payment or is paying in instalments: shown publicly but no longer for sale. */
+    public const BOOKED_STATUSES = ['dp', 'cicil'];
+
+    /** Statuses of non-rental accounts that the public catalog shows. */
+    public const PUBLIC_SALE_STATUSES = ['available', 'dp', 'cicil', 'sold'];
+
+    public const STATUS_LABELS = ['available' => 'Tersedia', 'dp' => 'Sudah DP', 'cicil' => 'Sudah dicicil', 'sold' => 'Terjual', 'draft' => 'Draft', 'rented' => 'Disewa'];
+
+    public function isBooked(): bool
+    {
+        return in_array($this->status, self::BOOKED_STATUSES, true);
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUS_LABELS[$this->status] ?? $this->status;
+    }
+
+    /** DP % offered to visitors: this account's own value, else the store rule. */
+    public function installmentPercent(): ?int
+    {
+        return $this->installment_dp_percent ?: Setting::downPaymentPercent();
+    }
+
+    /** Days to pay off after the DP: this account's own value, else the store tier for its price. */
+    public function installmentDays(): ?int
+    {
+        return $this->installment_days ?: Setting::dueDaysFor($this->price);
+    }
+
+    /** Visitors see the "Bisa cicil" badge and the Cicilan button; the DP/balance box also needs a DP percentage. */
+    public function offersInstallment(): bool
+    {
+        return $this->status === 'available' && ! $this->is_rental && $this->installment_enabled !== false;
+    }
+
+    public function installmentDownPayment(): int
+    {
+        return (int) ceil($this->price * ($this->installmentPercent() ?? 0) / 100);
+    }
+
+    /** Rupiah already paid on a booked account (DP / instalments so far). */
+    public function paidAmount(): int
+    {
+        return (int) round($this->price * ($this->dp_percent ?? 0) / 100);
+    }
+
+    public function remainingAmount(): int
+    {
+        return max(0, $this->price - $this->paidAmount());
+    }
+
+    /** Days until the balance is due in Jakarta time: negative when overdue, null without a due date. */
+    public function daysUntilPaymentDue(): ?int
+    {
+        if (! $this->payment_due_on) {
+            return null;
+        }
+        $today = now(self::LOCAL_TIMEZONE)->startOfDay();
+
+        return (int) $today->diffInDays($this->payment_due_on->copy()->shiftTimezone(self::LOCAL_TIMEZONE)->startOfDay(), false);
+    }
+
     protected function casts(): array
     {
-        return ['price' => 'integer', 'original_price' => 'integer', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
+        return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Accounts this admin may see and edit in the admin area: all for the super admin, otherwise their own.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeManageableBy(Builder $query, User $admin): void
+    {
+        if (! $admin->is_super_admin) {
+            $query->where('owner_id', $admin->id);
+        }
     }
 
     public function rentalPackages(): HasMany
@@ -128,6 +209,11 @@ class GameAccount extends Model
             if ($account->isDirty('status')) {
                 $account->sold_at = $account->status === 'sold' ? now() : null;
             }
+            // Payment progress only means something while the account is booked.
+            if (! $account->isBooked()) {
+                $account->dp_percent = null;
+                $account->payment_due_on = null;
+            }
         });
     }
 
@@ -182,12 +268,27 @@ class GameAccount extends Model
 
     public function installmentWhatsappUrl(): ?string
     {
-        return $this->whatsappLink('Halo admin, saya ingin mengajukan cicilan untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Mohon info DP dan tenor yang tersedia.');
+        $percent = $this->installmentPercent();
+        $days = $this->installmentDays();
+        $termsText = $percent || $days
+            ? ' Sesuai ketentuan toko: '.implode(', ', array_filter([
+                $percent ? 'DP '.$percent.'% (Rp '.number_format($this->installmentDownPayment(), 0, ',', '.').')' : null,
+                $days ? 'pelunasan maksimal '.$days.' hari setelah DP' : null,
+            ])).'.'
+            : ' Mohon info DP dan tenor yang tersedia.';
+
+        return $this->whatsappLink('Halo admin, saya ingin mengajukan cicilan untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).$termsText);
+    }
+
+    /** WhatsApp number that handles this account: its own seller, else the store (rental number for rentals). */
+    public function contactNumber(): string
+    {
+        return $this->seller_whatsapp ?: ($this->is_rental ? Setting::valueFor('whatsapp_rental_number') : '') ?: Setting::valueFor('whatsapp_number');
     }
 
     private function whatsappLink(string $message, bool $requireAvailable = true): ?string
     {
-        $number = $this->seller_whatsapp ?: ($this->is_rental ? Setting::valueFor('whatsapp_rental_number') : '') ?: Setting::valueFor('whatsapp_number');
+        $number = $this->contactNumber();
         if (! $number || ($requireAvailable && $this->status !== 'available')) {
             return null;
         }

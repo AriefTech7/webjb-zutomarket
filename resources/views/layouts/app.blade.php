@@ -43,6 +43,9 @@
     @if ($buyer) data-account-profile="{{ json_encode(['name' => $buyer->name, 'phone' => (string) $buyer->whatsapp]) }}" data-account-wishlist="{{ route('account.wishlist') }}"
         data-account-wishlist-ids="{{ json_encode($buyer->wishlistIds()) }}" @if (session('wishlist_merge')) data-account-wishlist-merge="1" @endif @endif>
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
+    {{-- The admin workspace (layouts.admin) draws its own sidebar, top bar and flash messages. --}}
+    @php($adminWorkspace = \Illuminate\Support\Facades\View::hasSection('admin-content'))
+    @unless ($adminWorkspace)
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
         <div class="shell flex h-16 items-center gap-3 md:h-20 md:gap-4">
@@ -64,6 +67,10 @@
                         class="rounded-full px-4 py-2 text-sm font-bold transition {{ $isNavActive ? 'bg-lime-300 text-slate-950 shadow-lg shadow-lime-300/20' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">{{ $navLabel }}</a>
                 @endforeach
             </nav>
+            <a href="{{ route('cart') }}" class="theme-toggle relative {{ request()->routeIs('cart') ? 'text-lime-300' : '' }}" aria-label="Keranjang" @if (request()->routeIs('cart')) aria-current="page" @endif>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2.5 3h2.6l2.4 12h11l2-8H6.3" /></svg>
+                <span data-cart-count hidden class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-300 px-1 text-[10px] font-black text-slate-950">0</span>
+            </a>
             @endunless
             <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Ganti ke mode terang">
                 <svg class="theme-icon-sun h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
@@ -71,6 +78,7 @@
             </button>
         </div>
     </header>
+    @endunless
     @unless (request()->is('admin*'))
         @php($runningText = \App\Models\Setting::runningTextItems())
         @if ($runningText)
@@ -92,21 +100,9 @@
     <main class="flex-1">
         <div data-wishlist-feedback role="status" aria-live="polite"
             class="shell hidden mt-5 rounded-xl border border-rose-300/20 bg-rose-300/5 p-4 text-sm text-slate-200"></div>
-        @if (session('success'))
-            <div role="status" class="shell mt-5">
-                <div class="rounded-xl border border-lime-300/30 bg-lime-300/10 p-4 text-sm text-lime-200">
-                    {{ session('success') }}</div>
-            </div>
-        @endif
-        @if ($errors->any())
-            <div role="alert" class="shell mt-5">
-                <ul class="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+        @unless ($adminWorkspace)
+            @include('layouts.flash', ['flashClass' => 'shell mt-5'])
+        @endunless
         @yield('content')
     </main>
     {{-- The admin area and the account / sign-in pages have no footer. --}}
@@ -139,7 +135,7 @@
             <div>
                 <h2 class="font-bold text-white">Menu</h2>
                 <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
-                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['how', 'Cara Transaksi'], ['feedback', 'Kritik & Saran']] as [$footerRoute, $footerLabel])
+                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['how', 'Cara Transaksi'], ['installment', 'Cicilan & DP'], ['feedback', 'Kritik & Saran']] as [$footerRoute, $footerLabel])
                         <li><a class="transition hover:text-lime-300" href="{{ route($footerRoute) }}">{{ $footerLabel }}</a></li>
                     @endforeach
                 </ul>

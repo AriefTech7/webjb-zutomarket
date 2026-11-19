@@ -2,7 +2,7 @@
 @section('title', 'Akun admin')
 @section('admin-title', 'Akun admin')
 @section('admin-content')
-    <p class="muted mb-5">Admin bisa mengubah semua data toko. Buat akun admin hanya untuk orang yang dipercaya. Admin baru login di <strong>/admin/login</strong> memakai username dan password.</p>
+    <p class="muted mb-5"><strong class="text-white">Admin</strong> hanya bisa melihat dan mengedit akun game miliknya sendiri. <strong class="text-white">Super admin</strong> bisa mengubah semua data toko dan mengatur admin. Buat akun admin hanya untuk orang yang dipercaya. Admin baru login di <strong>/admin/login</strong> memakai username dan password.</p>
 
     <details class="mb-8" @if ($errors->hasAny(['name', 'username', 'email', 'password']) || old('username')) open @endif>
         <summary class="btn inline-flex cursor-pointer list-none [&::-webkit-details-marker]:hidden">
@@ -31,10 +31,22 @@
         @foreach ($admins as $admin)
             <div class="panel flex flex-wrap items-center justify-between gap-4 p-4 md:p-5">
                 <div class="min-w-0">
-                    <p class="font-bold text-white">{{ $admin->username }} @if ($admin->is(auth()->user()))<span class="ml-1 rounded-full bg-lime-300/15 px-2 py-0.5 text-[10px] font-black uppercase text-lime-300">Kamu</span>@endif</p>
-                    <p class="text-xs text-slate-400">{{ $admin->name }} · {{ $admin->email }} · dibuat {{ $admin->created_at?->format('d/m/Y') }}</p>
+                    <p class="flex flex-wrap items-center gap-1.5 font-bold text-white">{{ $admin->username }}
+                        <span class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase {{ $admin->is_super_admin ? 'bg-amber-300/15 text-amber-300' : 'bg-white/10 text-slate-300' }}">{{ $admin->is_super_admin ? 'Super admin' : 'Admin' }}</span>
+                        @if ($admin->is(auth()->user()))<span class="rounded-full bg-lime-300/15 px-2 py-0.5 text-[10px] font-black uppercase text-lime-300">Kamu</span>@endif</p>
+                    <p class="text-xs text-slate-400">{{ $admin->name }} · {{ $admin->email }} · dibuat {{ $admin->created_at?->format('d/m/Y') }} · {{ $admin->owned_accounts_count }} akun game</p>
                 </div>
                 @unless ($admin->is(auth()->user()))
+                    <div class="flex w-full flex-wrap gap-2 sm:w-auto">
+                    <details class="w-full sm:w-auto">
+                        <summary class="btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $admin->is_super_admin ? 'Jadikan admin biasa' : 'Jadikan super admin' }}</summary>
+                        <form method="POST" action="{{ route('admin.admins.role', $admin) }}" class="mt-3 flex flex-wrap items-end gap-2">
+                            @csrf @method('PATCH')
+                            <div class="min-w-48 flex-1"><label class="label text-xs" for="role-current-{{ $admin->id }}">Password kamu</label>
+                                <input id="role-current-{{ $admin->id }}" class="field" type="password" name="current_password" required autocomplete="current-password"></div>
+                            <button class="btn-secondary">Simpan peran</button>
+                        </form>
+                    </details>
                     <details class="w-full sm:w-auto">
                         <summary class="btn-secondary cursor-pointer list-none text-rose-300 [&::-webkit-details-marker]:hidden">Hapus</summary>
                         <form method="POST" action="{{ route('admin.admins.destroy', $admin) }}" class="mt-3 flex flex-wrap items-end gap-2">
@@ -43,7 +55,9 @@
                                 <input id="delete-current-{{ $admin->id }}" class="field" type="password" name="current_password" required autocomplete="current-password"></div>
                             <button class="btn-secondary text-rose-300">Hapus {{ $admin->username }}</button>
                         </form>
+                        <p class="muted mt-2 text-xs">Akun game milik {{ $admin->username }} dipindahkan ke kamu.</p>
                     </details>
+                    </div>
                 @endunless
             </div>
         @endforeach

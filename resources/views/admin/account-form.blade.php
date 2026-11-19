@@ -22,10 +22,24 @@
                     @endforeach
                 </select>
                 @if ($categories->isEmpty())
-                    <a class="mt-2 block text-sm text-lime-300" href="{{ route('admin.categories') }}">Tambahkan kategori
-                        terlebih dahulu →</a>
+                    @if (auth()->user()->is_super_admin)
+                        <a class="mt-2 block text-sm text-lime-300" href="{{ route('admin.categories') }}">Tambahkan kategori
+                            terlebih dahulu →</a>
+                    @else
+                        <p class="muted mt-2 text-xs">Belum ada kategori. Minta super admin menambahkannya.</p>
+                    @endif
                 @endif
             </div>
+            @if ($admins->isNotEmpty())
+                {{-- Only the super admin sees this: who owns (and may edit) the account. --}}
+                <div><label class="label" for="owner_id">Pemilik akun</label><select class="field" id="owner_id" name="owner_id">
+                        @foreach ($admins as $admin)
+                            <option value="{{ $admin->id }}" @selected((int) old('owner_id', $account->owner_id ?? auth()->id()) === $admin->id)>{{ $admin->username }} · {{ $admin->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="muted mt-2 text-xs">Hanya pemilik dan super admin yang bisa mengedit atau menghapus akun ini.</p>
+                </div>
+            @endif
             @unless ($isRentalForm)
             <div><label class="label" for="price">Harga (Rupiah)</label><input class="field" id="price"
                     name="price" type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-money
@@ -40,6 +54,34 @@
                     value="{{ old('flash_sale_ends_at', $account->flash_sale_ends_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}">
                 <p class="muted mt-2 text-xs">Waktu WIB. Akun tampil di halaman Flash Sale sampai waktu ini. Kosongkan jika tidak ikut flash sale.</p>
             </div>
+            @php($storePercent = \App\Models\Setting::downPaymentPercent())
+            @php($storeDays = $account->exists ? \App\Models\Setting::dueDaysFor($account->price) : null)
+            <div class="rounded-2xl border border-amber-300/25 bg-amber-300/5 p-4 md:col-span-2">
+                <p class="text-sm font-bold text-amber-300">Cicilan untuk pengunjung</p>
+                <p class="muted mt-1 text-xs">Tampil di halaman akun (DP, sisa bayar, jangka waktu) dan di pesan WhatsApp "Cicilan". Kosongkan untuk mengikuti @if (auth()->user()->is_super_admin)<a class="text-lime-300 hover:underline" href="{{ route('admin.settings') }}#dp-terms">aturan toko</a>@else aturan toko @endif.</p>
+                <label class="mt-3 flex cursor-pointer items-center gap-3 text-sm font-semibold text-white">
+                    <input type="hidden" name="installment_enabled" value="0">
+                    <input type="checkbox" name="installment_enabled" value="1" class="size-4 accent-lime-300" @checked(old('installment_enabled', $account->installment_enabled ?? true))>
+                    Akun ini bisa dicicil <span class="font-normal text-slate-400">(label "Bisa cicil" di kartu, kotak cicilan &amp; tombol Cicilan)</span>
+                </label>
+                <div class="mt-3 grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="label" for="installment_dp_percent">DP cicilan (%)</label>
+                        <input class="field" id="installment_dp_percent" name="installment_dp_percent" type="number" inputmode="numeric" min="1" max="100"
+                            value="{{ old('installment_dp_percent', $account->installment_dp_percent) }}" placeholder="{{ $storePercent ? 'Kosong = '.$storePercent.'% (aturan toko)' : 'Contoh: 30' }}">
+                    </div>
+                    <div>
+                        <label class="label" for="installment_days">Jangka waktu cicilan (hari)</label>
+                        <input class="field" id="installment_days" name="installment_days" type="number" inputmode="numeric" min="1" max="365"
+                            value="{{ old('installment_days', $account->installment_days) }}" placeholder="{{ $storeDays ? 'Kosong = '.$storeDays.' hari (sesuai harga)' : 'Kosong = sesuai harga akun' }}">
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-2">
+                <label class="label" for="card_note">Catatan di kartu (opsional)</label>
+                <input class="field" id="card_note" name="card_note" maxlength="30" value="{{ old('card_note', $account->card_note) }}" placeholder="Contoh: Bisa TT, Nego, Full skin">
+                <p class="muted mt-2 text-xs">Label pendek di samping nama kategori pada kartu produk dan halaman akun. Maksimal 30 karakter.</p>
+            </div>
             @endunless
         </div>
         <div><label class="label" for="description">Deskripsi</label>
@@ -52,11 +94,31 @@
                 pembeli.</p>
         </div>
         <div><label class="label" for="status">Status akun</label><select class="field" id="status" name="status">
-                @foreach ($isRentalForm ? ['draft' => 'Draft / disembunyikan', 'available' => 'Siap disewa', 'rented' => 'Sedang disewa'] : ['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia', 'sold' => 'Terjual'] as $value => $label)
+                @foreach ($isRentalForm ? ['draft' => 'Draft / disembunyikan', 'available' => 'Siap disewa', 'rented' => 'Sedang disewa'] : ['draft' => 'Draft / disembunyikan', 'available' => 'Tersedia', 'dp' => 'Sudah DP', 'cicil' => 'Sudah dicicil', 'sold' => 'Terjual'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('status', $account->status ?? 'draft') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
+            @unless ($isRentalForm)
+                <p class="muted mt-2 text-xs">"Sudah DP" dan "Sudah dicicil" tetap tampil di katalog dengan label tersebut, tetapi tidak bisa dibeli. Ubah ke "Terjual" setelah lunas agar masuk data penjualan.</p>
+            @endunless
         </div>
+        @unless ($isRentalForm)
+            @php($dpPercentDefault = \App\Models\Setting::downPaymentPercent())
+            <div data-booking-fields class="grid gap-4 rounded-2xl border border-amber-300/25 bg-amber-300/5 p-4 sm:grid-cols-2">
+                <p class="text-sm font-bold text-amber-300 sm:col-span-2">Pembayaran DP / cicilan</p>
+                <div>
+                    <label class="label" for="dp_percent">Sudah dibayar (%)</label>
+                    <input class="field" id="dp_percent" name="dp_percent" type="number" inputmode="numeric" min="1" max="100"
+                        value="{{ old('dp_percent', $account->dp_percent) }}" placeholder="{{ $dpPercentDefault ? 'Kosong = '.$dpPercentDefault.'%' : 'Contoh: 30' }}">
+                    <p class="muted mt-2 text-xs">Persen dari harga jual yang sudah dibayar pembeli. Naikkan setiap ada cicilan masuk.</p>
+                </div>
+                <div>
+                    <label class="label" for="payment_due_on">Jatuh tempo pelunasan</label>
+                    <input class="field" id="payment_due_on" name="payment_due_on" type="date" value="{{ old('payment_due_on', $account->payment_due_on?->toDateString()) }}">
+                    <p class="muted mt-2 text-xs">Kosong = dihitung dari aturan batas lunas sesuai harga akun (mulai hari disimpan).</p>
+                </div>
+            </div>
+        @endunless
         <input type="hidden" name="is_rental" value="{{ $isRentalForm ? 1 : 0 }}">
         @if ($isRentalForm)
         @php($packageRows = array_pad(array_values(old('packages', $account->rentalPackages->map(fn ($package) => ['duration' => $package->duration, 'price' => $package->price])->all())), 6, ['duration' => '', 'price' => '']))
