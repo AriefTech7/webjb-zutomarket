@@ -68,7 +68,8 @@ services:
     init: true
     read_only: true
     tmpfs:
-      - /tmp:size=32m,mode=1777
+      # nginx buffers request bodies here, so this must exceed client_max_body_size (48m in nginx.conf).
+      - /tmp:size=64m,mode=1777
     cap_drop:
       - ALL
     security_opt:
