@@ -4,12 +4,14 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminBannerController;
 use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +25,9 @@ Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-
 Route::get('/rental', [CatalogController::class, 'rental'])->name('rental');
 Route::view('/tentang', 'catalog.about')->name('about');
 Route::view('/profil', 'catalog.profile')->name('profile');
+Route::get('/laporan', [ReportController::class, 'index'])->name('reports');
+Route::post('/laporan', [ReportController::class, 'store'])->middleware('throttle:6,10')->name('reports.store');
+Route::get('/laporan/{report}', [ReportController::class, 'show'])->whereNumber('report')->name('reports.show');
 Route::get('/kritik-saran', [FeedbackController::class, 'create'])->name('feedback');
 Route::post('/kritik-saran', [FeedbackController::class, 'store'])->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
@@ -102,6 +107,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/contacts', [AdminController::class, 'saveContact'])->name('contacts.store');
         Route::put('/contacts/{contact}', [AdminController::class, 'saveContact'])->name('contacts.update');
         Route::delete('/contacts/{contact}', [AdminController::class, 'deleteContact'])->name('contacts.destroy');
+        Route::get('/reports', [AdminReportController::class, 'index'])->name('reports');
+        Route::patch('/reports/{report}', [AdminReportController::class, 'update'])->name('reports.update');
+        Route::delete('/reports/{report}', [AdminReportController::class, 'destroy'])->name('reports.destroy');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::put('/settings', [AdminController::class, 'saveSettings'])->name('settings.update');
     });
