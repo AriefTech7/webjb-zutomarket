@@ -3,9 +3,10 @@
     @php($editedAccount = request()->route('account'))
     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
     {{-- Regular admins only manage their own accounts; the store-wide menus are for the super admin. --}}
-    @php($superOnly = ['sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
+    @php($superOnly = ['chat', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
     @php($pendingReports = auth()->user()->is_super_admin ? \App\Models\Report::where('status', 'pending')->count() : 0)
-    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+    @php($unreadChats = auth()->user()->is_super_admin ? \App\Models\ChatConversation::unreadByAdmin()->count() : 0)
+    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Ganti password'] as $route => $label)
         @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"
@@ -47,6 +48,15 @@
 
                         @case('reports')
                             <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01" />
+                        @break
+
+                        @case('chat')
+                            <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z" />
+                            <path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01" />
+                        @break
+
+                        @case('password')
+                            <path d="M15.5 7.5a3.5 3.5 0 1 1-3.4 4.3L4 20H2v-3l8.2-8.1a3.5 3.5 0 0 1 5.3-1.4ZM17 7h.01" />
                         @break
 
                         @case('admins')
@@ -94,6 +104,9 @@
                 </svg>
             </span>
             <span class="truncate">{{ $label }}</span>
+            @if ($route === 'chat')
+                <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" data-chat-unread-endpoint="{{ route('admin.chat.unread') }}" aria-label="chat belum dibalas" @unless ($unreadChats) hidden @endunless>{{ $unreadChats }}</span>
+            @endif
             @if ($route === 'reports' && $pendingReports)
                 <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" aria-label="{{ $pendingReports }} laporan menunggu">{{ $pendingReports }}</span>
             @endif

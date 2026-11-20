@@ -192,6 +192,7 @@
             </div>
         </div>
         @include('layouts.bottom-nav')
+        @include('layouts.chat-widget')
     @endunless
 </body>
 

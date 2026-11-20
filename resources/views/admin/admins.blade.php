@@ -36,8 +36,40 @@
                         @if ($admin->is(auth()->user()))<span class="rounded-full bg-lime-300/15 px-2 py-0.5 text-[10px] font-black uppercase text-lime-300">Kamu</span>@endif</p>
                     <p class="text-xs text-slate-400">{{ $admin->name }} · {{ $admin->email }} · dibuat {{ $admin->created_at?->format('d/m/Y') }} · {{ $admin->owned_accounts_count }} akun game</p>
                 </div>
+                @php($bag = $errors->getBag('admin'.$admin->id))
+                @if ($bag->any())
+                    <ul class="w-full rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+                        @foreach ($bag->all() as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                @endif
+                <div class="flex w-full flex-wrap gap-2 sm:w-auto">
+                    <details class="w-full sm:w-auto" @if ($bag->hasAny(['name', 'username', 'email']) || ($bag->has('current_password') && old('username'))) open @endif>
+                        <summary class="btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">Edit</summary>
+                        <form method="POST" action="{{ route('admin.admins.update', $admin) }}" class="mt-3 grid gap-3 sm:w-96">
+                            @csrf @method('PUT')
+                            <div><label class="label text-xs" for="edit-name-{{ $admin->id }}">Nama</label><input id="edit-name-{{ $admin->id }}" class="field" name="name" value="{{ old('name', $admin->name) }}" maxlength="50" required></div>
+                            <div><label class="label text-xs" for="edit-username-{{ $admin->id }}">Username (untuk login)</label><input id="edit-username-{{ $admin->id }}" class="field" name="username" value="{{ old('username', $admin->username) }}" minlength="3" maxlength="50" required autocomplete="off"></div>
+                            <div><label class="label text-xs" for="edit-email-{{ $admin->id }}">Email</label><input id="edit-email-{{ $admin->id }}" class="field" type="email" name="email" value="{{ old('email', $admin->email) }}" maxlength="255" required autocomplete="off"></div>
+                            <div><label class="label text-xs" for="edit-current-{{ $admin->id }}">Password kamu (konfirmasi)</label><input id="edit-current-{{ $admin->id }}" class="field" type="password" name="current_password" required autocomplete="current-password"></div>
+                            <button class="btn">Simpan</button>
+                        </form>
+                    </details>
+                    @if ($admin->is(auth()->user()))
+                        <a class="btn-secondary w-full sm:w-auto" href="{{ route('admin.password') }}">Ganti password</a>
+                    @else
+                        <details class="w-full sm:w-auto" @if ($bag->has('new_password') || ($bag->has('current_password') && ! old('username'))) open @endif>
+                            <summary class="btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">Ganti password</summary>
+                            <form method="POST" action="{{ route('admin.admins.password', $admin) }}" class="mt-3 grid gap-3 sm:w-96">
+                                @csrf @method('PUT')
+                                <div><label class="label text-xs" for="new-pass-{{ $admin->id }}">Password baru untuk {{ $admin->username }}</label><input id="new-pass-{{ $admin->id }}" class="field" type="password" name="new_password" minlength="8" required autocomplete="new-password"></div>
+                                <div><label class="label text-xs" for="new-pass2-{{ $admin->id }}">Ulangi password baru</label><input id="new-pass2-{{ $admin->id }}" class="field" type="password" name="new_password_confirmation" minlength="8" required autocomplete="new-password"></div>
+                                <div><label class="label text-xs" for="pass-current-{{ $admin->id }}">Password kamu (konfirmasi)</label><input id="pass-current-{{ $admin->id }}" class="field" type="password" name="current_password" required autocomplete="current-password"></div>
+                                <button class="btn">Simpan password</button>
+                                <p class="muted text-xs">{{ $admin->username }} akan keluar dari perangkat lain dan harus login dengan password baru.</p>
+                            </form>
+                        </details>
+                    @endif
                 @unless ($admin->is(auth()->user()))
-                    <div class="flex w-full flex-wrap gap-2 sm:w-auto">
                     <details class="w-full sm:w-auto">
                         <summary class="btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $admin->is_super_admin ? 'Jadikan admin biasa' : 'Jadikan super admin' }}</summary>
                         <form method="POST" action="{{ route('admin.admins.role', $admin) }}" class="mt-3 flex flex-wrap items-end gap-2">
@@ -57,8 +89,8 @@
                         </form>
                         <p class="muted mt-2 text-xs">Akun game milik {{ $admin->username }} dipindahkan ke kamu.</p>
                     </details>
-                    </div>
                 @endunless
+                </div>
             </div>
         @endforeach
     </div>

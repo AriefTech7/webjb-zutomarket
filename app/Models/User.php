@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -30,8 +31,16 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_super_admin' => 'boolean',
+            'last_seen_at' => 'datetime',
             'wishlist' => 'array',
         ];
+    }
+
+    /** Admins who answer the live chat (super admins) and used the admin area in the last 5 minutes. */
+    public static function onlineChatAdmins(): Collection
+    {
+        return static::where('is_admin', true)->where('is_super_admin', true)
+            ->where('last_seen_at', '>=', now()->subMinutes(5))->orderByDesc('last_seen_at')->get(['id', 'name']);
     }
 
     /** @return HasMany<GameAccount, $this> */

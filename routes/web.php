@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ReportController;
@@ -58,10 +59,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil/password', [AccountController::class, 'showPassword'])->name('account.password');
     Route::put('/profil/password', [AccountController::class, 'updatePassword'])->middleware('throttle:account-auth');
     Route::post('/akun/wishlist', [AccountController::class, 'syncWishlist'])->middleware('throttle:60,1')->name('account.wishlist');
+    // Live chat with the store (signed-in buyers; ChatController refuses admins).
+    Route::get('/chat/pesan', [ChatController::class, 'messages'])->middleware('throttle:120,1')->name('chat.messages');
+    Route::post('/chat/pesan', [ChatController::class, 'send'])->middleware('throttle:20,1')->name('chat.send');
 });
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/password', [AdminUserController::class, 'showOwnPassword'])->name('password');
+    Route::put('/password', [AdminUserController::class, 'updateOwnPassword'])->middleware('throttle:admin-accounts')->name('password.update');
 
     // Every admin: their own game & rental accounts (the controller checks ownership) and the inbox.
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
@@ -92,6 +98,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/admins', [AdminUserController::class, 'index'])->name('admins');
         Route::post('/admins', [AdminUserController::class, 'store'])->middleware('throttle:admin-accounts')->name('admins.store');
         Route::patch('/admins/{user}/role', [AdminUserController::class, 'updateRole'])->middleware('throttle:admin-accounts')->name('admins.role');
+        Route::put('/admins/{user}', [AdminUserController::class, 'update'])->middleware('throttle:admin-accounts')->name('admins.update');
+        Route::put('/admins/{user}/password', [AdminUserController::class, 'resetPassword'])->middleware('throttle:admin-accounts')->name('admins.password');
+        Route::get('/chat', [ChatController::class, 'adminIndex'])->name('chat');
+        Route::get('/chat/{conversation}', [ChatController::class, 'adminShow'])->name('chat.show');
+        Route::get('/chat/{conversation}/pesan', [ChatController::class, 'adminMessages'])->middleware('throttle:120,1')->name('chat.messages');
+        Route::post('/chat/{conversation}/pesan', [ChatController::class, 'adminReply'])->middleware('throttle:60,1')->name('chat.reply');
+        Route::delete('/chat/{conversation}', [ChatController::class, 'adminDestroy'])->name('chat.destroy');
+        Route::get('/chat-unread', [ChatController::class, 'adminUnread'])->middleware('throttle:120,1')->name('chat.unread');
         Route::delete('/admins/{user}', [AdminUserController::class, 'destroy'])->middleware('throttle:admin-accounts')->name('admins.destroy');
         Route::get('/buyers', [AdminBuyerController::class, 'index'])->name('buyers');
         Route::post('/buyers/{user}/password', [AdminBuyerController::class, 'resetPassword'])->name('buyers.password');

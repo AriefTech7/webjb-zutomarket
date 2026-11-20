@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -13,7 +14,12 @@ class EnsureUserIsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless($request->user()?->is_admin, 403, 'Halaman ini khusus admin.');
+        $user = $request->user();
+        abort_unless($user?->is_admin, 403, 'Halaman ini khusus admin.');
+        // Presence for the live chat ("Admin Online"): written at most once a minute, without touching updated_at.
+        if (! $user->last_seen_at || $user->last_seen_at->lt(now()->subMinute())) {
+            DB::table('users')->where('id', $user->id)->update(['last_seen_at' => now()]);
+        }
 
         return $next($request);
     }
