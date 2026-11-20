@@ -141,12 +141,36 @@
     50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-lime-300) 80%, transparent)); }
 }
 
+/*
+ * Phone bottom navigation (layouts/bottom-nav): a frosted-glass bar; the current tab gets a tinted rounded square
+ * behind its icon and an accent-coloured label.
+ */
+.bnav { background: #1a2348b3; border: 1px solid #ffffff1f; box-shadow: 0 18px 40px -14px #020617cc, inset 0 1px 0 #ffffff14; -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+.bnav-tab { display: flex; min-height: 3.25rem; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; padding: 0 2px; font-size: 10px; font-weight: 600; color: var(--color-slate-300); transition: color 0.2s ease; }
+.bnav-tab:hover { color: var(--color-white); }
+.bnav-icon { display: flex; width: 2.5rem; height: 2rem; align-items: center; justify-content: center; border-radius: 0.75rem; border: 1px solid transparent; transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease; }
+.bnav-tab:active .bnav-icon { transform: scale(0.92); }
+.bnav-tab.is-active { color: var(--color-lime-300); font-weight: 700; }
+.bnav-tab.is-active .bnav-icon { background: color-mix(in srgb, var(--color-lime-300) 22%, transparent); border-color: color-mix(in srgb, var(--color-lime-300) 35%, transparent); box-shadow: 0 6px 16px -8px var(--color-lime-300); }
+html[data-theme='light'] .bnav { background: #ffffffc7; border-color: #c7d2fe; box-shadow: 0 18px 40px -16px #0f172a40; }
+@media (prefers-reduced-motion: reduce) { .bnav-icon { transition: none; } }
 /* "Info Terbaru" poster viewer (<dialog>): transparent shell, the box carries the look; dims and blurs the page. */
 .info-viewer { margin: auto; padding: 0; border: 0; background: transparent; color: inherit; max-width: none; max-height: none; overflow: visible; }
 .info-viewer::backdrop { background: #020617c7; backdrop-filter: blur(4px); }
 .info-viewer-box { width: min(92vw, 34rem); max-height: 92vh; overflow-y: auto; }
 .info-viewer[open] .info-viewer-box { animation: info-viewer-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); }
 @media (prefers-reduced-motion: reduce) { .info-viewer[open] .info-viewer-box { animation: none; } }
+/* /laporan: the "Kirim laporan baru" dialog is wider than the poster viewer; report cards arrive one after another. */
+.report-dialog-box { width: min(94vw, 44rem); }
+.report-dialog-box:focus { outline: none; }
+/* Category pills: plain class (not bg-[#...]) so the theme rules cannot repaint the chosen one dark. */
+.report-pill { border-color: #ffffff1a; background-color: #ffffff0d; color: var(--color-slate-200); }
+.report-pill:hover { border-color: #ffffff40; }
+.report-pill:has(:checked) { border-color: var(--color-lime-300); background-color: var(--color-lime-300); color: var(--color-slate-950); }
+.report-pill:has(:focus-visible) { outline: 2px solid var(--color-lime-300); outline-offset: 3px; }
+.report-card { animation: about-slide 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.05s); }
+.report-hero::after { content: ''; position: absolute; inset: auto -10% -60% auto; width: 22rem; height: 22rem; border-radius: 9999px; background: radial-gradient(circle, color-mix(in srgb, #f06bb4 22%, transparent), transparent 70%); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .report-card { animation: none; } }
 @keyframes info-viewer-in {
     from { opacity: 0; transform: translateY(14px) scale(0.97); }
 }

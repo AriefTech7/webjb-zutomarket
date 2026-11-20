@@ -7,6 +7,7 @@ import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
 import { initialiseMoneyInputs } from './money';
 import { initialiseProfile, PROFILE_KEY } from './profile';
+import { initialiseReportForm } from './report';
 import { initialiseSliders } from './slider';
 import { initialiseWishlist, WISHLIST_KEY } from './wishlist';
 
@@ -21,6 +22,7 @@ initialiseThemeToggle();
 initialiseMoneyInputs();
 initialiseInstallmentSimulator();
 initialiseInfoViewer();
+initialiseReportForm();
 initialiseSliders();
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {

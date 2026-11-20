@@ -3,8 +3,9 @@
     @php($editedAccount = request()->route('account'))
     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
     {{-- Regular admins only manage their own accounts; the store-wide menus are for the super admin. --}}
-    @php($superOnly = ['sales', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
-    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
+    @php($superOnly = ['sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
+    @php($pendingReports = auth()->user()->is_super_admin ? \App\Models\Report::where('status', 'pending')->count() : 0)
+    @foreach (['dashboard' => 'Ringkasan', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp'] as $route => $label)
         @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"
@@ -42,6 +43,10 @@
                         @case('messages')
                             <rect x="3" y="5" width="18" height="14" rx="2" />
                             <path d="m3 7 9 6 9-6" />
+                        @break
+
+                        @case('reports')
+                            <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01" />
                         @break
 
                         @case('admins')
@@ -89,6 +94,9 @@
                 </svg>
             </span>
             <span class="truncate">{{ $label }}</span>
+            @if ($route === 'reports' && $pendingReports)
+                <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" aria-label="{{ $pendingReports }} laporan menunggu">{{ $pendingReports }}</span>
+            @endif
             @if ($route === 'messages' && $unreadMessages)
                 <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-lime-300 text-slate-950' }}" aria-label="{{ $unreadMessages }} pesan belum dibaca">{{ $unreadMessages }}</span>
             @endif
