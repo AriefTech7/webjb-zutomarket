@@ -37,7 +37,7 @@
                 @if ($onlineAdmins->isNotEmpty())
                     <div class="hidden shrink-0 -space-x-2 min-[360px]:flex" aria-hidden="true">
                         @foreach ($onlineAdmins->take(3) as $admin)
-                            <span class="chat-avatar" title="{{ $admin->name }}" style="--hue: {{ ($admin->id * 67) % 360 }}">{{ mb_strtoupper(mb_substr($admin->name, 0, 1)) }}</span>
+                            @include('layouts.avatar', ['user' => $admin, 'class' => 'chat-avatar', 'alt' => $admin->name])
                         @endforeach
                         @if ($onlineAdmins->count() > 3)
                             <span class="chat-avatar chat-avatar-more">+{{ $onlineAdmins->count() - 3 }}</span>

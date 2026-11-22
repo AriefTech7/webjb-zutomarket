@@ -1,6 +1,7 @@
 import { initialiseCart, initialiseShare } from './cart';
 import { initialiseChat } from './chat';
 import { initialiseCountdowns } from './countdown';
+import { initialiseImageCompression } from './image-compress';
 import { initialiseInfoViewer } from './info-viewer';
 import { initialiseInstallPrompt } from './install';
 import { initialiseInstallmentSimulator } from './installment';
@@ -25,6 +26,7 @@ initialiseInstallmentSimulator();
 initialiseInfoViewer();
 initialiseReportForm();
 initialiseChat();
+initialiseImageCompression();
 initialiseSliders();
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {

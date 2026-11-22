@@ -8,7 +8,7 @@
         <h2 class="text-lg font-bold md:col-span-2">Tambah info</h2>
         <div><label class="label" for="new-info-title">Judul</label><input class="field" id="new-info-title" name="title" value="{{ old('title') }}" maxlength="100" required placeholder="Contoh: Cara beli akun"></div>
         <div><label class="label" for="new-info-image">Gambar poster</label><input class="field" id="new-info-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" required>
-            <p class="muted mt-2 text-xs">JPG, PNG, atau WebP. Maksimal 4 MB.</p></div>
+            <p class="muted mt-2 text-xs">JPG, PNG, atau WebP. Maksimal 10 MB; gambar besar dikompres otomatis.</p></div>
         <div class="md:col-span-2"><label class="label" for="new-info-caption">Keterangan (opsional)</label>
             <textarea class="field" id="new-info-caption" name="caption" rows="3" maxlength="1000" placeholder="Contoh: nomor dan grup admin yang real di sini https://zutomarket.id/tentang">{{ old('caption') }}</textarea>
             <p class="muted mt-2 text-xs">Tampil di bawah poster saat pembeli membukanya. Link yang diawali https:// otomatis bisa diklik. Kosong = memakai judul.</p></div>

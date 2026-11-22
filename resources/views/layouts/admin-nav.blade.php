@@ -6,7 +6,7 @@
     @php($superOnly = ['chat', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
     @php($pendingReports = auth()->user()->is_super_admin ? \App\Models\Report::where('status', 'pending')->count() : 0)
     @php($unreadChats = auth()->user()->is_super_admin ? \App\Models\ChatConversation::unreadByAdmin()->count() : 0)
-    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Ganti password'] as $route => $label)
+    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Profil & password'] as $route => $label)
         @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"

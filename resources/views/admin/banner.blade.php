@@ -2,7 +2,7 @@
 @section('title', 'Banner')
 @section('admin-title', 'Banner beranda')
 @section('admin-content')
-    <p class="muted mb-5">Banner tampil bergeser otomatis (slider) di bagian paling atas halaman utama. Ukuran yang disarankan <strong>1280 × 430 px</strong> (rasio sekitar 3:1), semua banner sebaiknya berukuran sama. JPG, PNG, atau WebP, maksimal 4 MB. Urutan kecil tampil lebih dulu. Maksimal {{ \App\Http\Controllers\AdminBannerController::MAX_BANNERS }} banner.</p>
+    <p class="muted mb-5">Banner tampil bergeser otomatis (slider) di bagian paling atas halaman utama. Ukuran yang disarankan <strong>1280 × 430 px</strong> (rasio sekitar 3:1), semua banner sebaiknya berukuran sama. JPG, PNG, atau WebP, maksimal 10 MB (gambar besar dikompres otomatis). Urutan kecil tampil lebih dulu. Maksimal {{ \App\Http\Controllers\AdminBannerController::MAX_BANNERS }} banner.</p>
 
     @if ($banners->count() < \App\Http\Controllers\AdminBannerController::MAX_BANNERS)
         <form method="POST" action="{{ route('admin.banner.store') }}" enctype="multipart/form-data" class="panel mb-8 grid gap-4 p-5 md:grid-cols-2 md:p-6">

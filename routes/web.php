@@ -68,6 +68,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/password', [AdminUserController::class, 'showOwnPassword'])->name('password');
     Route::put('/password', [AdminUserController::class, 'updateOwnPassword'])->middleware('throttle:admin-accounts')->name('password.update');
+    Route::post('/profil/foto', [AdminUserController::class, 'updateAvatar'])->middleware('throttle:20,1')->name('avatar.update');
+    Route::delete('/profil/foto', [AdminUserController::class, 'destroyAvatar'])->name('avatar.destroy');
 
     // Every admin: their own game & rental accounts (the controller checks ownership) and the inbox.
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');

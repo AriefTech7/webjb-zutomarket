@@ -56,7 +56,7 @@ class ReportController extends Controller
             'title' => ['required', 'string', 'max:120'],
             'description' => ['required', 'string', 'min:20', 'max:3000'],
             'evidence' => ['required', 'array', 'min:1', 'max:'.Report::MAX_EVIDENCE],
-            'evidence.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'evidence.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ], [
             'game_id.required_if' => 'Isi ID game yang bermasalah.',
             'wa_number.required_if' => 'Isi nomor WA pelaku.',
@@ -65,7 +65,7 @@ class ReportController extends Controller
             'description.min' => 'Ceritakan detail laporan minimal 20 karakter.',
             'evidence.required' => 'Upload minimal 1 gambar bukti.',
             'evidence.max' => 'Maksimal '.Report::MAX_EVIDENCE.' gambar bukti.',
-            'evidence.*.max' => 'Setiap gambar bukti maksimal 4 MB.',
+            'evidence.*.max' => 'Setiap gambar bukti maksimal 10 MB.',
         ]);
         $paths = array_map(fn ($file): string => $file->store('reports', 'public'), $request->file('evidence', []));
         Report::create([
