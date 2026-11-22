@@ -12,8 +12,19 @@ use Illuminate\Support\Facades\Storage;
  */
 class Report extends Model
 {
-    /** "pengguna" = a person (WhatsApp number required); "id_game" = a game ID (WhatsApp number optional). */
-    public const CATEGORIES = ['pengguna' => 'Pengguna Bermasalah', 'id_game' => 'ID Game Bermasalah'];
+    /**
+     * "pengguna" = a person (WhatsApp number required); "id_game" and "akun_mafia" = a game ID (WhatsApp number
+     * optional). "Akun Mafia" is an account that was sold and then taken back by its old owner.
+     */
+    public const CATEGORIES = ['pengguna' => 'Pengguna Bermasalah', 'id_game' => 'ID Game Bermasalah', 'akun_mafia' => 'Akun Mafia'];
+
+    /** Categories about a game ID, with the label of the ID field. */
+    public const GAME_ID_CATEGORIES = ['id_game' => 'ID game bermasalah', 'akun_mafia' => 'ID akun mafia'];
+
+    public static function needsGameId(?string $category): bool
+    {
+        return array_key_exists((string) $category, self::GAME_ID_CATEGORIES);
+    }
 
     public const STATUSES = ['pending' => 'Menunggu', 'approved' => 'Tampil', 'rejected' => 'Ditolak'];
 

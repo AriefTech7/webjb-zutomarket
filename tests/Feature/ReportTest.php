@@ -48,6 +48,11 @@ class ReportTest extends TestCase
         $this->post('/laporan', $this->form(['category' => 'id_game', 'wa_number' => '']))->assertSessionHasErrors(['game_id' => 'Isi ID game yang bermasalah.']);
         $this->post('/laporan', $this->form(['category' => 'id_game', 'game_id' => '1234 5678 (2001)', 'wa_number' => '']))->assertSessionHasNoErrors();
         $this->assertSame('12345678(2001)', Report::sole()->game_id);
+        $this->post('/laporan', $this->form(['category' => 'akun_mafia', 'wa_number' => '']))->assertSessionHasErrors(['game_id' => 'Isi ID game yang bermasalah.']);
+        $this->post('/laporan', $this->form(['category' => 'akun_mafia', 'game_id' => '55 66 77', 'wa_number' => '']))->assertSessionHasNoErrors();
+        $mafia = Report::latest('id')->first();
+        $this->assertSame(['556677', 'Akun Mafia'], [$mafia->game_id, $mafia->categoryLabel()]);
+        $mafia->delete();
 
         $this->post('/laporan', $this->form(['evidence' => []]))->assertSessionHasErrors(['evidence' => 'Upload minimal 1 gambar bukti.']);
         $this->post('/laporan', $this->form(['evidence' => array_fill(0, 11, UploadedFile::fake()->image('b.png'))]))->assertSessionHasErrors('evidence');

@@ -1,5 +1,8 @@
 {{-- "Kirim laporan baru" dialog on /laporan. Opens again by itself when the server sent the form back with errors. --}}
-@php($reportCategory = old('category', 'pengguna'))
+@php
+    $reportCategory = old('category', 'pengguna');
+    $needsGameId = \App\Models\Report::needsGameId($reportCategory);
+@endphp
 <dialog class="info-viewer" data-report-dialog aria-labelledby="report-form-title" @if ($errors->any()) data-open-on-load @endif>
     <form method="POST" action="{{ route('reports.store') }}" enctype="multipart/form-data" class="info-viewer-box report-dialog-box relative space-y-4 rounded-3xl border border-white/10 bg-[#101833] p-5 shadow-2xl shadow-[#020617]/60 md:p-7" data-report-form>
         @csrf
@@ -29,18 +32,18 @@
 
         <fieldset>
             <legend class="label text-xs uppercase tracking-wide">Kategori</legend>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 @foreach (\App\Models\Report::CATEGORIES as $categoryValue => $categoryLabel)
-                    <label class="report-pill flex min-h-11 cursor-pointer items-center justify-center rounded-full border px-3 text-center text-sm font-bold transition">
-                        <input class="sr-only" type="radio" name="category" value="{{ $categoryValue }}" @checked($reportCategory === $categoryValue)>{{ $categoryLabel }}
+                    <label @class(['report-pill flex min-h-11 cursor-pointer items-center justify-center rounded-full border px-3 text-center text-sm font-bold transition', 'col-span-2 sm:col-span-1' => $loop->last && $loop->count % 2 === 1])>
+                        <input class="sr-only" type="radio" name="category" value="{{ $categoryValue }}" @checked($reportCategory === $categoryValue) @if (isset(\App\Models\Report::GAME_ID_CATEGORIES[$categoryValue])) data-game-id-label="{{ \App\Models\Report::GAME_ID_CATEGORIES[$categoryValue] }}" @endif>{{ $categoryLabel }}
                     </label>
                 @endforeach
             </div>
         </fieldset>
 
         <div class="grid gap-4 sm:grid-cols-2">
-            <div data-report-game-id @if ($reportCategory !== 'id_game') hidden @endif><label class="label text-xs uppercase tracking-wide" for="report_game_id">ID game bermasalah</label><input class="field" id="report_game_id" name="game_id" value="{{ old('game_id') }}" maxlength="50" placeholder="Contoh: 123456789" @disabled($reportCategory !== 'id_game') @required($reportCategory === 'id_game')></div>
-            <div><label class="label text-xs uppercase tracking-wide" for="report_wa_number">No WA pelaku <span class="font-normal normal-case text-slate-500" data-report-wa-optional @if ($reportCategory !== 'id_game') hidden @endif>(opsional)</span></label><input class="field" id="report_wa_number" name="wa_number" type="tel" inputmode="tel" value="{{ old('wa_number') }}" maxlength="20" placeholder="628xxxxxxxxxx" @required($reportCategory === 'pengguna')></div>
+            <div data-report-game-id @if (! $needsGameId) hidden @endif><label class="label text-xs uppercase tracking-wide" for="report_game_id">{{ \App\Models\Report::GAME_ID_CATEGORIES[$reportCategory] ?? 'ID game bermasalah' }}</label><input class="field" id="report_game_id" name="game_id" value="{{ old('game_id') }}" maxlength="50" placeholder="Contoh: 123456789" @disabled(! $needsGameId) @required($needsGameId)></div>
+            <div><label class="label text-xs uppercase tracking-wide" for="report_wa_number">No WA pelaku <span class="font-normal normal-case text-slate-500" data-report-wa-optional @if (! $needsGameId) hidden @endif>(opsional)</span></label><input class="field" id="report_wa_number" name="wa_number" type="tel" inputmode="tel" value="{{ old('wa_number') }}" maxlength="20" placeholder="628xxxxxxxxxx" @required($reportCategory === 'pengguna')></div>
         </div>
         <div><label class="label text-xs uppercase tracking-wide" for="report_title">Judul laporan</label><input class="field" id="report_title" name="title" value="{{ old('title') }}" maxlength="120" required placeholder="Ringkasan singkat laporan"></div>
         <div><label class="label text-xs uppercase tracking-wide" for="report_description">Detail laporan</label><textarea class="field" id="report_description" name="description" rows="5" minlength="20" maxlength="3000" required placeholder="Jelaskan kronologi, pihak terkait, nominal jika ada, dan bukti pendukung.">{{ old('description') }}</textarea></div>

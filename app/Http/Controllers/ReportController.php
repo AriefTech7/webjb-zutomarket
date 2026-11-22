@@ -51,7 +51,7 @@ class ReportController extends Controller
             'reporter_email' => ['required', 'email', 'max:120'],
             'reporter_whatsapp' => ['required', 'string', 'max:20', $phone],
             'category' => ['required', Rule::in(array_keys(Report::CATEGORIES))],
-            'game_id' => ['nullable', 'required_if:category,id_game', 'string', 'max:50'],
+            'game_id' => ['nullable', 'required_if:category,'.implode(',', array_keys(Report::GAME_ID_CATEGORIES)), 'string', 'max:50'],
             'wa_number' => ['nullable', 'required_if:category,pengguna', 'string', 'max:20', $phone],
             'title' => ['required', 'string', 'max:120'],
             'description' => ['required', 'string', 'min:20', 'max:3000'],
@@ -71,7 +71,7 @@ class ReportController extends Controller
         Report::create([
             ...$data,
             // A "Pengguna Bermasalah" report is about a person, not a game ID.
-            'game_id' => $data['category'] === 'id_game' && filled($data['game_id'] ?? null) ? Report::normaliseGameId($data['game_id']) : null,
+            'game_id' => Report::needsGameId($data['category']) && filled($data['game_id'] ?? null) ? Report::normaliseGameId($data['game_id']) : null,
             'wa_number' => filled($data['wa_number'] ?? null) ? Report::normaliseWhatsapp($data['wa_number']) : null,
             'reporter_whatsapp' => Report::normaliseWhatsapp($data['reporter_whatsapp']),
             'evidence' => $paths,
