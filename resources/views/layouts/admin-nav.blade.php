@@ -3,10 +3,11 @@
     @php($editedAccount = request()->route('account'))
     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
     {{-- Regular admins only manage their own accounts; the store-wide menus are for the super admin. --}}
-    @php($superOnly = ['chat', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
+    @php($superOnly = ['chat', 'orders', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
     @php($pendingReports = auth()->user()->is_super_admin ? \App\Models\Report::where('status', 'pending')->count() : 0)
     @php($unreadChats = auth()->user()->is_super_admin ? \App\Models\ChatConversation::unreadByAdmin()->count() : 0)
-    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Profil & password'] as $route => $label)
+    @php($ordersToDeliver = auth()->user()->is_super_admin ? \App\Models\Order::where('status', 'paid')->whereNull('delivered_at')->count() : 0)
+    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'orders' => 'Pesanan website', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Profil & password'] as $route => $label)
         @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"
@@ -34,6 +35,11 @@
                         @case('rentals')
                             <circle cx="12" cy="12" r="9" />
                             <path d="M12 7v5l3 2" />
+                        @break
+
+                        @case('orders')
+                            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                            <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
                         @break
 
                         @case('sales')
@@ -106,6 +112,9 @@
             <span class="truncate">{{ $label }}</span>
             @if ($route === 'chat')
                 <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" data-chat-unread-endpoint="{{ route('admin.chat.unread') }}" aria-label="chat belum dibalas" @unless ($unreadChats) hidden @endunless>{{ $unreadChats }}</span>
+            @endif
+            @if ($route === 'orders' && $ordersToDeliver)
+                <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" aria-label="{{ $ordersToDeliver }} pesanan perlu diserahkan">{{ $ordersToDeliver }}</span>
             @endif
             @if ($route === 'reports' && $pendingReports)
                 <span class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-black {{ $isActiveMenu ? 'bg-slate-950 text-lime-300' : 'bg-rose-400 text-slate-950' }}" aria-label="{{ $pendingReports }} laporan menunggu">{{ $pendingReports }}</span>

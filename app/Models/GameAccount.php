@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Tripay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -86,6 +87,39 @@ class GameAccount extends Model
     protected function casts(): array
     {
         return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
+    }
+
+    /** 950 → "950", 3100 → "3,1 rb", 1250000 → "1,3 jt" (the "Dilihat" / "Suka" counters). */
+    public static function compactCount(int $count): string
+    {
+        foreach ([1_000_000 => 'jt', 1_000 => 'rb'] as $step => $unit) {
+            if ($count >= $step) {
+                return str_replace('.', ',', rtrim(rtrim(number_format($count / $step, 1, '.', ''), '0'), '.')).' '.$unit;
+            }
+        }
+
+        return (string) $count;
+    }
+
+    /**
+     * Paid on the website through Tripay instead of WhatsApp: only the super admin's own accounts (not consigned
+     * ones with a seller number, not rentals), and only once Tripay is configured. Loads the owner if needed.
+     */
+    public function usesPaymentGateway(): bool
+    {
+        return Tripay::enabled() && ! $this->is_rental && blank($this->seller_whatsapp) && (bool) $this->owner?->is_super_admin;
+    }
+
+    /** The unpaid, not yet expired order holding this account, if any. */
+    public function pendingOrder(): ?Order
+    {
+        return Order::pending()->whereHas('items', fn ($query) => $query->where('game_account_id', $this->id))->latest('id')->first();
+    }
+
+    /** @return HasMany<OrderItem, $this> */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     /** @return BelongsTo<User, $this> */

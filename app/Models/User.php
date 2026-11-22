@@ -60,6 +60,12 @@ class User extends Authenticatable
         return $this->hasMany(GameAccount::class, 'owner_id');
     }
 
+    /** @return HasMany<Order, $this> */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     /** The super admin edits every account; other admins only the accounts they own. */
     public function canManage(GameAccount $account): bool
     {

@@ -23,7 +23,7 @@ class CartTest extends TestCase
             ->assertSee('data-cart-toggle="'.$available->id.'"', false)->assertSee('Keranjang')
             ->assertSee(route('cart'), false);
         $this->get('/katalog?status=sold')->assertOk()->assertSee('Akun Laku')->assertDontSee('data-cart-toggle=', false);
-        $this->get('/akun/'.$available->slug)->assertOk()->assertSee('Tambah ke keranjang');
+        $this->get('/akun/'.$available->slug)->assertOk()->assertSee('data-cart-toggle="'.$available->id.'"', false);
     }
 
     public function test_cart_page_lists_only_buyable_accounts_with_one_whatsapp_checkout_per_seller(): void

@@ -39,7 +39,7 @@
 </head>
 
 @php($buyer = auth()->user()?->is_admin === false ? auth()->user() : null)
-<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}"
+<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}" data-like-endpoint="{{ url('/suka') }}"
     @if ($buyer) data-account-profile="{{ json_encode(['name' => $buyer->name, 'phone' => (string) $buyer->whatsapp]) }}" data-account-wishlist="{{ route('account.wishlist') }}"
         data-account-wishlist-ids="{{ json_encode($buyer->wishlistIds()) }}" @if (session('wishlist_merge')) data-account-wishlist-merge="1" @endif @endif>
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))

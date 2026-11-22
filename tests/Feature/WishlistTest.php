@@ -25,7 +25,7 @@ class WishlistTest extends TestCase
         $this->get('/')->assertOk()->assertSee('data-wishlist-toggle="'.$account->id.'"', false)
             ->assertSee(route('rental'), false)->assertSee('Rental Akun');
         $this->get('/profil')->assertOk()->assertSee(route('wishlist'), false)->assertSee('data-wishlist-count', false);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Simpan ke wishlist')
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('data-wishlist-toggle="'.$account->id.'"', false)
             ->assertSee('aria-pressed="false"', false);
     }
 

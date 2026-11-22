@@ -110,6 +110,15 @@
     /* Share / Suka / Keranjang row on product cards: icon over label when narrow, side by side from 15rem. */
     .card-action { @apply flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-white/10 bg-white/5 px-0.5 py-1.5 text-[10px] font-semibold leading-tight tracking-tight text-slate-300 transition hover:border-white/20 hover:text-white disabled:cursor-wait @[15rem]:flex-row @[15rem]:gap-1.5 @[15rem]:rounded-xl @[15rem]:px-1 @[15rem]:text-xs @[15rem]:tracking-normal; }
     .card-action > span { @apply max-w-full truncate; }
+    /* Account page: Share / Suka / Keranjang row, buy buttons and the boxed flash sale timer. */
+    .detail-action { @apply flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 text-xs font-semibold text-slate-200 transition hover:border-white/20 hover:text-white disabled:cursor-wait md:min-h-12 md:gap-2 md:text-sm; }
+    .detail-action > span { @apply truncate; }
+    .btn-wa { @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-3 text-xs font-bold text-emerald-300 transition hover:bg-emerald-300/20 md:min-h-12 md:gap-2 md:text-sm; }
+    .btn-buy { @apply min-h-11 rounded-xl md:min-h-12; box-shadow: 0 8px 28px -6px color-mix(in srgb, var(--color-lime-300) 55%, transparent); }
+    .btn-dp { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-xs font-black text-slate-950 transition hover:brightness-110 md:min-h-12 md:text-sm; background-image: linear-gradient(90deg, #fbbf24, #f97316); box-shadow: 0 8px 28px -6px #f9731680; }
+    .flash-box { @apply border-rose-400/40; background-image: linear-gradient(90deg, color-mix(in srgb, var(--color-rose-400) 14%, transparent), color-mix(in srgb, var(--color-rose-400) 4%, transparent)); box-shadow: 0 0 26px -6px color-mix(in srgb, var(--color-rose-400) 45%, transparent); }
+    .flash-cell { @apply block min-w-9 rounded-lg border border-rose-400/30 bg-white/5 px-1.5 py-1 text-base font-black tabular-nums leading-tight text-rose-300 md:min-w-10 md:text-lg; }
+    .flash-unit { @apply mt-1 block text-[9px] font-bold uppercase tracking-wider text-slate-400; }
     /* Admin dashboard charts. Series colours validated for colour-blind separation on the dark and light panels. */
     .viz { --viz-added: #9085e9; --viz-sold: #d95926; --viz-available: #3987e5; --viz-booked: #199e70; --viz-rental: #9085e9; --viz-draft: #64748b; --viz-track: #a9c3ff1a; }
     .theme-toggle { @apply flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#a9c3ff]/20 bg-[#a9c3ff]/10 text-slate-200 transition hover:text-white; }
@@ -202,6 +211,11 @@ html[data-theme='light'] .chat-msg.is-mine .chat-bubble { color: #ffffff; }
 .report-pill:hover { border-color: #ffffff40; }
 .report-pill:has(:checked) { border-color: var(--color-lime-300); background-color: var(--color-lime-300); color: var(--color-slate-950); }
 .report-pill:has(:focus-visible) { outline: 2px solid var(--color-lime-300); outline-offset: 3px; }
+/* Checkout: payment channel cards. */
+.pay-option { border-color: color-mix(in srgb, var(--color-white) 10%, transparent); background-color: color-mix(in srgb, var(--color-white) 5%, transparent); }
+.pay-option:hover { border-color: color-mix(in srgb, var(--color-white) 25%, transparent); }
+.pay-option:has(:checked) { border-color: var(--color-lime-300); background-color: color-mix(in srgb, var(--color-lime-300) 12%, transparent); box-shadow: 0 0 0 1px var(--color-lime-300); }
+.pay-option:has(:focus-visible) { outline: 2px solid var(--color-lime-300); outline-offset: 3px; }
 .report-card { animation: about-slide 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.05s); }
 .report-hero::after { content: ''; position: absolute; inset: auto -10% -60% auto; width: 22rem; height: 22rem; border-radius: 9999px; background: radial-gradient(circle, color-mix(in srgb, #f06bb4 22%, transparent), transparent 70%); pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .report-card { animation: none; } }

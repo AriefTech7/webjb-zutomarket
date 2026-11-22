@@ -34,6 +34,16 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    // Tripay payment gateway (checkout on the website). Mode "sandbox" uses Tripay's test API and test keys.
+    'tripay' => [
+        'mode' => env('TRIPAY_MODE', 'sandbox'),
+        'api_key' => env('TRIPAY_API_KEY'),
+        'private_key' => env('TRIPAY_PRIVATE_KEY'),
+        'merchant_code' => env('TRIPAY_MERCHANT_CODE'),
+        // How long a buyer has to pay; the account is held for them meanwhile.
+        'expiry_minutes' => (int) env('TRIPAY_EXPIRY_MINUTES', 60),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

@@ -4,14 +4,17 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminBannerController;
 use App\Http\Controllers\AdminBuyerController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +23,7 @@ Route::get('/', [CatalogController::class, 'home'])->name('catalog');
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.all');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
+Route::post('/suka/{account}', [CatalogController::class, 'like'])->middleware('throttle:60,1')->name('accounts.like');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::view('/joki-ml', 'catalog.joki')->name('joki');
 Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-sale');
@@ -39,6 +43,8 @@ Route::get('/keranjang/accounts', [CartController::class, 'accounts'])->middlewa
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
 Route::view('/ketentuan-layanan', 'catalog.terms')->name('terms');
 Route::view('/kebijakan-refund', 'catalog.refund')->name('refund');
+// Tripay posts payment results here (signed with the private key; CSRF is skipped in bootstrap/app.php).
+Route::post('/payment/tripay/callback', [OrderController::class, 'callback'])->middleware('throttle:120,1')->name('payment.tripay.callback');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
@@ -61,6 +67,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil/password', [AccountController::class, 'showPassword'])->name('account.password');
     Route::put('/profil/password', [AccountController::class, 'updatePassword'])->middleware('throttle:account-auth');
     Route::post('/akun/wishlist', [AccountController::class, 'syncWishlist'])->middleware('throttle:60,1')->name('account.wishlist');
+    // Website checkout through Tripay (the super admin's accounts) and the buyer's orders.
+    Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    Route::get('/pesanan', [OrderController::class, 'index'])->name('orders');
+    Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/pesanan/{order}/status', [OrderController::class, 'status'])->middleware('throttle:30,1')->name('orders.status');
     // Live chat with the store (signed-in buyers; ChatController refuses admins).
     Route::get('/chat/pesan', [ChatController::class, 'messages'])->middleware('throttle:120,1')->name('chat.messages');
     Route::post('/chat/pesan', [ChatController::class, 'send'])->middleware('throttle:20,1')->name('chat.send');
@@ -92,6 +104,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Super admin only: store-wide settings, sales, buyers and the admin team.
     Route::middleware('super-admin')->group(function () {
         Route::put('/dp-terms', [AdminController::class, 'saveDownPaymentTerms'])->name('dp-terms.update');
+        Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
+        Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
         Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
         Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
         Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');

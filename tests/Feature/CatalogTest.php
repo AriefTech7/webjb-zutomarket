@@ -228,14 +228,14 @@ class CatalogTest extends TestCase
         $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT'])->assertSessionHasNoErrors();
         $account->refresh();
         $this->get('/katalog')->assertOk()->assertSee($badge, false)->assertSee('>Bisa TT</span>', false);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Bisa TT</span>', false)->assertSee('Bisa dicicil')->assertSee('>Cicilan</a>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Bisa TT</span>', false)->assertSee('Bisa dicicil')->assertSee('data-installment-button', false);
         $this->assertStringContainsString('Bisa TT', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
 
         // Switched off: no badge, no instalment box, no Cicilan button; the note stays.
         $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT', 'installment_enabled' => '0'])->assertSessionHasNoErrors();
         $this->assertFalse($account->refresh()->installment_enabled);
         $this->get('/katalog')->assertOk()->assertDontSee($badge, false)->assertSee('>Bisa TT</span>', false);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('>Cicilan</a>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('data-installment-button', false);
         $this->assertStringNotContainsString($badge, $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
         $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => str_repeat('x', 31)])->assertSessionHasErrors('card_note');
 
@@ -256,7 +256,7 @@ class CatalogTest extends TestCase
         $this->assertNull($account->refresh()->sold_at);
         $this->get('/admin/accounts')->assertOk()->assertSee('Sudah DP');
         $this->get('/katalog')->assertOk()->assertSee('Akun Booking')->assertSee('Sudah di-DP pembeli');
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Sudah DP')->assertDontSee('>Beli</a>', false)->assertDontSee('Tanya Stok')->assertDontSee('>Cicilan</a>', false)->assertSee('Lihat akun lain');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Sudah DP')->assertDontSee('Beli Sekarang', false)->assertDontSee('Tanya Stok')->assertDontSee('data-installment-button', false)->assertSee('Lihat akun lain');
         $this->assertNull($account->whatsappUrl());
 
         $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil'])->assertSessionHasNoErrors();
@@ -505,12 +505,12 @@ class CatalogTest extends TestCase
         Setting::create(['key' => 'dp_due_tiers', 'value' => '[]']);
         $this->assertStringEndsWith(rawurlencode('Mohon info DP dan tenor yang tersedia.'), $account->installmentWhatsappUrl());
         $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Cicilan</a>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('data-installment-button', false);
 
         $account->update(['status' => 'sold']);
 
         $this->assertNull($account->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('>Cicilan</a>', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-installment-button', false);
     }
 
     public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void
@@ -993,7 +993,7 @@ class CatalogTest extends TestCase
 
         $response = $this->get('/akun/'.$account->slug);
 
-        $response->assertOk()->assertSee('Tanya Stok')->assertSee('>Tawar</a>', false)->assertSee('>Beli</a>', false)->assertSee('Hemat Rp 801.000 (-29%)')->assertSee('Beranda')->assertSee('Rekomendasi Produk');
+        $response->assertOk()->assertSee('Tanya Stok')->assertSee('Tawar harga</a>', false)->assertSee('Beli Sekarang', false)->assertSee('Hemat Rp 801.000')->assertSee('-29%')->assertSee('Beranda')->assertSee('Rekomendasi Produk');
         $this->assertSame(['FF 5815', 'Akun lain'], $response->viewData('recommendations')->pluck('title')->all());
         $response->assertDontSee('FF laku');
         $this->assertNotContains($account->id, $response->viewData('recommendations')->modelKeys());

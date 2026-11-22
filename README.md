@@ -112,6 +112,25 @@ Perubahan environment memerlukan recreate container, bukan hanya `restart`.
 Jangan gunakan `docker compose down -v`: opsi tersebut menghapus volume data.
 Scheduler belum dibutuhkan karena belum ada scheduled task di aplikasi.
 
+### Pembayaran Tripay (checkout website)
+
+Akun milik super admin (tanpa nomor WA penjual, bukan rental) dibayar langsung di
+website lewat Tripay; akun lain tetap lewat WhatsApp. Checkout aktif setelah empat
+variabel ini diisi di `.env.production` (lalu `dc up -d --force-recreate app`):
+
+```dotenv
+TRIPAY_MODE=sandbox            # ganti ke production setelah merchant disetujui
+TRIPAY_API_KEY=...
+TRIPAY_PRIVATE_KEY=...
+TRIPAY_MERCHANT_CODE=...
+TRIPAY_EXPIRY_MINUTES=60       # lama akun ditahan untuk pembeli yang belum bayar
+```
+
+Di dashboard Tripay, isi URL callback `https://zutomarket.id/payment/tripay/callback`
+dan atur "biaya ditanggung pelanggan" per metode pembayaran. Daftar metode di-cache
+1 jam (`php artisan cache:clear` setelah mengubahnya). Pesanan masuk ke
+Admin > Pesanan website; akun otomatis menjadi Terjual saat pembayaran lunas.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

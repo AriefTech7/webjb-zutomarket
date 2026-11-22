@@ -159,6 +159,28 @@ export function initialiseWishlist() {
         }
     };
 
+    // "Suka" counter on the account page: tell the server about each add / remove (it counts once per session).
+    const reportLike = async (id, liked) => {
+        if (!account.likeEndpoint) return;
+        try {
+            const response = await fetch(`${account.likeEndpoint}/${id}`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                body: JSON.stringify({ liked }),
+            });
+            if (!response.ok) return;
+            const result = await response.json();
+            document.querySelectorAll(`[data-like-count="${id}"]`).forEach((counter) => { counter.textContent = result.label; });
+        } catch {
+            // The counter is only decoration: the wishlist itself is already saved.
+        }
+    };
+
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-wishlist-toggle]');
         if (!button || button.disabled) return;
@@ -166,6 +188,7 @@ export function initialiseWishlist() {
             const id = Number(button.dataset.wishlistToggle);
             const ids = store.toggle(id);
             void pushToAccount();
+            void reportLike(id, ids.includes(id));
             synchronise();
             announce(ids.includes(id) ? 'Akun ditambahkan ke wishlist.' : 'Akun dihapus dari wishlist.');
             void loadPage();
