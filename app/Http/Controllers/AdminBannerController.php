@@ -56,7 +56,7 @@ class AdminBannerController extends Controller
     private function validated(Request $request, bool $imageRequired): array
     {
         return $request->validate([
-            'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', 'dimensions:min_width=600,min_height=150'],
+            'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240', 'dimensions:min_width=600,min_height=150'],
             'link_url' => ['nullable', 'url:https', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999'],
         ], [

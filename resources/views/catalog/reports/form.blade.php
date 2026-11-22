@@ -49,7 +49,7 @@
             <div class="rounded-2xl border border-white/10 bg-[#080f25] p-4">
                 <input id="report_evidence" name="evidence[]" type="file" accept="image/jpeg,image/png,image/webp" multiple required data-report-evidence
                     class="block w-full text-sm text-slate-300 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-lime-300 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-950">
-                <p class="muted mt-2 text-xs">Upload screenshot atau foto bukti. Maksimal {{ \App\Models\Report::MAX_EVIDENCE }} gambar, tiap gambar maksimal 4 MB.</p>
+                <p class="muted mt-2 text-xs">Upload screenshot atau foto bukti. Maksimal {{ \App\Models\Report::MAX_EVIDENCE }} gambar, tiap gambar maksimal 10 MB (gambar besar dikompres otomatis).</p>
             </div>
         </div>
         <p class="flex gap-2 rounded-2xl border border-rose-300/25 bg-rose-300/5 p-4 text-sm text-slate-300">

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 // is_admin, is_super_admin and google_id are deliberately not fillable: they are only ever set explicitly.
 #[Fillable(['name', 'username', 'email', 'whatsapp', 'password', 'wishlist'])]
@@ -40,7 +41,17 @@ class User extends Authenticatable
     public static function onlineChatAdmins(): Collection
     {
         return static::where('is_admin', true)->where('is_super_admin', true)
-            ->where('last_seen_at', '>=', now()->subMinutes(5))->orderByDesc('last_seen_at')->get(['id', 'name']);
+            ->where('last_seen_at', '>=', now()->subMinutes(5))->orderByDesc('last_seen_at')->get(['id', 'name', 'avatar_path']);
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : null;
+    }
+
+    public function initial(): string
+    {
+        return mb_strtoupper(mb_substr(trim((string) $this->name) ?: '?', 0, 1));
     }
 
     /** @return HasMany<GameAccount, $this> */

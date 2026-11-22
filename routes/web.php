@@ -37,6 +37,8 @@ Route::view('/cicilan', 'catalog.installment')->name('installment');
 Route::get('/keranjang', [CartController::class, 'index'])->name('cart');
 Route::get('/keranjang/accounts', [CartController::class, 'accounts'])->middleware('throttle:60,1')->name('cart.accounts');
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
+Route::view('/ketentuan-layanan', 'catalog.terms')->name('terms');
+Route::view('/kebijakan-refund', 'catalog.refund')->name('refund');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
@@ -68,6 +70,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/password', [AdminUserController::class, 'showOwnPassword'])->name('password');
     Route::put('/password', [AdminUserController::class, 'updateOwnPassword'])->middleware('throttle:admin-accounts')->name('password.update');
+    Route::post('/profil/foto', [AdminUserController::class, 'updateAvatar'])->middleware('throttle:20,1')->name('avatar.update');
+    Route::delete('/profil/foto', [AdminUserController::class, 'destroyAvatar'])->name('avatar.destroy');
 
     // Every admin: their own game & rental accounts (the controller checks ownership) and the inbox.
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');

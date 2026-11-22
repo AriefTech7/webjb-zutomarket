@@ -30,11 +30,14 @@
     <div class="space-y-3">
         @foreach ($admins as $admin)
             <div class="panel flex flex-wrap items-center justify-between gap-4 p-4 md:p-5">
+                <div class="flex min-w-0 items-center gap-3">
+                @include('layouts.avatar', ['user' => $admin, 'class' => 'size-11 shrink-0 rounded-full text-base', 'alt' => 'Foto '.$admin->username])
                 <div class="min-w-0">
                     <p class="flex flex-wrap items-center gap-1.5 font-bold text-white">{{ $admin->username }}
                         <span class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase {{ $admin->is_super_admin ? 'bg-amber-300/15 text-amber-300' : 'bg-white/10 text-slate-300' }}">{{ $admin->is_super_admin ? 'Super admin' : 'Admin' }}</span>
                         @if ($admin->is(auth()->user()))<span class="rounded-full bg-lime-300/15 px-2 py-0.5 text-[10px] font-black uppercase text-lime-300">Kamu</span>@endif</p>
                     <p class="text-xs text-slate-400">{{ $admin->name }} · {{ $admin->email }} · dibuat {{ $admin->created_at?->format('d/m/Y') }} · {{ $admin->owned_accounts_count }} akun game</p>
+                </div>
                 </div>
                 @php($bag = $errors->getBag('admin'.$admin->id))
                 @if ($bag->any())

@@ -154,7 +154,7 @@
             @endif
             <input class="field" id="main_image" name="main_image" type="file" accept="image/jpeg,image/png,image/webp"
                 @required(!$account->exists)>
-            <p class="muted mt-2 text-xs">JPG, PNG, atau WebP. Maksimal 4 MB per gambar.</p>
+            <p class="muted mt-2 text-xs">JPG, PNG, atau WebP. Maksimal 10 MB per gambar; gambar besar dikompres otomatis.</p>
         </div>
         <div><label class="label" for="images">Gambar tambahan (maksimal 6)</label><input class="field" id="images"
                 name="images[]" type="file" multiple accept="image/jpeg,image/png,image/webp">

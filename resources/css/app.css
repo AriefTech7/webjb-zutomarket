@@ -175,7 +175,7 @@ html[data-theme='light'] .bnav { background: #ffffffc7; border-color: #c7d2fe; b
 @media (max-width: 47.99rem) { .chat-panel.is-expanded { inset: 0.75rem; width: auto; height: auto; } }
 @media (min-width: 80rem) { .chat-panel.is-expanded { height: min(calc(100dvh - 7rem), 46rem); } }
 /* Online admins in the header: overlapping initials, a pulsing green dot, and a green dot on the launcher. */
-.chat-avatar { display: flex; width: 1.9rem; height: 1.9rem; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #101833; background: hsl(var(--hue, 210) 70% 55%); color: #fff; font-size: 0.75rem; font-weight: 800; }
+.chat-avatar { display: flex; width: 2.1rem; height: 2.1rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #101833; background: hsl(var(--hue, 210) 70% 55%); color: #fff; font-size: 0.75rem; font-weight: 800; }
 .chat-avatar-more { background: var(--color-lime-300); color: var(--color-slate-950); font-size: 0.7rem; }
 .chat-pulse { position: relative; width: 0.5rem; height: 0.5rem; flex-shrink: 0; border-radius: 9999px; background: #34d399; }
 .chat-pulse::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: inherit; animation: chat-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }

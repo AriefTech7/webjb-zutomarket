@@ -312,8 +312,8 @@ class AdminController extends Controller
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
             'flash_sale_ends_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
-            'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
+            'main_image' => [$account->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'images' => 'nullable|array|max:6', 'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
             'remove_images' => 'nullable|array', 'remove_images.*' => 'integer',
         ], [
             'seller_whatsapp.regex' => 'Nomor penjual harus diawali kode negara tanpa tanda +, contoh 6281234567890.',
@@ -476,7 +476,7 @@ class AdminController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'caption' => 'nullable|string|max:1000',
-            'image' => [$info->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'image' => [$info->exists ? 'nullable' : 'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'link_url' => 'nullable|url:https|max:500',
             'sort_order' => 'nullable|integer|min:0|max:999',
         ], ['link_url.url' => 'Isi tautan lengkap yang diawali https://.']);

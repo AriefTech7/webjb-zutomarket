@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -33,6 +35,35 @@ class AdminManagementTest extends TestCase
 
         $this->post('/admin/logout');
         $this->post('/admin/login', ['username' => 'stafbaru', 'password' => 'baru12345'])->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_an_admin_sets_a_profile_photo_shown_in_the_live_chat(): void
+    {
+        Storage::fake('public');
+        $razan = User::factory()->create(['name' => 'Razan']);
+        $this->actingAs($razan)->get('/admin/password')->assertOk()->assertSee('Foto profil')->assertSee('data-avatar-input', false)->assertDontSee('Hapus foto');
+        $this->get('/admin')->assertSee(route('admin.password'), false)->assertSee('Profil &amp; password', false);
+
+        $this->post('/admin/profil/foto', [])->assertSessionHasErrors(['avatar' => 'Pilih foto dulu.']);
+        $this->post('/admin/profil/foto', ['avatar' => UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')])->assertSessionHasErrors('avatar');
+        $this->post('/admin/profil/foto', ['avatar' => UploadedFile::fake()->image('a.png')->size(3000)])->assertSessionHasErrors(['avatar' => 'Foto maksimal 2 MB.']);
+        $this->post('/admin/profil/foto', ['avatar' => UploadedFile::fake()->image('a.png', 256, 256)])->assertRedirect(route('admin.password'))->assertSessionHas('success');
+        $first = $razan->refresh()->avatar_path;
+        Storage::disk('public')->assertExists($first);
+        $this->get('/admin')->assertSee($razan->avatarUrl(), false);
+
+        // Replacing deletes the old file; visitors see the photo while the admin is online.
+        $this->post('/admin/profil/foto', ['avatar' => UploadedFile::fake()->image('b.png', 256, 256)]);
+        Storage::disk('public')->assertMissing($first);
+        auth()->logout();
+        $this->get('/')->assertSee('1 Admin Online')->assertSee('src="'.$razan->refresh()->avatarUrl().'"', false);
+
+        $this->actingAs($razan)->delete('/admin/profil/foto')->assertSessionHas('success');
+        Storage::disk('public')->assertMissing($razan->getOriginal('avatar_path'));
+        $this->assertNull($razan->refresh()->avatar_path);
+        auth()->logout();
+        $this->get('/')->assertSee('title="Razan"', false)->assertSee('>R</span>', false);
+        $this->post('/admin/profil/foto', ['avatar' => UploadedFile::fake()->image('c.png')])->assertRedirect('/admin/login');
     }
 
     public function test_every_admin_changes_their_own_password_but_only_the_super_admin_manages_others(): void

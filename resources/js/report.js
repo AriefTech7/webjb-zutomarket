@@ -1,10 +1,10 @@
 // /laporan: "Buat Laporan" opens the report dialog; the category decides which suspect field is required.
 export const MAX_EVIDENCE = 10;
 
-export function evidenceError(files, maxBytes = 4 * 1024 * 1024) {
+export function evidenceError(files, maxBytes = 10 * 1024 * 1024) {
     if (files.length === 0) return 'Upload minimal 1 gambar bukti.';
     if (files.length > MAX_EVIDENCE) return `Maksimal ${MAX_EVIDENCE} gambar bukti.`;
-    if ([...files].some((file) => file.size > maxBytes)) return 'Setiap gambar bukti maksimal 4 MB.';
+    if ([...files].some((file) => file.size > maxBytes)) return 'Setiap gambar bukti maksimal 10 MB.';
     return '';
 }
 

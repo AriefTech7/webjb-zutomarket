@@ -156,7 +156,7 @@
                     <p class="font-bold text-lime-300">Created By OzinVoid</p>
                 </div>
                 <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Tautan footer">
-                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['privacy', 'Kebijakan Privasi']] as [$footerRoute, $footerLabel])
+                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['privacy', 'Kebijakan Privasi'], ['terms', 'Ketentuan Layanan'], ['refund', 'Kebijakan Refund']] as [$footerRoute, $footerLabel])
                         <a class="transition hover:text-lime-300" href="{{ route($footerRoute) }}">{{ $footerLabel }}</a>
                     @endforeach
                 </nav>

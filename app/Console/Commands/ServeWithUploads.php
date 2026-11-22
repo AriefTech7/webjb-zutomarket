@@ -9,7 +9,7 @@ class ServeWithUploads extends ServeCommand
     protected function serverCommand(): array
     {
         $command = parent::serverCommand();
-        array_splice($command, 1, 0, ['-d', 'upload_max_filesize=4M', '-d', 'post_max_size=48M', '-d', 'max_file_uploads=20']);
+        array_splice($command, 1, 0, ['-d', 'upload_max_filesize=10M', '-d', 'post_max_size=48M', '-d', 'max_file_uploads=20']);
 
         return $command;
     }

@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -98,6 +99,37 @@ class AdminUserController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('admin.password')->with('success', 'Password berhasil diganti.');
+    }
+
+    /**
+     * The admin's own profile photo. The browser crops it to a 256 px square JPEG before upload (image-compress.js);
+     * the size cap is the fallback when that did not run.
+     */
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate(['avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']], [
+            'avatar.required' => 'Pilih foto dulu.',
+            'avatar.max' => 'Foto maksimal 2 MB.',
+        ]);
+        $user = $request->user();
+        $old = $user->avatar_path;
+        $user->forceFill(['avatar_path' => $request->file('avatar')->store('avatars', 'public')])->save();
+        if ($old) {
+            Storage::disk('public')->delete($old);
+        }
+
+        return redirect()->route('admin.password')->with('success', 'Foto profil diperbarui.');
+    }
+
+    public function destroyAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        if ($user->avatar_path) {
+            Storage::disk('public')->delete($user->avatar_path);
+            $user->forceFill(['avatar_path' => null])->save();
+        }
+
+        return redirect()->route('admin.password')->with('success', 'Foto profil dihapus.');
     }
 
     private const MESSAGES = [
