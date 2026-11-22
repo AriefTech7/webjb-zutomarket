@@ -37,6 +37,8 @@ Route::view('/cicilan', 'catalog.installment')->name('installment');
 Route::get('/keranjang', [CartController::class, 'index'])->name('cart');
 Route::get('/keranjang/accounts', [CartController::class, 'accounts'])->middleware('throttle:60,1')->name('cart.accounts');
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
+Route::view('/ketentuan-layanan', 'catalog.terms')->name('terms');
+Route::view('/kebijakan-refund', 'catalog.refund')->name('refund');
 Route::middleware('guest')->group(function () {
     Route::view('/admin/login', 'auth.login')->name('login');
     Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
