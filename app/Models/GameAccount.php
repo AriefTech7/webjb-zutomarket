@@ -102,12 +102,12 @@ class GameAccount extends Model
     }
 
     /**
-     * Paid on the website through Tripay instead of WhatsApp: only the super admin's own accounts (not consigned
-     * ones with a seller number, not rentals), and only once Tripay is configured. Loads the owner if needed.
+     * Paid on the website through Tripay instead of WhatsApp: every account the super admin owns (rentals
+     * excepted), once Tripay is configured. Other admins' accounts stay on WhatsApp. Loads the owner if needed.
      */
     public function usesPaymentGateway(): bool
     {
-        return Tripay::enabled() && ! $this->is_rental && blank($this->seller_whatsapp) && (bool) $this->owner?->is_super_admin;
+        return Tripay::enabled() && ! $this->is_rental && (bool) $this->owner?->is_super_admin;
     }
 
     /** The unpaid, not yet expired order holding this account, if any. */
