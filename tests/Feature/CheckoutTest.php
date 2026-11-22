@@ -58,13 +58,16 @@ class CheckoutTest extends TestCase
     public function test_only_the_super_admins_own_accounts_use_the_website_checkout(): void
     {
         $store = $this->storeAccount();
-        $consigned = $this->storeAccount(['seller_whatsapp' => '6289999999999']);
-        $regular = GameAccount::factory()->create(['owner_id' => User::factory()->regularAdmin()->create()->id]);
+        // The super admin's accounts use the checkout even when a seller number is filled in.
+        $withSellerNumber = $this->storeAccount(['seller_whatsapp' => '6289999999999']);
+        $regular = GameAccount::factory()->create(['owner_id' => User::factory()->regularAdmin()->create()->id, 'seller_whatsapp' => '6288888888888']);
+        $rental = $this->storeAccount(['is_rental' => true]);
 
-        $this->get('/akun/'.$store->slug)->assertOk()->assertSee(route('checkout', ['akun' => [$store->id]]), false)->assertSee('Bayar aman di website');
-        foreach ([$consigned, $regular] as $account) {
-            $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-checkout-button', false)->assertSee(e($account->buyWhatsappUrl()), false);
+        foreach ([$store, $withSellerNumber] as $account) {
+            $this->get('/akun/'.$account->slug)->assertOk()->assertSee(route('checkout', ['akun' => [$account->id]]), false)->assertSee('Bayar aman di website');
         }
+        $this->get('/akun/'.$regular->slug)->assertOk()->assertDontSee('data-checkout-button', false)->assertSee(e($regular->buyWhatsappUrl()), false);
+        $this->assertFalse($rental->usesPaymentGateway());
 
         // Without Tripay keys everything stays on WhatsApp.
         config(['services.tripay.api_key' => null]);
@@ -202,9 +205,9 @@ class CheckoutTest extends TestCase
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void
     {
         $store = $this->storeAccount(['price' => 100000]);
-        $consigned = $this->storeAccount(['seller_whatsapp' => '6289999999999', 'price' => 200000]);
+        $otherAdmins = GameAccount::factory()->create(['owner_id' => User::factory()->regularAdmin()->create()->id, 'seller_whatsapp' => '6289999999999', 'price' => 200000]);
 
-        $html = $this->getJson('/keranjang/accounts?'.http_build_query(['ids' => [$store->id, $consigned->id]]))->assertOk()->json('html');
+        $html = $this->getJson('/keranjang/accounts?'.http_build_query(['ids' => [$store->id, $otherAdmins->id]]))->assertOk()->json('html');
         $this->assertStringContainsString(e(route('checkout', ['akun' => [$store->id]])), $html);
         $this->assertStringContainsString('Bayar di website (1 akun · Rp 100.000)', $html);
         $this->assertStringContainsString('https://wa.me/6289999999999', $html);

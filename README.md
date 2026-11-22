@@ -114,7 +114,7 @@ Scheduler belum dibutuhkan karena belum ada scheduled task di aplikasi.
 
 ### Pembayaran Tripay (checkout website)
 
-Akun milik super admin (tanpa nomor WA penjual, bukan rental) dibayar langsung di
+Semua akun milik super admin (kecuali rental) dibayar langsung di
 website lewat Tripay; akun lain tetap lewat WhatsApp. Checkout aktif setelah empat
 variabel ini diisi di `.env.production` (lalu `dc up -d --force-recreate app`):
 
