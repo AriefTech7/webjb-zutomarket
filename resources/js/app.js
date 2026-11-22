@@ -8,6 +8,7 @@ import { initialiseInstallmentSimulator } from './installment';
 import { initialiseThemeToggle } from './theme';
 import { initialiseJokiOrder } from './joki';
 import { initialiseMoneyInputs } from './money';
+import { initialiseCheckout } from './order';
 import { initialiseProfile, PROFILE_KEY } from './profile';
 import { initialiseReportForm } from './report';
 import { initialiseSliders } from './slider';
@@ -28,6 +29,7 @@ initialiseReportForm();
 initialiseChat();
 initialiseImageCompression();
 initialiseSliders();
+initialiseCheckout();
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {
     const input = document.getElementById(button.dataset.passwordToggle);

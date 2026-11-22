@@ -4,6 +4,11 @@
             {{ session('success') }}</div>
     </div>
 @endif
+@if (session('error'))
+    <div role="alert" class="{{ $flashClass }}">
+        <div class="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{{ session('error') }}</div>
+    </div>
+@endif
 @if ($errors->any())
     <div role="alert" class="{{ $flashClass }}">
         <ul class="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">

@@ -9,6 +9,7 @@
                     <div class="min-w-0 flex-1">
                         <span class="inline-block max-w-full truncate rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</span>
                         <a href="{{ route('accounts.show', $account->slug) }}" class="mt-1 block truncate text-sm font-black hover:text-lime-300 md:text-base">{{ $account->title }}</a>
+                        <p class="mt-1 text-[11px] font-semibold {{ $gateway->contains($account) ? 'text-emerald-300' : 'text-slate-400' }}">{{ $gateway->contains($account) ? 'Bayar di website' : 'Beli lewat WhatsApp admin/penjual' }}</p>
                         <p class="mt-1 text-base font-black text-lime-300 md:text-lg">{{ $account->formattedPrice() }}
                             @if ($account->hasDiscount())<span class="ml-1 text-xs font-semibold text-slate-500 line-through">{{ $account->formattedOriginalPrice() }}</span>@endif
                         </p>
@@ -27,6 +28,13 @@
                 <div class="flex justify-between gap-3 border-t border-white/10 pt-2"><dt class="text-slate-400">Total harga</dt><dd class="text-xl font-black text-lime-300">Rp {{ number_format($accounts->sum('price'), 0, ',', '.') }}</dd></div>
             </dl>
             <div class="mt-5 space-y-2">
+                @if ($gateway->isNotEmpty())
+                    <a class="btn btn-buy w-full" href="{{ route('checkout', ['akun' => $gateway->modelKeys()]) }}" data-checkout-button>
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        Bayar di website{{ $checkouts->isNotEmpty() || $gateway->count() < $accounts->count() ? ' ('.$gateway->count().' akun · Rp '.number_format($gateway->sum('price'), 0, ',', '.').')' : '' }}
+                    </a>
+                    <p class="muted text-center text-xs">QRIS, virtual account, e-wallet</p>
+                @endif
                 @foreach ($checkouts as $checkout)
                     @if ($checkout['url'])
                         <a class="btn w-full" href="{{ $checkout['url'] }}" target="_blank" rel="noopener noreferrer">

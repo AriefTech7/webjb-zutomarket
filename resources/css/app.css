@@ -211,6 +211,11 @@ html[data-theme='light'] .chat-msg.is-mine .chat-bubble { color: #ffffff; }
 .report-pill:hover { border-color: #ffffff40; }
 .report-pill:has(:checked) { border-color: var(--color-lime-300); background-color: var(--color-lime-300); color: var(--color-slate-950); }
 .report-pill:has(:focus-visible) { outline: 2px solid var(--color-lime-300); outline-offset: 3px; }
+/* Checkout: payment channel cards. */
+.pay-option { border-color: color-mix(in srgb, var(--color-white) 10%, transparent); background-color: color-mix(in srgb, var(--color-white) 5%, transparent); }
+.pay-option:hover { border-color: color-mix(in srgb, var(--color-white) 25%, transparent); }
+.pay-option:has(:checked) { border-color: var(--color-lime-300); background-color: color-mix(in srgb, var(--color-lime-300) 12%, transparent); box-shadow: 0 0 0 1px var(--color-lime-300); }
+.pay-option:has(:focus-visible) { outline: 2px solid var(--color-lime-300); outline-offset: 3px; }
 .report-card { animation: about-slide 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.05s); }
 .report-hero::after { content: ''; position: absolute; inset: auto -10% -60% auto; width: 22rem; height: 22rem; border-radius: 9999px; background: radial-gradient(circle, color-mix(in srgb, #f06bb4 22%, transparent), transparent 70%); pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .report-card { animation: none; } }

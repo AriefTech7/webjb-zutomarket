@@ -150,6 +150,9 @@
                 @endif
 
                 @unless ($account->is_rental)
+                    {{-- The super admin's accounts are paid on the website (Tripay); the rest through WhatsApp. --}}
+                    @php($gateway = $account->status === 'available' && $account->usesPaymentGateway())
+                    @php($holder = $gateway ? $account->pendingOrder() : null)
                     <div class="mt-5 space-y-3">
                         @if ($url = $account->whatsappUrl())
                             <div class="grid grid-cols-2 gap-3">
@@ -159,13 +162,27 @@
                                     <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" /></svg>Tawar harga</a>
                             </div>
                             <div class="grid gap-3 {{ $account->offersInstallment() ? 'grid-cols-2' : '' }}">
-                                <a class="btn btn-buy w-full" href="{{ $account->buyWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Beli Sekarang<span class="hidden sm:inline"> — {{ $account->formattedPrice() }}</span></a>
+                                @if ($gateway)
+                                    @if ($holder && $holder->user_id !== auth()->id())
+                                        <span class="btn btn-buy w-full cursor-not-allowed opacity-60" title="Akun ini sedang dibayar pembeli lain">Sedang dibayar pembeli lain</span>
+                                    @else
+                                        <a class="btn btn-buy w-full" href="{{ $holder ? route('orders.show', $holder) : route('checkout', ['akun' => [$account->id]]) }}" data-checkout-button>{{ $holder ? 'Lanjutkan pembayaran' : 'Beli Sekarang' }}<span class="hidden sm:inline"> — {{ $account->formattedPrice() }}</span></a>
+                                    @endif
+                                @else
+                                    <a class="btn btn-buy w-full" href="{{ $account->buyWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Beli Sekarang<span class="hidden sm:inline"> — {{ $account->formattedPrice() }}</span></a>
+                                @endif
                                 @if ($account->offersInstallment())
                                     <a class="btn-dp w-full" data-installment-button href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">{{ ($installmentPercent ?? $account->installmentPercent()) ? 'DP '.($installmentPercent ?? $account->installmentPercent()).'%' : 'Cicilan' }}</a>
                                 @endif
                             </div>
                             <a class="btn-secondary w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">
                                 <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 3l4 4-4 4M21 7H9M7 21l-4-4 4-4M3 17h12" /></svg>Tukar tambah</a>
+                            @if ($gateway)
+                                <p class="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
+                                    <svg class="size-4 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4" /></svg>
+                                    Bayar aman di website: QRIS, virtual account, e-wallet
+                                </p>
+                            @endif
                         @elseif ($account->status === 'sold' || $account->isBooked())
                             <a class="btn w-full" href="{{ route('catalog.all') }}">Lihat akun lain ↗</a>
                         @else
