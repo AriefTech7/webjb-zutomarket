@@ -18,8 +18,13 @@ export function initialiseReportForm() {
     const waOptional = form.querySelector('[data-report-wa-optional]');
     const evidence = form.querySelector('[data-report-evidence]');
 
+    const gameIdLabel = gameIdBox.querySelector('label');
+
     const syncCategory = () => {
-        const isGameId = form.elements.category.value === 'id_game';
+        // "ID Game Bermasalah" and "Akun Mafia" carry data-game-id-label: they need a game ID instead of a WA number.
+        const label = form.querySelector('input[name="category"]:checked')?.dataset.gameIdLabel;
+        const isGameId = Boolean(label);
+        if (label) gameIdLabel.textContent = label;
         gameIdBox.hidden = !isGameId;
         gameId.disabled = !isGameId;
         gameId.required = isGameId;
