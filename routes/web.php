@@ -20,6 +20,7 @@ Route::get('/', [CatalogController::class, 'home'])->name('catalog');
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.all');
 Route::get('/kategori/{category:slug}', [CatalogController::class, 'index'])->name('categories.show');
 Route::get('/akun/{account:slug}', [CatalogController::class, 'show'])->name('accounts.show');
+Route::post('/suka/{account}', [CatalogController::class, 'like'])->middleware('throttle:60,1')->name('accounts.like');
 Route::view('/cara-transaksi', 'catalog.how')->name('how');
 Route::view('/joki-ml', 'catalog.joki')->name('joki');
 Route::get('/flash-sale', [CatalogController::class, 'flashSale'])->name('flash-sale');

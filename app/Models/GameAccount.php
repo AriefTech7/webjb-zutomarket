@@ -88,6 +88,18 @@ class GameAccount extends Model
         return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
     }
 
+    /** 950 → "950", 3100 → "3,1 rb", 1250000 → "1,3 jt" (the "Dilihat" / "Suka" counters). */
+    public static function compactCount(int $count): string
+    {
+        foreach ([1_000_000 => 'jt', 1_000 => 'rb'] as $step => $unit) {
+            if ($count >= $step) {
+                return str_replace('.', ',', rtrim(rtrim(number_format($count / $step, 1, '.', ''), '0'), '.')).' '.$unit;
+            }
+        }
+
+        return (string) $count;
+    }
+
     /** @return BelongsTo<User, $this> */
     public function owner(): BelongsTo
     {
