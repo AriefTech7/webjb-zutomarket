@@ -9,7 +9,7 @@
                         class="-rotate-12 rounded-lg border-2 border-rose-300 bg-[#070b1c]/70 px-3 py-1 text-base font-black uppercase tracking-widest text-rose-300 md:text-2xl">Terjual</span></span>
             @elseif ($account->isBooked())
                 <span class="absolute inset-0 z-10 flex items-center justify-center bg-[#070b1c]/45"><span
-                        class="-rotate-12 rounded-lg border-2 bg-[#070b1c]/70 px-3 py-1 text-base font-black uppercase tracking-widest md:text-2xl {{ $account->status === 'dp' ? 'border-amber-300 text-amber-300' : 'border-violet-300 text-violet-300' }}">{{ $account->statusLabel() }}</span></span>
+                        class="-rotate-12 rounded-lg border-2 bg-[#070b1c]/70 px-3 py-1 text-base font-black uppercase tracking-widest md:text-2xl border-amber-300 text-amber-300">{{ $account->publicStatusLabel() }}</span></span>
             @else
                 <span class="status status-live absolute left-2 top-2 z-10 text-lime-300 md:left-3 md:top-3">@include('catalog.live-dot')Tersedia</span>
             @endif
@@ -29,7 +29,7 @@
                     <p class="text-sm font-black text-rose-300 md:text-lg">Sudah terjual</p>
                 @elseif ($account->isBooked())
                     <p class="text-base font-black text-slate-400 md:text-xl">{{ $account->formattedPrice() }}</p>
-                    <p class="mt-1 text-[11px] font-bold md:text-xs {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->status === 'dp' ? 'Sudah di-DP pembeli' : 'Sedang dicicil pembeli' }}</p>
+                    <p class="mt-1 text-[11px] font-bold text-amber-300 md:text-xs">Sudah dipesan pembeli</p>
                 @else
                     @if ($account->hasDiscount())
                         <p class="text-[11px] font-semibold text-slate-500 line-through md:text-xs">{{ $account->formattedOriginalPrice() }}</p>

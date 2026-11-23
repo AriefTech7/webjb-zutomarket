@@ -116,156 +116,67 @@ class CatalogTest extends TestCase
         $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'original_price' => null, 'flash_sale_ends_at' => null]);
     }
 
-    public function test_installment_page_simulates_dp_and_lists_the_store_rules(): void
+    public function test_instalment_sales_are_gone_from_the_storefront(): void
     {
-        $this->get('/cicilan')->assertOk()->assertSee('Simulasi cicilan')->assertSee('DP 30%')
-            ->assertSeeInOrder(['Rp 1.000 – Rp 100.000', '7 hari', 'Rp 101.000 – Rp 300.000', '16 hari', 'Rp 301.000 – Rp 500.000', '23 hari', 'Rp 501.000 ke atas', '31 hari'])
-            ->assertSee('Ketentuan DP')->assertSee('DP wajib 30% dari harga akun.')
-            ->assertSee('Pembatalan &amp; Penarikan', false)->assertSee('<strong class="text-white">maka dikenakan potongan 50% dari harga akun.</strong>', false)
-            ->assertSee(route('installment'), false);
-
-        // A price from an account page is simulated right away.
-        $this->get('/cicilan?harga=450000')->assertOk()->assertSee('Rp 135.000')->assertSee('23 hari')
-            ->assertSee('Sisa pembayaran Rp 315.000 wajib dilunasi maksimal 23 hari setelah DP masuk.')
-            ->assertSee('data-tier-index="2"  data-active', false);
-    }
-
-    public function test_store_down_payment_terms_are_shown_to_buyers_and_prefill_booked_accounts(): void
-    {
-        $this->travelTo(CarbonImmutable::parse('2026-11-18 10:00', 'Asia/Jakarta'));
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $account = GameAccount::factory()->create(['title' => 'Akun Lunas', 'price' => 450000, 'card_note' => 'Bisa cicil']);
+        $noted = GameAccount::factory()->create(['title' => 'Akun Catatan', 'card_note' => 'Bisa TT']);
+
+        $this->get('/cicilan')->assertMovedPermanently()->assertRedirect('/katalog');
+        $this->get('/katalog')->assertOk()->assertSee('Akun Lunas')->assertDontSee('>Bisa cicil</span>', false)->assertSee('>Bisa TT</span>', false)
+            ->assertDontSee('Cicilan &amp; DP', false);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('Sisa bayar')->assertDontSee('data-installment-button', false)
+            ->assertDontSee('Bisa cicil')->assertSee('Tukar tambah');
+        $this->get('/akun/'.$noted->slug)->assertOk()->assertSee('>Bisa TT</span>', false);
+        $this->assertSame([null, 'Bisa TT', null], [$account->publicCardNote(), $noted->publicCardNote(), (new GameAccount(['card_note' => 'DP 30%']))->publicCardNote()]);
+
+        // Admins can no longer offer instalments or put an account on a new DP.
         $this->actingAs(User::factory()->create());
-        $account = GameAccount::factory()->create(['price' => 450000]);
-
-        // Defaults apply until the admin changes them.
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Bisa dicicil')->assertSeeInOrder(['DP 30%', 'Rp 135.000', 'Sisa bayar', 'Rp 315.000', 'Jangka waktu', '23 hari'])
-            ->assertSee(route('installment', ['harga' => 450000]), false);
-        $this->assertStringContainsString(rawurlencode('Sesuai ketentuan toko: DP 30% (Rp 135.000), pelunasan maksimal 23 hari setelah DP.'), $account->installmentWhatsappUrl());
-
-        // Tiers are edited with rupiah dots, in any order; one empty price = "and above".
-        $this->put('/admin/dp-terms', ['dp_min_percent' => 40, 'tiers' => [['max' => '', 'days' => 30], ['max' => '200.000', 'days' => 10], ['max' => '', 'days' => '']]])->assertSessionHasNoErrors();
-        $this->assertSame([['min' => 1000, 'max' => 200000, 'days' => 10], ['min' => 201000, 'max' => null, 'days' => 30]], Setting::dueTiers());
-        $this->assertSame([10, 30], [Setting::dueDaysFor(200000), Setting::dueDaysFor(200001)]);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSeeInOrder(['DP 40%', 'Rp 180.000', 'Rp 270.000', '30 hari']);
-        $this->put('/admin/dp-terms', ['tiers' => [['max' => '', 'days' => 30], ['max' => '', 'days' => 40]]])->assertSessionHasErrors('tiers');
-        $this->put('/admin/dp-terms', ['tiers' => [['max' => '100.000', 'days' => '']]])->assertSessionHasErrors('tiers.0.days');
-        $this->put('/admin/dp-terms', ['dp_min_percent' => 150])->assertSessionHasErrors('dp_min_percent');
-        $this->put('/admin/dp-terms', ['dp_min_percent' => 40, 'tiers' => [['max' => '200.000', 'days' => 10], ['max' => '', 'days' => 30]], 'dp_rules' => "DP {dp}% **wajib**\r\n\r\n<b>x</b>", 'dp_cancel_rules' => ''])->assertSessionHasNoErrors();
-        $this->get('/cicilan')->assertOk()->assertSee('DP 40% <strong class="text-white">wajib</strong>', false)->assertSee('&lt;b&gt;x&lt;/b&gt;', false)->assertDontSee('Pembatalan &amp; Penarikan', false);
-        $this->get('/admin/settings')->assertOk()->assertSee('Aturan DP &amp; cicilan', false)->assertSee('name="tiers[1][days]"', false);
-
-        // Marked "Sudah DP" with empty fields: the store terms fill them in, using the tier of the price.
+        $this->get('/admin/accounts/create')->assertOk()->assertDontSee('<option value="dp"', false)->assertDontSee('Cicilan untuk pengunjung');
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertDontSee('Akun ini bisa dicicil')->assertDontSee('<option value="cicil"', false);
+        $this->get('/admin/settings')->assertOk()->assertDontSee('Aturan DP &amp; cicilan', false);
         $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 450000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic'];
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp'])->assertSessionHasNoErrors();
-        $account->refresh();
-        $this->assertSame(40, $account->dp_percent);
-        $this->assertSame('2026-12-18', $account->payment_due_on->toDateString());
-        $this->assertSame([180000, 270000, 30], [$account->paidAmount(), $account->remainingAmount(), $account->daysUntilPaymentDue()]);
-
-        // The admin's own values win, and the dashboard lists the booking with inline editing.
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil', 'dp_percent' => 60, 'payment_due_on' => '2026-11-16'])->assertSessionHasNoErrors();
-        $this->get('/admin')->assertOk()->assertSee('Pembayaran DP &amp; cicilan', false)->assertSee('Dibayar Rp 270.000 · Sisa')->assertSee('Rp 180.000')
-            ->assertSee('Lewat 2 hari')->assertSee('1 lewat tempo')->assertSee('DP 40% · 10/30 hari')
-            ->assertSee('action="'.route('admin.accounts.payment', $account).'"', false);
-        $this->get('/admin/accounts')->assertOk()->assertSee('60% dibayar · tempo 16 Nov');
-        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 80, 'payment_due_on' => '2026-11-25'])->assertSessionHasNoErrors();
-        $this->assertSame([80, '2026-11-25', 7], [$account->refresh()->dp_percent, $account->payment_due_on->toDateString(), $account->daysUntilPaymentDue()]);
-        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 0])->assertSessionHasErrors('dp_percent');
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp', 'dp_percent' => 101])->assertSessionHasErrors('dp_percent');
-
-        // Once it is no longer booked the payment fields are cleared.
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'available', 'dp_percent' => 60, 'payment_due_on' => '2026-11-30'])->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'dp_percent' => null, 'payment_due_on' => null]);
-        $this->get('/admin')->assertOk()->assertSee('Belum ada akun berstatus Sudah DP atau Sudah dicicil.');
-        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 50])->assertNotFound();
-
-        // An admin can switch the terms off entirely.
-        $this->put('/admin/dp-terms', ['dp_min_percent' => '', 'tiers' => [['max' => '', 'days' => '']]])->assertSessionHasNoErrors();
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil');
-        auth()->logout();
-        $this->put('/admin/dp-terms', ['dp_min_percent' => 10])->assertRedirect('/admin/login');
-        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 50])->assertRedirect('/admin/login');
+        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp'])->assertSessionHasErrors('status');
+        $this->assertSame('available', $account->refresh()->status);
     }
 
-    public function test_each_account_can_set_its_own_dp_percent_and_instalment_period_for_visitors(): void
+    public function test_accounts_already_booked_finish_their_old_dp_and_show_as_reserved(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-18 10:00', 'Asia/Jakarta'));
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
-        $this->actingAs(User::factory()->create());
-        $account = GameAccount::factory()->create(['price' => 450000]);
-        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 450000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
-        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('Cicilan untuk pengunjung')
-            ->assertSee('placeholder="Kosong = 30% (aturan toko)"', false)->assertSee('placeholder="Kosong = 23 hari (sesuai harga)"', false);
+        $account = GameAccount::factory()->create(['title' => 'Akun Booking', 'price' => 500000, 'status' => 'dp', 'dp_percent' => 40, 'payment_due_on' => '2026-11-16']);
 
-        $this->put('/admin/accounts/'.$account->id, $data + ['installment_dp_percent' => 50, 'installment_days' => 45])->assertSessionHasNoErrors();
-        $account->refresh();
-        $this->assertSame([50, 45, 225000], [$account->installmentPercent(), $account->installmentDays(), $account->installmentDownPayment()]);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSeeInOrder(['Bisa dicicil', 'DP 50%', 'Rp 225.000', 'Rp 225.000', '45 hari']);
-        $this->assertStringContainsString(rawurlencode('DP 50% (Rp 225.000), pelunasan maksimal 45 hari setelah DP.'), $account->installmentWhatsappUrl());
-        $this->put('/admin/accounts/'.$account->id, $data + ['installment_dp_percent' => 0])->assertSessionHasErrors('installment_dp_percent');
-        $this->put('/admin/accounts/'.$account->id, $data + ['installment_days' => 400])->assertSessionHasErrors('installment_days');
-
-        // When the buyer pays the DP, the booking starts from the account's own terms.
-        $this->put('/admin/accounts/'.$account->id, [...$data, 'status' => 'dp', 'installment_dp_percent' => 50, 'installment_days' => 45])->assertSessionHasNoErrors();
-        $this->assertSame([50, '2027-01-02'], [$account->refresh()->dp_percent, $account->payment_due_on->toDateString()]);
-
-        // Emptied again: back to the store rules.
-        $this->put('/admin/accounts/'.$account->id, $data + ['installment_dp_percent' => '', 'installment_days' => ''])->assertSessionHasNoErrors();
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSeeInOrder(['DP 30%', 'Rp 135.000', '23 hari']);
-    }
-
-    public function test_product_cards_show_the_instalment_badge_and_the_admins_card_note(): void
-    {
-        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
-        $this->actingAs(User::factory()->create());
-        $account = GameAccount::factory()->create(['title' => 'Akun Catatan']);
-        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 350000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
-        $badge = '>Bisa cicil</span>';
-
-        $this->get('/katalog')->assertOk()->assertSee($badge, false);
-        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('Akun ini bisa dicicil')->assertSee('name="card_note"', false);
-
-        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT'])->assertSessionHasNoErrors();
-        $account->refresh();
-        $this->get('/katalog')->assertOk()->assertSee($badge, false)->assertSee('>Bisa TT</span>', false);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('>Bisa TT</span>', false)->assertSee('Bisa dicicil')->assertSee('data-installment-button', false);
-        $this->assertStringContainsString('Bisa TT', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
-
-        // Switched off: no badge, no instalment box, no Cicilan button; the note stays.
-        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT', 'installment_enabled' => '0'])->assertSessionHasNoErrors();
-        $this->assertFalse($account->refresh()->installment_enabled);
-        $this->get('/katalog')->assertOk()->assertDontSee($badge, false)->assertSee('>Bisa TT</span>', false);
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('data-installment-button', false);
-        $this->assertStringNotContainsString($badge, $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
-        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => str_repeat('x', 31)])->assertSessionHasErrors('card_note');
-
-        // Sold accounts never show the badge.
-        $this->put('/admin/accounts/'.$account->id, [...$data, 'installment_enabled' => '1', 'status' => 'sold'])->assertSessionHasNoErrors();
-        $this->get('/katalog?status=sold')->assertOk()->assertSee('Akun Catatan')->assertDontSee($badge, false);
-    }
-
-    public function test_down_payment_and_instalment_accounts_stay_listed_but_cannot_be_ordered(): void
-    {
-        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
-        $this->actingAs(User::factory()->create());
-        $account = GameAccount::factory()->create(['title' => 'Akun Booking', 'price' => 500000]);
-        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 500000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic'];
-        $this->get('/admin/accounts/create')->assertOk()->assertSee('<option value="dp"', false)->assertSee('Sudah dicicil');
-
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp'])->assertSessionHasNoErrors();
-        $this->assertNull($account->refresh()->sold_at);
-        $this->get('/admin/accounts')->assertOk()->assertSee('Sudah DP');
-        $this->get('/katalog')->assertOk()->assertSee('Akun Booking')->assertSee('Sudah di-DP pembeli');
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Sudah DP')->assertDontSee('Beli Sekarang', false)->assertDontSee('Tanya Stok')->assertDontSee('data-installment-button', false)->assertSee('Lihat akun lain');
+        // Visitors only see that it is reserved, not the DP details.
+        $this->get('/katalog')->assertOk()->assertSee('Akun Booking')->assertSee('Sudah dipesan pembeli')->assertDontSee('Sudah di-DP');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Dipesan')->assertDontSee('Sudah DP')->assertDontSee('Beli Sekarang')->assertDontSee('Tanya Stok')->assertSee('Lihat akun lain');
+        $this->get('/katalog?status=available')->assertOk()->assertDontSee('Akun Booking');
         $this->assertNull($account->whatsappUrl());
 
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil'])->assertSessionHasNoErrors();
-        $this->get('/katalog')->assertOk()->assertSee('Sedang dicicil pembeli');
-        $this->get('/katalog?status=available')->assertOk()->assertDontSee('Akun Booking');
-        $this->get('/admin')->assertOk()->assertSee('DP / cicil');
+        // The admin keeps tracking the old DP until it is paid off, then marks it sold.
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin')->assertOk()->assertSee('Pembayaran DP &amp; cicilan', false)->assertSee('Cicilan / DP sudah tidak dijual lagi')
+            ->assertSee('Dibayar Rp 200.000 · Sisa')->assertSee('Lewat 2 hari')->assertSee('action="'.route('admin.accounts.payment', $account).'"', false);
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('<option value="dp"', false)->assertSee('pesanan DP lama');
+        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 80, 'payment_due_on' => '2026-11-25'])->assertSessionHasNoErrors();
+        $this->assertSame([80, 7], [$account->refresh()->dp_percent, $account->daysUntilPaymentDue()]);
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 500000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic'];
+        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil', 'dp_percent' => 90])->assertSessionHasNoErrors();
+        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'sold'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'sold', 'dp_percent' => null, 'payment_due_on' => null]);
+        // Once sold it cannot go back to a DP.
+        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp'])->assertSessionHasErrors('status');
+        $this->get('/admin')->assertOk()->assertSee('Belum ada akun berstatus Sudah DP atau Sudah dicicil.');
+    }
 
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp', 'is_rental' => 1, 'packages' => [['duration' => '1 Hari', 'price' => 60000]]])
-            ->assertSessionHasErrors(['status' => 'Status "Sudah DP" dan "Sudah dicicil" hanya untuk akun jual, bukan rental.']);
+    public function test_the_admins_card_note_is_limited_to_30_characters(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $account = GameAccount::factory()->create();
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 350000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
+        $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('name="card_note"', false);
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT'])->assertSessionHasNoErrors();
+        $this->assertStringContainsString('Bisa TT', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => str_repeat('x', 31)])->assertSessionHasErrors('card_note');
     }
 
     public function test_rental_accounts_stay_out_of_the_sale_catalog_and_appear_on_the_rental_page(): void
@@ -490,27 +401,6 @@ class CatalogTest extends TestCase
 
         $this->assertNull($account->tradeInWhatsappUrl());
         $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Tukar tambah');
-    }
-
-    public function test_installment_button_asks_for_terms_and_follows_the_seller_number(): void
-    {
-        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
-        $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
-        $sellerAccount = GameAccount::factory()->create(['seller_whatsapp' => '6289999999999']);
-
-        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan cicilan untuk akun Mythic & Hero seharga Rp 350.000.'), $account->installmentWhatsappUrl());
-        $this->assertStringEndsWith(rawurlencode('Sesuai ketentuan toko: DP 30% (Rp 105.000), pelunasan maksimal 23 hari setelah DP.'), $account->installmentWhatsappUrl());
-        // Without store terms the buyer asks for them instead.
-        Setting::create(['key' => 'dp_min_percent', 'value' => '']);
-        Setting::create(['key' => 'dp_due_tiers', 'value' => '[]']);
-        $this->assertStringEndsWith(rawurlencode('Mohon info DP dan tenor yang tersedia.'), $account->installmentWhatsappUrl());
-        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('data-installment-button', false);
-
-        $account->update(['status' => 'sold']);
-
-        $this->assertNull($account->installmentWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-installment-button', false);
     }
 
     public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void

@@ -37,7 +37,8 @@ Route::get('/kritik-saran', [FeedbackController::class, 'create'])->name('feedba
 Route::post('/kritik-saran', [FeedbackController::class, 'store'])->middleware('throttle:5,1')->name('feedback.store');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::get('/wishlist/accounts', [WishlistController::class, 'accounts'])->middleware('throttle:60,1')->name('wishlist.accounts');
-Route::view('/cicilan', 'catalog.installment')->name('installment');
+// Instalment sales were discontinued (2026-11-23): old /cicilan links go to the catalog.
+Route::permanentRedirect('/cicilan', '/katalog');
 Route::get('/keranjang', [CartController::class, 'index'])->name('cart');
 Route::get('/keranjang/accounts', [CartController::class, 'accounts'])->middleware('throttle:60,1')->name('cart.accounts');
 Route::view('/kebijakan-privasi', 'catalog.privacy')->name('privacy');
@@ -103,7 +104,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Super admin only: store-wide settings, sales, buyers and the admin team.
     Route::middleware('super-admin')->group(function () {
-        Route::put('/dp-terms', [AdminController::class, 'saveDownPaymentTerms'])->name('dp-terms.update');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
         Route::get('/sales', [AdminController::class, 'sales'])->name('sales');

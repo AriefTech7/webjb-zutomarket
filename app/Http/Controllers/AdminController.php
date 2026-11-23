@@ -116,45 +116,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Store-wide instalment terms: DP %, payoff days per price tier and (from the settings page) the rule texts.
-     * Shared by the dashboard panel and Admin > Pengaturan.
-     */
-    public function saveDownPaymentTerms(Request $request): RedirectResponse
-    {
-        // Tier prices are typed as "100.000" like the other rupiah fields.
-        $request->merge(['tiers' => collect($request->input('tiers', []))->map(fn ($tier): array => [
-            'max' => is_string($tier['max'] ?? null) && preg_match('/^(Rp\s*)?[\d.\s]+$/i', trim($tier['max'])) ? preg_replace('/\D/', '', $tier['max']) : ($tier['max'] ?? null),
-            'days' => $tier['days'] ?? null,
-        ])->all()]);
-        $data = $request->validate([
-            'dp_min_percent' => 'nullable|integer|min:1|max:100',
-            'tiers' => 'sometimes|array|max:8',
-            'tiers.*.max' => 'nullable|integer|min:1000|max:999999999999',
-            'tiers.*.days' => 'nullable|integer|min:1|max:365|required_with:tiers.*.max',
-            'dp_rules' => 'sometimes|nullable|string|max:3000',
-            'dp_cancel_rules' => 'sometimes|nullable|string|max:3000',
-        ], ['tiers.*.days.required_with' => 'Isi jumlah hari untuk setiap batas harga.']);
-
-        $tiers = collect($data['tiers'] ?? [])->filter(fn (array $tier): bool => filled($tier['days']))
-            ->map(fn (array $tier): array => ['max' => filled($tier['max']) ? (int) $tier['max'] : null, 'days' => (int) $tier['days']]);
-        if ($tiers->whereNull('max')->count() > 1 || $tiers->whereNotNull('max')->pluck('max')->duplicates()->isNotEmpty()) {
-            return back()->withErrors(['tiers' => 'Setiap batas harga harus berbeda, dan hanya satu baris boleh "ke atas" (batas harga kosong).'])->withInput();
-        }
-
-        Setting::updateOrCreate(['key' => 'dp_min_percent'], ['value' => (string) ($data['dp_min_percent'] ?? '')]);
-        if ($request->has('tiers')) {
-            Setting::updateOrCreate(['key' => 'dp_due_tiers'], ['value' => $tiers->sortBy(fn (array $tier): int => $tier['max'] ?? PHP_INT_MAX)->values()->toJson()]);
-        }
-        foreach (['dp_rules', 'dp_cancel_rules'] as $key) {
-            if ($request->exists($key)) {
-                Setting::updateOrCreate(['key' => $key], ['value' => trim(preg_replace("/\r\n?/", "\n", $data[$key] ?? ''))]);
-            }
-        }
-
-        return back()->with('success', 'Aturan DP & cicilan disimpan.');
-    }
-
     /** Paid share and due date of one booked account, edited inline on the dashboard. */
     public function updatePayment(Request $request, GameAccount $account): RedirectResponse
     {
@@ -301,12 +262,10 @@ class AdminController extends Controller
             'packages.*.price' => 'nullable|integer|min:0|max:999999999999|required_with:packages.*.duration',
             'ready_estimate_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'description' => 'required|string|max:10000', 'specifications' => 'required|string|max:10000',
-            'status' => 'required|in:available,dp,cicil,sold,draft,rented',
+            // Instalment sales were discontinued: "Sudah DP" / "Sudah dicicil" only stay on accounts already booked.
+            'status' => ['required', Rule::in(['available', 'sold', 'draft', 'rented', ...($account->isBooked() ? GameAccount::BOOKED_STATUSES : [])])],
             'dp_percent' => 'nullable|integer|min:1|max:100',
             'payment_due_on' => 'nullable|date_format:Y-m-d',
-            'installment_dp_percent' => 'nullable|integer|min:1|max:100',
-            'installment_days' => 'nullable|integer|min:1|max:365',
-            'installment_enabled' => 'sometimes|boolean',
             'card_note' => 'nullable|string|max:30',
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('is_admin', true)],
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
@@ -338,8 +297,8 @@ class AdminController extends Controller
         }
         // Booked accounts start from the store's default terms when the admin leaves the fields empty.
         if (in_array($data['status'], GameAccount::BOOKED_STATUSES, true)) {
-            $days = ($data['installment_days'] ?? null) ?: Setting::dueDaysFor((int) $data['price']);
-            $data['dp_percent'] = $data['dp_percent'] ?? (($data['installment_dp_percent'] ?? null) ?: Setting::downPaymentPercent());
+            $days = Setting::dueDaysFor((int) $data['price']);
+            $data['dp_percent'] = $data['dp_percent'] ?? Setting::downPaymentPercent();
             $data['payment_due_on'] = $data['payment_due_on']
                 ?? ($days ? now(GameAccount::LOCAL_TIMEZONE)->addDays($days)->toDateString() : null);
         }

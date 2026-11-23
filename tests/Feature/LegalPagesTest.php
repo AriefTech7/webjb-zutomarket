@@ -16,10 +16,10 @@ class LegalPagesTest extends TestCase
         Setting::create(['key' => 'store_name', 'value' => 'zutomarket.id']);
 
         $this->get('/ketentuan-layanan')->assertOk()->assertSee('Ketentuan Layanan')->assertSee('Berlaku sejak 22 November 2026')
-            ->assertSee('zutomarket.id adalah toko online')->assertSee('Pembayaran dan serah terima akun')->assertSee('DP 30%')
-            ->assertSee('href="'.route('refund').'"', false)->assertSee('href="'.route('installment').'"', false);
+            ->assertSee('zutomarket.id adalah toko online')->assertSee('Pembayaran dan serah terima akun')->assertSee('penuh (lunas) sekaligus')
+            ->assertSee('tidak menyediakan pembelian dengan cicilan atau DP')->assertDontSee('Cicilan (DP)')->assertSee('href="'.route('refund').'"', false);
         $this->get('/kebijakan-refund')->assertOk()->assertSee('Kebijakan Refund')->assertSee('Refund penuh')->assertSee('Tidak dapat di-refund')
-            ->assertSee('Cara mengajukan refund')->assertSee('1–3 hari kerja')->assertSee('href="'.route('terms').'"', false);
+            ->assertSee('Cara mengajukan refund')->assertSee('1–3 hari kerja')->assertSee('href="'.route('terms').'"', false)->assertDontSee('Cicilan dan DP');
 
         $this->get('/')->assertOk()->assertSee('href="'.route('terms').'"', false)->assertSee('href="'.route('refund').'"', false)
             ->assertSee('Ketentuan Layanan')->assertSee('Kebijakan Refund');
