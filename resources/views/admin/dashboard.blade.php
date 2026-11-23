@@ -132,25 +132,7 @@
                     </div>
                 </div>
 
-                @if ($isSuperAdmin)
-                <details class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3" @if ($errors->has('tiers') || $errors->has('tiers.*') || $errors->has('dp_min_percent')) open @endif>
-                    <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                        <span class="text-xs font-bold text-amber-300">Aturan toko <span class="font-normal text-slate-300">· DP {{ \App\Models\Setting::downPaymentPercent() ?? '-' }}% · {{ collect(\App\Models\Setting::dueTiers())->pluck('days')->implode('/') ?: '-' }} hari</span></span>
-                        <span class="text-xs font-bold text-lime-300">Ubah aturan ▾</span>
-                    </summary>
-                    <form method="POST" action="{{ route('admin.dp-terms.update') }}" class="mt-3 space-y-3">
-                        @csrf @method('PUT')
-                        @include('admin.dp-terms-fields')
-                        <div class="flex flex-wrap items-center gap-3">
-                            <button class="btn">Simpan aturan</button>
-                            <a href="{{ route('admin.settings') }}#dp-terms" class="text-xs font-semibold text-lime-300 hover:underline">Ubah teks ketentuan</a>
-                            <a href="{{ route('installment') }}" target="_blank" rel="noopener" class="text-xs font-semibold text-slate-400 hover:text-white">Lihat halaman Cicilan ↗</a>
-                        </div>
-                    </form>
-                </details>
-                @else
-                    <p class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 text-xs text-slate-300"><span class="font-bold text-amber-300">Aturan toko</span> · DP {{ \App\Models\Setting::downPaymentPercent() ?? '-' }}% · {{ collect(\App\Models\Setting::dueTiers())->pluck('days')->implode('/') ?: '-' }} hari (diatur super admin)</p>
-                @endif
+                <p class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 text-xs text-slate-300"><span class="font-bold text-amber-300">Cicilan / DP sudah tidak dijual lagi.</span> Daftar ini hanya untuk menyelesaikan pesanan DP lama sampai lunas, lalu ubah statusnya ke "Terjual". Pengunjung melihat akun ini sebagai "Dipesan".</p>
 
                 <ul class="mt-4 space-y-3">
                     @forelse ($bookings as $booking)

@@ -39,27 +39,21 @@ class GameAccount extends Model
         return self::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
-    /** DP % offered to visitors: this account's own value, else the store rule. */
-    public function installmentPercent(): ?int
+    /**
+     * The store no longer sells on instalments (2026-11-23, payment gateway terms). Accounts still booked under the
+     * old DP / cicil arrangement are shown to visitors as "Dipesan"; the DP details stay admin-only.
+     */
+    public function publicStatusLabel(): string
     {
-        return $this->installment_dp_percent ?: Setting::downPaymentPercent();
+        return $this->isBooked() ? 'Dipesan' : $this->statusLabel();
     }
 
-    /** Days to pay off after the DP: this account's own value, else the store tier for its price. */
-    public function installmentDays(): ?int
+    /** The admin's short card note, unless it advertises instalments ("Bisa cicil", "DP 30%"…). */
+    public function publicCardNote(): ?string
     {
-        return $this->installment_days ?: Setting::dueDaysFor($this->price);
-    }
+        $note = trim((string) $this->card_note);
 
-    /** Visitors see the "Bisa cicil" badge and the Cicilan button; the DP/balance box also needs a DP percentage. */
-    public function offersInstallment(): bool
-    {
-        return $this->status === 'available' && ! $this->is_rental && $this->installment_enabled !== false;
-    }
-
-    public function installmentDownPayment(): int
-    {
-        return (int) ceil($this->price * ($this->installmentPercent() ?? 0) / 100);
+        return $note !== '' && ! preg_match('/cicil|\bdp\b|kredit|angsur|uang muka/i', $note) ? $note : null;
     }
 
     /** Rupiah already paid on a booked account (DP / instalments so far). */
@@ -298,20 +292,6 @@ class GameAccount extends Model
     public function tradeInWhatsappUrl(): ?string
     {
         return $this->whatsappLink('Halo admin, saya ingin mengajukan tukar tambah untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Akun yang saya tawarkan: ...');
-    }
-
-    public function installmentWhatsappUrl(): ?string
-    {
-        $percent = $this->installmentPercent();
-        $days = $this->installmentDays();
-        $termsText = $percent || $days
-            ? ' Sesuai ketentuan toko: '.implode(', ', array_filter([
-                $percent ? 'DP '.$percent.'% (Rp '.number_format($this->installmentDownPayment(), 0, ',', '.').')' : null,
-                $days ? 'pelunasan maksimal '.$days.' hari setelah DP' : null,
-            ])).'.'
-            : ' Mohon info DP dan tenor yang tersedia.';
-
-        return $this->whatsappLink('Halo admin, saya ingin mengajukan cicilan untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).$termsText);
     }
 
     /** WhatsApp number that handles this account: its own seller, else the store (rental number for rentals). */

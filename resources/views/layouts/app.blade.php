@@ -135,7 +135,7 @@
             <div>
                 <h2 class="font-bold text-white">Menu</h2>
                 <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
-                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['how', 'Cara Transaksi'], ['installment', 'Cicilan & DP'], ['reports', 'Laporan ID & WA'], ['feedback', 'Kritik & Saran']] as [$footerRoute, $footerLabel])
+                    @foreach ([['catalog.all', 'Produk'], ['rental', 'Rental'], ['joki', 'Joki ML'], ['about', 'Tentang'], ['how', 'Cara Transaksi'], ['reports', 'Laporan ID & WA'], ['feedback', 'Kritik & Saran']] as [$footerRoute, $footerLabel])
                         <li><a class="transition hover:text-lime-300" href="{{ route($footerRoute) }}">{{ $footerLabel }}</a></li>
                     @endforeach
                 </ul>

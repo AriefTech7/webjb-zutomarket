@@ -259,7 +259,7 @@ class AccountTest extends TestCase
 
     public function test_admin_sets_the_running_text_shown_under_the_header(): void
     {
-        $this->get('/')->assertOk()->assertSee('class="marquee', false)->assertSee('Bisa cicil &amp; tukar tambah, tanya admin', false);
+        $this->get('/')->assertOk()->assertSee('class="marquee', false)->assertSee('Bisa tukar tambah, tanya admin', false)->assertDontSee('cicil');
 
         $settings = ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo'];
         $this->actingAs(User::factory()->create());

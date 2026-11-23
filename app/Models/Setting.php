@@ -90,7 +90,7 @@ class Setting extends Model
             e(str_replace('{dp}', (string) (static::downPaymentPercent() ?? ''), $line))), $lines));
     }
 
-    public const DEFAULT_RUNNING_TEXT = "Jual beli akun game langsung dengan admin via WhatsApp\nBisa cicil & tukar tambah, tanya admin\nRental akun tersedia, cek halaman Rental\nJoki rank Mobile Legends, pesan di menu Joki ML";
+    public const DEFAULT_RUNNING_TEXT = "Jual beli akun game langsung dengan admin via WhatsApp\nBisa tukar tambah, tanya admin\nRental akun tersedia, cek halaman Rental\nJoki rank Mobile Legends, pesan di menu Joki ML";
 
     /**
      * Items for the running text bar under the header: one per non-empty line of the setting.

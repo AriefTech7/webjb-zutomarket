@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Kebijakan Refund')
-@section('description', 'Kebijakan pengembalian dana (refund) ZutoMarket untuk pembelian akun game, cicilan, rental, dan joki.')
+@section('description', 'Kebijakan pengembalian dana (refund) ZutoMarket untuk pembelian akun game, rental, dan joki.')
 @section('content')
     @php
         $storeName = \App\Models\Setting::valueFor('store_name');
@@ -22,19 +22,15 @@
                 </ul>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white">2. Cicilan dan DP</h2>
-                <p class="mt-2">Jika pelunasan melewati batas waktu atau pembeli membatalkan secara sepihak, DP yang sudah dibayar dikenakan potongan sesuai ketentuan di halaman {!! $link('installment', 'Cicilan & DP') !!}, lalu akun ditarik kembali dan sisa dana (jika ada) dikembalikan. Jika pembatalan terjadi karena kesalahan toko, DP dikembalikan penuh.</p>
-            </div>
-            <div>
-                <h2 class="text-lg font-bold text-white">3. Rental akun</h2>
+                <h2 class="text-lg font-bold text-white">2. Rental akun</h2>
                 <p class="mt-2">Sewa yang sudah berjalan tidak dapat di-refund. Jika akun sewaan bermasalah dari sisi toko sehingga tidak bisa dipakai, kami mengganti dengan akun lain atau mengembalikan dana untuk sisa durasi yang belum terpakai.</p>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white">4. Jasa joki</h2>
+                <h2 class="text-lg font-bold text-white">3. Jasa joki</h2>
                 <p class="mt-2">Jika joki belum dimulai, dana dikembalikan penuh. Jika joki tidak dapat diselesaikan oleh pihak kami, dana dikembalikan sebanding dengan bintang atau paket yang belum dikerjakan. Pembatalan karena pemilik akun login di tengah proses atau memberikan data akun yang salah tidak mendapat refund untuk bagian yang sudah dikerjakan.</p>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white">5. Tidak dapat di-refund</h2>
+                <h2 class="text-lg font-bold text-white">4. Tidak dapat di-refund</h2>
                 <ul class="mt-2 list-disc space-y-1 pl-5">
                     <li>Berubah pikiran setelah data akun diserahkan.</li>
                     <li>Data login akun sudah diubah, dijual ulang, atau dibagikan ke orang lain.</li>
@@ -43,7 +39,7 @@
                 </ul>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white">6. Cara mengajukan refund</h2>
+                <h2 class="text-lg font-bold text-white">5. Cara mengajukan refund</h2>
                 <ol class="mt-2 list-decimal space-y-1 pl-5">
                     <li>Hubungi admin resmi melalui WhatsApp (lihat halaman {!! $link('about', 'Tentang') !!}) atau live chat di website.</li>
                     <li>Sertakan nama akun yang dibeli, bukti pembayaran, dan alasan refund beserta bukti (screenshot/rekaman layar).</li>
@@ -53,7 +49,7 @@
                 <p class="mt-2">Biaya transaksi dari bank atau penyedia pembayaran yang sudah terpotong saat pembayaran tidak ikut dikembalikan, kecuali refund terjadi karena kesalahan toko.</p>
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white">7. Kontak</h2>
+                <h2 class="text-lg font-bold text-white">6. Kontak</h2>
                 <p class="mt-2">Ada pertanyaan tentang refund? Hubungi admin melalui halaman {!! $link('about', 'Tentang') !!}. Lihat juga {!! $link('terms', 'Ketentuan Layanan') !!}.</p>
             </div>
         </div>

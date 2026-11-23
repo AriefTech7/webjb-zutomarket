@@ -53,23 +53,4 @@
         </div>
         <button class="btn">Simpan pengaturan</button>
     </form>
-
-    <form id="dp-terms" action="{{ route('admin.dp-terms.update') }}" method="POST" class="panel mt-6 max-w-2xl scroll-mt-28 space-y-5 p-6">
-        @csrf @method('PUT')
-        <div>
-            <h2 class="text-lg font-black">Aturan DP &amp; cicilan</h2>
-            <p class="muted mt-1 text-xs">Tampil di halaman <a class="text-lime-300 hover:underline" href="{{ route('installment') }}" target="_blank" rel="noopener">Cicilan &amp; DP</a>, halaman akun, dan pesan WhatsApp "Cicilan". Dipakai juga sebagai isian awal saat akun ditandai "Sudah DP" / "Sudah dicicil".</p>
-        </div>
-        @include('admin.dp-terms-fields')
-        <div>
-            <label for="dp_rules" class="label">Ketentuan DP</label>
-            <textarea class="field" id="dp_rules" name="dp_rules" rows="5" maxlength="3000">{{ old('dp_rules', \App\Models\Setting::valueFor('dp_rules', \App\Models\Setting::DEFAULT_DP_RULES)) }}</textarea>
-        </div>
-        <div>
-            <label for="dp_cancel_rules" class="label">Pembatalan &amp; penarikan</label>
-            <textarea class="field" id="dp_cancel_rules" name="dp_cancel_rules" rows="6" maxlength="3000">{{ old('dp_cancel_rules', \App\Models\Setting::valueFor('dp_cancel_rules', \App\Models\Setting::DEFAULT_DP_CANCEL_RULES)) }}</textarea>
-            <p class="muted mt-2 text-xs">Satu poin per baris. Tulis <code>{dp}</code> untuk persen DP dan <code>**teks**</code> untuk huruf tebal. Kosongkan untuk menyembunyikan bagian ini.</p>
-        </div>
-        <button class="btn">Simpan aturan DP</button>
-    </form>
 @endsection

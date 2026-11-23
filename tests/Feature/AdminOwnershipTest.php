@@ -67,12 +67,11 @@ class AdminOwnershipTest extends TestCase
         foreach (['/admin/settings', '/admin/categories', '/admin/admins', '/admin/sales', '/admin/buyers', '/admin/banner', '/admin/infos', '/admin/contacts'] as $page) {
             $this->get($page)->assertForbidden();
         }
-        $this->put('/admin/dp-terms', ['dp_min_percent' => 10])->assertForbidden();
         $this->put('/admin/settings', ['store_name' => 'Dibajak', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'x'])->assertForbidden();
         foreach (['/admin', '/admin/accounts', '/admin/rentals', '/admin/messages'] as $page) {
             $this->get($page)->assertOk();
         }
-        $this->get('/admin')->assertDontSee('Pengaturan WhatsApp')->assertDontSee('Ubah aturan')->assertSee('diatur super admin')->assertSee('Akun game');
+        $this->get('/admin')->assertDontSee('Pengaturan WhatsApp')->assertDontSee('Pesanan website')->assertSee('Akun game');
     }
 
     public function test_the_super_admin_manages_every_account_and_the_admin_roles(): void

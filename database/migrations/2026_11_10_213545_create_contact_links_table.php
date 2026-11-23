@@ -26,7 +26,7 @@ return new class extends Migration
         $setting = fn (string $key): ?string => DB::table('settings')->where('key', $key)->value('value') ?: null;
         $now = now();
         $rows = array_filter([
-            $setting('whatsapp_number') ? ['admin', 'Admin '.($setting('store_name') ?? 'SHOPGAME ZUTO'), 'Jual beli akun, joki, cicilan, dan tukar tambah', $setting('whatsapp_number'), 0] : null,
+            $setting('whatsapp_number') ? ['admin', 'Admin '.($setting('store_name') ?? 'SHOPGAME ZUTO'), 'Jual beli akun, joki, dan tukar tambah', $setting('whatsapp_number'), 0] : null,
             $setting('whatsapp_rental_number') ? ['admin', 'Admin Rental Akun', 'Khusus sewa akun game', $setting('whatsapp_rental_number'), 1] : null,
             ['social', 'Instagram', '@zutomarket.id', 'https://www.instagram.com/zutomarket.id', 0],
             ['social', 'TikTok', '@aku_zuto', 'https://www.tiktok.com/@aku_zuto', 1],

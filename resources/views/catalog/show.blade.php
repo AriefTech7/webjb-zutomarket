@@ -34,7 +34,7 @@
                     <p class="text-xs font-black uppercase tracking-wide text-amber-300">{{ $account->category->name }}</p>
                     @include('catalog.card-badges')
                     @if ($account->isBooked())
-                        <span class="status {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->statusLabel() }}</span>
+                        <span class="status text-amber-300">{{ $account->publicStatusLabel() }}</span>
                     @else
                         @if ($account->status === 'available')
                             <span class="status status-live text-lime-300">@include('catalog.live-dot'){{ $account->is_rental ? 'Siap disewa' : 'Tersedia' }}</span>
@@ -75,8 +75,8 @@
                             <p class="mt-1 text-3xl font-black uppercase tracking-widest text-rose-300">Terjual</p>
                             <p class="muted mt-1">Akun ini sudah terjual. Lihat akun lain yang masih tersedia di katalog.</p>
                         @else
-                            <p class="mt-1 text-3xl font-black uppercase tracking-widest {{ $account->status === 'dp' ? 'text-amber-300' : 'text-violet-300' }}">{{ $account->statusLabel() }}</p>
-                            <p class="muted mt-1">{{ $account->status === 'dp' ? 'Akun ini sudah di-DP pembeli' : 'Akun ini sedang dicicil pembeli' }} dan tidak bisa dipesan lagi. Harga: {{ $account->formattedPrice() }}.</p>
+                            <p class="mt-1 text-3xl font-black uppercase tracking-widest text-amber-300">{{ $account->publicStatusLabel() }}</p>
+                            <p class="muted mt-1">Akun ini sudah dipesan pembeli dan tidak bisa dipesan lagi. Harga: {{ $account->formattedPrice() }}.</p>
                         @endif
                     </div>
                 @else
@@ -117,22 +117,6 @@
                     </div>
                 @endif
 
-                {{-- Instalment offer: the account's own DP % / days, else the store rules. --}}
-                @if (! $account->is_rental && $account->status === 'available' && $account->offersInstallment() && ($installmentPercent = $account->installmentPercent()))
-                    @php($installmentDays = $account->installmentDays())
-                    <div class="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/5 p-3 md:p-4" aria-label="Bisa dicicil">
-                        <div class="flex items-center justify-between gap-3">
-                            <p class="text-sm font-black text-amber-300">Bisa dicicil</p>
-                            <a class="text-xs font-bold text-lime-300 hover:underline" href="{{ route('installment', ['harga' => $account->price]) }}">Ketentuan cicilan ↗</a>
-                        </div>
-                        <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
-                            <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">DP {{ $installmentPercent }}%</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">Rp {{ number_format($account->installmentDownPayment(), 0, ',', '.') }}</dd></div>
-                            <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">Sisa bayar</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">Rp {{ number_format($account->price - $account->installmentDownPayment(), 0, ',', '.') }}</dd></div>
-                            <div class="rounded-lg bg-white/5 px-2 py-2"><dt class="text-[11px] text-slate-400">Jangka waktu</dt><dd class="mt-0.5 text-sm font-black text-white md:text-base">{{ $installmentDays ? $installmentDays.' hari' : 'Tanya admin' }}</dd></div>
-                        </dl>
-                    </div>
-                @endif
-
                 <div class="mt-5">
                     <h2 class="mb-2 text-sm font-bold">Spesifikasi akun</h2>
                     <div class="whitespace-pre-line rounded-xl bg-white/5 p-4 text-sm leading-7 text-slate-300">{{ $account->specifications }}</div>
@@ -161,7 +145,7 @@
                                 <a class="btn-wa w-full" href="{{ $account->offerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">
                                     <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" /></svg>Tawar harga</a>
                             </div>
-                            <div class="grid gap-3 {{ $account->offersInstallment() ? 'grid-cols-2' : '' }}">
+                            <div class="grid gap-3">
                                 @if ($gateway)
                                     @if ($holder && $holder->user_id !== auth()->id())
                                         <span class="btn btn-buy w-full cursor-not-allowed opacity-60" title="Akun ini sedang dibayar pembeli lain">Sedang dibayar pembeli lain</span>
@@ -170,9 +154,6 @@
                                     @endif
                                 @else
                                     <a class="btn btn-buy w-full" href="{{ $account->buyWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Beli Sekarang<span class="hidden sm:inline"> — {{ $account->formattedPrice() }}</span></a>
-                                @endif
-                                @if ($account->offersInstallment())
-                                    <a class="btn-dp w-full" data-installment-button href="{{ $account->installmentWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">{{ ($installmentPercent ?? $account->installmentPercent()) ? 'DP '.($installmentPercent ?? $account->installmentPercent()).'%' : 'Cicilan' }}</a>
                                 @endif
                             </div>
                             <a class="btn-secondary w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">

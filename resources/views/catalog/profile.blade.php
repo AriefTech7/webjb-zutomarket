@@ -7,7 +7,6 @@
             <nav class="muted mx-auto mt-5 flex max-w-md flex-wrap justify-center gap-x-4 gap-y-2 text-xs" aria-label="Menu akun">
                 <a class="hover:text-lime-300" href="{{ route('wishlist') }}">Wishlist saya <span data-wishlist-count hidden class="rounded-full bg-rose-400 px-1.5 text-[10px] text-slate-950">0</span></a>
                 <a class="hover:text-lime-300" href="{{ route('how') }}">Cara transaksi</a>
-                <a class="hover:text-lime-300" href="{{ route('installment') }}">Cicilan &amp; DP</a>
                 <a class="hover:text-lime-300" href="{{ route('reports') }}">Laporan ID &amp; WA</a>
                 <a class="hover:text-lime-300" href="{{ route('about') }}">WA Admin &amp; Sosmed</a>
                 <a class="hover:text-lime-300" href="{{ route('feedback') }}">Kritik &amp; saran</a>
@@ -27,7 +26,6 @@
                     [route('account.settings'), 'Pengaturan', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z'],
                     [route('account.password'), 'Ubah Password', 'M15.5 7.5a3.5 3.5 0 1 1-3.4 4.3L4 20H2v-3l8.2-8.1a3.5 3.5 0 0 1 5.3-1.4ZM17 7h.01'],
                     [route('how'), 'Cara Transaksi', 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h4'],
-                    [route('installment'), 'Cicilan & DP', 'M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7ZM2 10h20M6 15h4'],
                     [route('reports'), 'Laporan ID & WA', 'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01'],
                     [route('about'), 'WA Admin & Sosmed', 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z'],
                     [route('feedback'), 'Kritik & Saran', 'M4 4h16v12H5.2L4 17.2V4ZM8 9h8M8 12h5'],
