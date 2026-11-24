@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Tripay's server-to-server callback carries its own HMAC signature instead of a CSRF token.
         $middleware->validateCsrfTokens(except: ['payment/tripay/callback']);
         $middleware->alias(['admin' => EnsureUserIsAdmin::class, 'super-admin' => EnsureUserIsSuperAdmin::class]);
-        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin*') ? route('login') : route('account.login'));
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is(config('app.admin_path').'*') ? route('login') : route('account.login'));
         $middleware->redirectUsersTo(fn (Request $request) => $request->user()?->is_admin ? route('admin.dashboard') : route('profile'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {

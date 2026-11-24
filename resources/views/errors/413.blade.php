@@ -12,7 +12,7 @@
     <h1>Upload terlalu besar</h1>
     <p>{{ $message }}</p>
     <p>Gunakan tombol kembali di browser untuk memperbaiki pilihan gambar.</p>
-    <a href="/admin/accounts" style="color:#ff8069">Kembali ke pengelolaan akun</a>
+    <a href="{{ url(config('app.admin_path').'/accounts') }}" style="color:#ff8069">Kembali ke pengelolaan akun</a>
 </body>
 
 </html>

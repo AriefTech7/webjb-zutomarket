@@ -47,8 +47,8 @@ Route::view('/kebijakan-refund', 'catalog.refund')->name('refund');
 // Tripay posts payment results here (signed with the private key; CSRF is skipped in bootstrap/app.php).
 Route::post('/payment/tripay/callback', [OrderController::class, 'callback'])->middleware('throttle:120,1')->name('payment.tripay.callback');
 Route::middleware('guest')->group(function () {
-    Route::view('/admin/login', 'auth.login')->name('login');
-    Route::post('/admin/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
+    Route::view('/'.config('app.admin_path').'/login', 'auth.login')->name('login');
+    Route::post('/'.config('app.admin_path').'/login', [AuthController::class, 'login'])->middleware('throttle:admin-login');
     Route::get('/masuk', [AccountController::class, 'showLogin'])->name('account.login');
     Route::post('/masuk', [AccountController::class, 'login'])->middleware('throttle:account-auth');
     Route::get('/daftar', [AccountController::class, 'showRegister'])->name('account.register');
@@ -78,7 +78,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat/pesan', [ChatController::class, 'messages'])->middleware('throttle:120,1')->name('chat.messages');
     Route::post('/chat/pesan', [ChatController::class, 'send'])->middleware('throttle:20,1')->name('chat.send');
 });
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+// The admin area lives under a configurable, hard-to-guess prefix (ADMIN_PATH, see config/app.php).
+Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('admin.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/password', [AdminUserController::class, 'showOwnPassword'])->name('password');
