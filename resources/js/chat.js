@@ -154,6 +154,18 @@ export function initialiseChat() {
             }
         };
         widget.querySelectorAll('[data-chat-toggle]').forEach((button) => button.addEventListener('click', toggle));
+        // "Tanya Stok" on an account page: open the chat with the question already typed (unless the buyer typed something).
+        document.addEventListener('click', (event) => {
+            const ask = event.target.closest('[data-chat-ask]');
+            if (!ask) return;
+            if (!isOpen()) toggle();
+            const textarea = box?.querySelector('textarea');
+            if (textarea && !textarea.value.trim()) {
+                textarea.value = ask.dataset.chatAsk;
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        });
         expand?.addEventListener('click', () => {
             const expanded = panel.classList.toggle('is-expanded');
             expand.setAttribute('aria-pressed', String(expanded));

@@ -120,15 +120,20 @@ class CatalogTest extends TestCase
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
         $account = GameAccount::factory()->create(['title' => 'Akun Lunas', 'price' => 450000, 'card_note' => 'Bisa cicil']);
-        $noted = GameAccount::factory()->create(['title' => 'Akun Catatan', 'card_note' => 'Bisa TT']);
+        $noted = GameAccount::factory()->create(['title' => 'Akun Catatan', 'card_note' => 'Full skin']);
 
         $this->get('/cicilan')->assertMovedPermanently()->assertRedirect('/katalog');
-        $this->get('/katalog')->assertOk()->assertSee('Akun Lunas')->assertDontSee('>Bisa cicil</span>', false)->assertSee('>Bisa TT</span>', false)
+        $this->get('/katalog')->assertOk()->assertSee('Akun Lunas')->assertDontSee('>Bisa cicil</span>', false)->assertSee('>Full skin</span>', false)
             ->assertDontSee('Cicilan &amp; DP', false);
         $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Bisa dicicil')->assertDontSee('Sisa bayar')->assertDontSee('data-installment-button', false)
-            ->assertDontSee('Bisa cicil')->assertSee('Tukar tambah');
-        $this->get('/akun/'.$noted->slug)->assertOk()->assertSee('>Bisa TT</span>', false);
-        $this->assertSame([null, 'Bisa TT', null], [$account->publicCardNote(), $noted->publicCardNote(), (new GameAccount(['card_note' => 'DP 30%']))->publicCardNote()]);
+            ->assertDontSee('Bisa cicil')->assertDontSee('Tukar tambah')->assertDontSee('Tawar harga');
+        $this->get('/akun/'.$noted->slug)->assertOk()->assertSee('>Full skin</span>', false);
+        $this->assertSame([null, 'Full skin', null], [$account->publicCardNote(), $noted->publicCardNote(), (new GameAccount(['card_note' => 'DP 30%']))->publicCardNote()]);
+        // Trade-ins and haggling are not offered either.
+        foreach (['Bisa TT', 'tt', 'Tukar tambah', 'Nego', 'Bisa nego tipis', 'Tawar'] as $note) {
+            $this->assertNull((new GameAccount(['card_note' => $note]))->publicCardNote(), $note);
+        }
+        $this->assertSame('Mytic glory', (new GameAccount(['card_note' => 'Mytic glory']))->publicCardNote());
 
         // Admins can no longer offer instalments or put an account on a new DP.
         $this->actingAs(User::factory()->create());
@@ -174,8 +179,8 @@ class CatalogTest extends TestCase
         $account = GameAccount::factory()->create();
         $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 350000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
         $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('name="card_note"', false);
-        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Bisa TT'])->assertSessionHasNoErrors();
-        $this->assertStringContainsString('Bisa TT', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+        $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => 'Full skin'])->assertSessionHasNoErrors();
+        $this->assertStringContainsString('Full skin', $this->getJson('/wishlist/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
         $this->put('/admin/accounts/'.$account->id, $data + ['card_note' => str_repeat('x', 31)])->assertSessionHasErrors('card_note');
     }
 
@@ -389,18 +394,20 @@ class CatalogTest extends TestCase
         $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 0, 'price' => 100000])->assertRedirect('/admin/accounts');
     }
 
-    public function test_trade_in_button_opens_whatsapp_only_for_available_accounts(): void
+    public function test_stock_questions_open_the_live_chat_and_there_is_no_trade_in_or_haggling(): void
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
         $account = GameAccount::factory()->create(['title' => 'Mythic & Hero']);
 
-        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin mengajukan tukar tambah untuk akun Mythic & Hero seharga Rp 350.000.'), $account->tradeInWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Tukar tambah');
+        // "Tanya Stok" opens the live chat with the question ready; "Chat admin WA" is the plain WhatsApp contact.
+        $this->get('/akun/'.$account->slug)->assertOk()
+            ->assertSee('data-chat-ask="'.e('Halo admin, apakah akun Mythic & Hero (Rp 350.000) masih tersedia? '.route('accounts.show', $account->slug)).'"', false)
+            ->assertSee('Chat admin WA</a>', false)->assertSee(e($account->whatsappUrl()), false)
+            ->assertSee('data-chat-widget', false)->assertDontSee('Tukar tambah')->assertDontSee('Tawar harga');
+        $this->assertFalse(method_exists($account, 'tradeInWhatsappUrl') || method_exists($account, 'offerWhatsappUrl'));
 
         $account->update(['status' => 'sold']);
-
-        $this->assertNull($account->tradeInWhatsappUrl());
-        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('Tukar tambah');
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-chat-ask', false)->assertDontSee('Chat admin WA');
     }
 
     public function test_account_with_seller_number_contacts_the_seller_instead_of_the_store(): void
@@ -410,12 +417,11 @@ class CatalogTest extends TestCase
 
         $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->whatsappUrl());
         $this->assertNull($storeAccount->whatsappUrl());
-        $this->get('/akun/'.$sellerAccount->slug)->assertOk()->assertSee('Tanya Stok ke penjual')->assertSee('https://wa.me/6289999999999?text=', false);
+        $this->get('/akun/'.$sellerAccount->slug)->assertOk()->assertSee('Chat admin WA')->assertSee('https://wa.me/6289999999999?text=', false);
 
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
 
         $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->whatsappUrl());
-        $this->assertStringStartsWith('https://wa.me/6289999999999?text=', $sellerAccount->tradeInWhatsappUrl());
         $this->assertStringStartsWith('https://wa.me/6281234567890?text=', $storeAccount->whatsappUrl());
 
         $sellerAccount->update(['status' => 'sold']);
@@ -879,11 +885,10 @@ class CatalogTest extends TestCase
         GameAccount::factory()->create(['title' => 'Akun lain']);
 
         $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin membeli akun FF 5819 seharga Rp 1.999.000.'), $account->buyWhatsappUrl());
-        $this->assertStringEndsWith(rawurlencode('Penawaran saya: Rp ...'), $account->offerWhatsappUrl());
 
         $response = $this->get('/akun/'.$account->slug);
 
-        $response->assertOk()->assertSee('Tanya Stok')->assertSee('Tawar harga</a>', false)->assertSee('Beli Sekarang', false)->assertSee('Hemat Rp 801.000')->assertSee('-29%')->assertSee('Beranda')->assertSee('Rekomendasi Produk');
+        $response->assertOk()->assertSee('Tanya Stok')->assertSee('Chat admin WA</a>', false)->assertDontSee('Tawar')->assertDontSee('Tukar tambah')->assertSee('Beli Sekarang', false)->assertSee('Hemat Rp 801.000')->assertSee('-29%')->assertSee('Beranda')->assertSee('Rekomendasi Produk');
         $this->assertSame(['FF 5815', 'Akun lain'], $response->viewData('recommendations')->pluck('title')->all());
         $response->assertDontSee('FF laku');
         $this->assertNotContains($account->id, $response->viewData('recommendations')->modelKeys());

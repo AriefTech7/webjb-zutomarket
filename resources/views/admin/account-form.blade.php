@@ -56,8 +56,8 @@
             </div>
             <div class="md:col-span-2">
                 <label class="label" for="card_note">Catatan di kartu (opsional)</label>
-                <input class="field" id="card_note" name="card_note" maxlength="30" value="{{ old('card_note', $account->card_note) }}" placeholder="Contoh: Bisa TT, Nego, Full skin">
-                <p class="muted mt-2 text-xs">Label pendek di samping nama kategori pada kartu produk dan halaman akun. Maksimal 30 karakter.</p>
+                <input class="field" id="card_note" name="card_note" maxlength="30" value="{{ old('card_note', $account->card_note) }}" placeholder="Contoh: Full skin, Akun lama">
+                <p class="muted mt-2 text-xs">Label pendek di samping nama kategori pada kartu produk dan halaman akun. Maksimal 30 karakter. Catatan tentang cicilan, DP, tukar tambah (TT), atau nego tidak ditampilkan ke pengunjung.</p>
             </div>
             @endunless
         </div>

@@ -140,10 +140,11 @@
                     <div class="mt-5 space-y-3">
                         @if ($url = $account->whatsappUrl())
                             <div class="grid grid-cols-2 gap-3">
-                                <a class="btn-secondary w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">
-                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z" /></svg>Tanya Stok{{ $account->seller_whatsapp ? ' ke penjual' : '' }}</a>
-                                <a class="btn-wa w-full" href="{{ $account->offerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">
-                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" /></svg>Tawar harga</a>
+                                {{-- "Tanya Stok" opens the website's live chat with the question typed in (guests are asked to sign in there). --}}
+                                <button type="button" class="btn-secondary w-full" data-chat-ask="{{ 'Halo admin, apakah akun '.$account->title.' ('.$account->formattedPrice().') masih tersedia? '.route('accounts.show', $account->slug) }}">
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z" /></svg>Tanya Stok</button>
+                                <a class="btn-wa w-full" href="{{ $url }}" target="_blank" rel="noopener noreferrer">
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" /></svg>Chat admin WA</a>
                             </div>
                             <div class="grid gap-3">
                                 @if ($gateway)
@@ -156,8 +157,6 @@
                                     <a class="btn btn-buy w-full" href="{{ $account->buyWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">Beli Sekarang<span class="hidden sm:inline"> — {{ $account->formattedPrice() }}</span></a>
                                 @endif
                             </div>
-                            <a class="btn-secondary w-full" href="{{ $account->tradeInWhatsappUrl() }}" target="_blank" rel="noopener noreferrer">
-                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 3l4 4-4 4M21 7H9M7 21l-4-4 4-4M3 17h12" /></svg>Tukar tambah</a>
                             @if ($gateway)
                                 <p class="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
                                     <svg class="size-4 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4" /></svg>

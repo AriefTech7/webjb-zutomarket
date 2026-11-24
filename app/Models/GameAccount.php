@@ -48,12 +48,15 @@ class GameAccount extends Model
         return $this->isBooked() ? 'Dipesan' : $this->statusLabel();
     }
 
-    /** The admin's short card note, unless it advertises instalments ("Bisa cicil", "DP 30%"…). */
+    /**
+     * The admin's short card note, unless it advertises something the store no longer offers (payment gateway
+     * terms): instalments ("Bisa cicil", "DP 30%"), trade-ins ("Bisa TT", "tukar tambah") or haggling ("Nego").
+     */
     public function publicCardNote(): ?string
     {
         $note = trim((string) $this->card_note);
 
-        return $note !== '' && ! preg_match('/cicil|\bdp\b|kredit|angsur|uang muka/i', $note) ? $note : null;
+        return $note !== '' && ! preg_match('/cicil|\bdp\b|kredit|angsur|uang muka|\btt\b|tukar|\bnego|tawar/i', $note) ? $note : null;
     }
 
     /** Rupiah already paid on a booked account (DP / instalments so far). */
@@ -209,11 +212,6 @@ class GameAccount extends Model
         return $this->whatsappLink('Halo admin, saya ingin membeli akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug));
     }
 
-    public function offerWhatsappUrl(): ?string
-    {
-        return $this->whatsappLink('Halo admin, saya ingin menawar akun '.$this->title.' (harga '.$this->formattedPrice().'). '.route('accounts.show', $this->slug).' Penawaran saya: Rp ...');
-    }
-
     public function formattedOriginalPrice(): string
     {
         return 'Rp '.number_format((int) $this->original_price, 0, ',', '.');
@@ -287,11 +285,6 @@ class GameAccount extends Model
             '{harga}' => $this->formattedPrice(),
             '{url}' => route('accounts.show', $this->slug),
         ]));
-    }
-
-    public function tradeInWhatsappUrl(): ?string
-    {
-        return $this->whatsappLink('Halo admin, saya ingin mengajukan tukar tambah untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug).' Akun yang saya tawarkan: ...');
     }
 
     /** WhatsApp number that handles this account: its own seller, else the store (rental number for rentals). */
