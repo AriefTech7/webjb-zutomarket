@@ -259,7 +259,7 @@ class AccountTest extends TestCase
 
     public function test_admin_sets_the_running_text_shown_under_the_header(): void
     {
-        $this->get('/')->assertOk()->assertSee('class="marquee', false)->assertSee('Bisa tukar tambah, tanya admin', false)->assertDontSee('cicil');
+        $this->get('/')->assertOk()->assertSee('class="marquee', false)->assertSee('Tanya stok langsung lewat live chat', false)->assertDontSee('cicil')->assertDontSee('tukar tambah');
 
         $settings = ['store_name' => 'Zuto', 'whatsapp_number' => '6281234567890', 'whatsapp_default_message' => 'Halo'];
         $this->actingAs(User::factory()->create());
@@ -268,7 +268,7 @@ class AccountTest extends TestCase
 
         $this->put('/admin/settings', [...$settings, 'running_text' => "PROMO AKHIR TAHUN\r\n\r\n  <b>Diskon</b> rental  \r\n"])->assertSessionHasNoErrors();
         $this->assertSame(['PROMO AKHIR TAHUN', '<b>Diskon</b> rental'], Setting::runningTextItems());
-        $this->get('/')->assertSeeInOrder(['PROMO AKHIR TAHUN', '&lt;b&gt;Diskon&lt;/b&gt; rental', 'PROMO AKHIR TAHUN'], false)->assertDontSee('<b>Diskon</b>', false)->assertDontSee('tukar tambah, tanya admin');
+        $this->get('/')->assertSeeInOrder(['PROMO AKHIR TAHUN', '&lt;b&gt;Diskon&lt;/b&gt; rental', 'PROMO AKHIR TAHUN'], false)->assertDontSee('<b>Diskon</b>', false)->assertDontSee('Tanya stok langsung lewat live chat');
 
         // Saving the other settings without the field keeps the text; an empty field hides the bar.
         $this->put('/admin/settings', $settings)->assertSessionHasNoErrors();

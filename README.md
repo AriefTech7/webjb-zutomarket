@@ -112,6 +112,14 @@ Perubahan environment memerlukan recreate container, bukan hanya `restart`.
 Jangan gunakan `docker compose down -v`: opsi tersebut menghapus volume data.
 Scheduler belum dibutuhkan karena belum ada scheduled task di aplikasi.
 
+### Alamat admin rahasia
+
+Halaman admin (login dan dashboard) berada di bawah prefix `ADMIN_PATH`
+(default `admin`). Di production isi dengan nilai yang sulit ditebak di
+`.env.production`, misalnya `ADMIN_PATH=kelola-3f9a1c7e2b`, lalu
+`dc up -d --force-recreate app`. Setelah itu `/admin` menjawab 404 dan admin login
+lewat `https://zutomarket.id/kelola-3f9a1c7e2b/login`. Bagikan alamat ini hanya ke admin.
+
 ### Pembayaran Tripay (checkout website)
 
 Semua akun milik super admin (kecuali rental) dibayar langsung di

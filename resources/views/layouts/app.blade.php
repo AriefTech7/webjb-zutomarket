@@ -32,14 +32,14 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="ZutoMarket">
     <meta name="description" content="@yield('description', 'Jelajahi katalog akun game, pilih spesifikasi favoritmu, dan hubungi admin langsung melalui WhatsApp.')">
-    @if (request()->is('admin*'))
+    @if (request()->is(config('app.admin_path').'*'))
         <meta name="robots" content="noindex,nofollow">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 @php($buyer = auth()->user()?->is_admin === false ? auth()->user() : null)
-<body class="min-h-screen flex flex-col {{ request()->is('admin*') ? '' : 'pb-24 xl:pb-0' }}" data-like-endpoint="{{ url('/suka') }}"
+<body class="min-h-screen flex flex-col {{ request()->is(config('app.admin_path').'*') ? '' : 'pb-24 xl:pb-0' }}" data-like-endpoint="{{ url('/suka') }}"
     @if ($buyer) data-account-profile="{{ json_encode(['name' => $buyer->name, 'phone' => (string) $buyer->whatsapp]) }}" data-account-wishlist="{{ route('account.wishlist') }}"
         data-account-wishlist-ids="{{ json_encode($buyer->wishlistIds()) }}" @if (session('wishlist_merge')) data-account-wishlist-merge="1" @endif @endif>
     @php($storeName = \App\Models\Setting::valueFor('store_name', 'SHOPGAME ZUTO'))
@@ -49,11 +49,11 @@
     <header
         class="sticky top-0 z-40 border-b border-[#a9c3ff]/15 bg-[#070b1c]/90 shadow-lg shadow-[#020617]/10 backdrop-blur-xl">
         <div class="shell flex h-16 items-center gap-3 md:h-20 md:gap-4">
-            <a href="{{ route('catalog') }}" class="flex shrink-0 items-center gap-3 {{ request()->is('admin*') ? 'mr-auto' : '' }}"
+            <a href="{{ route('catalog') }}" class="flex shrink-0 items-center gap-3 {{ request()->is(config('app.admin_path').'*') ? 'mr-auto' : '' }}"
                 aria-label="{{ $storeName }}"><span class="logo-shine" style="--logo-url: url('{{ asset('images/zuto-wordmark.webp') }}')"><img src="{{ asset('images/zuto-wordmark.webp') }}"
                     alt="{{ $storeName }}" width="1199" height="422" class="brand-wordmark w-24 md:w-40"></span><span
                     class="sr-only">{{ $storeName }}</span></a>
-            @unless (request()->is('admin*'))
+            @unless (request()->is(config('app.admin_path').'*'))
             <form action="{{ route('catalog.all') }}#katalog" method="GET" role="search" class="relative min-w-0 flex-1 md:max-w-md">
                 <label class="sr-only" for="header-search">Cari produk</label>
                 <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
@@ -79,7 +79,7 @@
         </div>
     </header>
     @endunless
-    @unless (request()->is('admin*'))
+    @unless (request()->is(config('app.admin_path').'*'))
         @php($runningText = \App\Models\Setting::runningTextItems())
         @if ($runningText)
             {{-- Running text: items are rendered twice so the -50% loop is seamless; the copy is hidden from screen readers. --}}
@@ -106,9 +106,9 @@
         @yield('content')
     </main>
     {{-- The admin area and the account / sign-in pages have no footer. --}}
-    @unless (request()->is('admin*') || request()->routeIs('profile', 'account.settings', 'account.password', 'account.login', 'account.register', 'password.request', 'password.reset'))
+    @unless (request()->is(config('app.admin_path').'*') || request()->routeIs('profile', 'account.settings', 'account.password', 'account.login', 'account.register', 'password.request', 'password.reset'))
     @php($footerWhatsapp = preg_replace('/\D+/', '', \App\Models\Setting::valueFor('whatsapp_number')))
-    @php($footerGames = request()->is('admin*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
+    @php($footerGames = request()->is(config('app.admin_path').'*') ? collect() : \App\Models\Category::orderBy('name')->limit(10)->get(['name', 'slug']))
     <footer class="mt-16 border-t border-[#a9c3ff]/15 bg-[#050817]/60 pt-12 pb-8">
         <div class="shell grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_0.8fr_1.1fr]">
             <div>
@@ -164,7 +164,7 @@
         </div>
     </footer>
     @endunless
-    @unless (request()->is('admin*'))
+    @unless (request()->is(config('app.admin_path').'*'))
         <div data-install-prompt hidden role="dialog" aria-labelledby="install-title"
             class="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md xl:inset-x-auto xl:bottom-6 xl:right-6 xl:w-[26rem]">
             <div class="panel bg-[#101833] p-5 shadow-2xl shadow-[#020617]/70">

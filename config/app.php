@@ -16,6 +16,12 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | URL prefix of the admin area (login and dashboard). Set ADMIN_PATH to a hard-to-guess value in production,
+    | e.g. "kelola-3f9a1c7e2b", so /admin answers 404. Locally and in tests it stays "admin".
+    */
+    'admin_path' => trim((string) env('ADMIN_PATH', 'admin'), '/') ?: 'admin',
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
