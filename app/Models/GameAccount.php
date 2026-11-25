@@ -16,7 +16,7 @@ class GameAccount extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'dp_percent', 'payment_due_on', 'seller_whatsapp', 'original_price', 'installment_dp_percent', 'installment_days', 'installment_enabled', 'card_note', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at'];
+    protected $fillable = ['category_id', 'title', 'slug', 'price', 'description', 'specifications', 'main_image', 'status', 'dp_percent', 'payment_due_on', 'seller_whatsapp', 'original_price', 'installment_dp_percent', 'installment_days', 'installment_enabled', 'card_note', 'flash_sale_ends_at', 'is_rental', 'ready_estimate_at', 'use_gateway'];
 
     /** Admins type flash sale times in Indonesian Western time. */
     public const LOCAL_TIMEZONE = 'Asia/Jakarta';
@@ -83,7 +83,7 @@ class GameAccount extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime'];
+        return ['price' => 'integer', 'original_price' => 'integer', 'dp_percent' => 'integer', 'payment_due_on' => 'date', 'installment_dp_percent' => 'integer', 'installment_days' => 'integer', 'installment_enabled' => 'boolean', 'sold_at' => 'datetime', 'flash_sale_ends_at' => 'datetime', 'is_rental' => 'boolean', 'ready_estimate_at' => 'datetime', 'use_gateway' => 'boolean'];
     }
 
     /** 950 → "950", 3100 → "3,1 rb", 1250000 → "1,3 jt" (the "Dilihat" / "Suka" counters). */
@@ -104,7 +104,7 @@ class GameAccount extends Model
      */
     public function usesPaymentGateway(): bool
     {
-        return Tripay::active() && ! $this->is_rental && (bool) $this->owner?->is_super_admin;
+        return Tripay::active() && ! $this->is_rental && $this->use_gateway !== false && (bool) $this->owner?->is_super_admin;
     }
 
     /** The unpaid, not yet expired order holding this account, if any. */

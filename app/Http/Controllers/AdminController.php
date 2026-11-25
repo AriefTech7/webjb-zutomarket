@@ -42,7 +42,6 @@ class AdminController extends Controller
             'soldPercent' => $total ? (int) round($sold / $total * 100) : 0,
             'stockSegments' => [
                 ['label' => 'Tersedia', 'value' => $countWhere(fn ($row): bool => $row->status === 'available' && ! $row->is_rental), 'color' => 'var(--viz-available)'],
-                ['label' => 'DP / cicil', 'value' => $countWhere(fn ($row): bool => in_array($row->status, GameAccount::BOOKED_STATUSES, true)), 'color' => 'var(--viz-booked)'],
                 ['label' => 'Terjual', 'value' => $sold, 'color' => 'var(--viz-sold)'],
                 ['label' => 'Rental', 'value' => $countWhere(fn ($row): bool => $row->is_rental && $row->status !== 'sold'), 'color' => 'var(--viz-rental)'],
                 ['label' => 'Draft', 'value' => $countWhere(fn ($row): bool => $row->status === 'draft' && ! $row->is_rental), 'color' => 'var(--viz-draft)'],
@@ -59,9 +58,6 @@ class AdminController extends Controller
             ])
                 ->orderByDesc('accounts_count')->get()->where('accounts_count', '>', 0)->take(5)->values(),
             'flashSales' => GameAccount::onFlashSale()->manageableBy($request->user())->orderBy('flash_sale_ends_at')->limit(4)->get(),
-            // Booked accounts, nearest due date first; those without a due date last.
-            'bookings' => GameAccount::with('category')->manageableBy($request->user())->whereIn('status', GameAccount::BOOKED_STATUSES)
-                ->orderByRaw('payment_due_on IS NULL')->orderBy('payment_due_on')->orderBy('id')->get(),
             'latestMessages' => FeedbackMessage::latest()->limit(4)->get(),
             'accounts' => GameAccount::with(['category', 'owner'])->manageableBy($request->user())->latest()->limit(5)->get(),
         ]);
@@ -116,15 +112,13 @@ class AdminController extends Controller
         ]);
     }
 
-    /** Paid share and due date of one booked account, edited inline on the dashboard. */
-    public function updatePayment(Request $request, GameAccount $account): RedirectResponse
+    /** Per-account switch (super admin): this account is paid on the website, or bought through WhatsApp. */
+    public function toggleAccountGateway(GameAccount $account): RedirectResponse
     {
-        $this->authorizeAccount($request, $account);
-        abort_unless($account->isBooked(), 404);
-        $data = $request->validate(['dp_percent' => 'nullable|integer|min:1|max:100', 'payment_due_on' => 'nullable|date_format:Y-m-d']);
-        $account->update(['dp_percent' => $data['dp_percent'] ?? null, 'payment_due_on' => $data['payment_due_on'] ?? null]);
+        abort_if($account->is_rental, 422);
+        $account->forceFill(['use_gateway' => ! $account->use_gateway])->save();
 
-        return back()->with('success', 'Pembayaran '.$account->title.' diperbarui.');
+        return back()->with('success', $account->title.($account->use_gateway ? ': dibayar di website (payment gateway).' : ': dibeli lewat WhatsApp.'));
     }
 
     public function updateRentalStatus(Request $request, GameAccount $account): RedirectResponse
@@ -267,6 +261,7 @@ class AdminController extends Controller
             'dp_percent' => 'nullable|integer|min:1|max:100',
             'payment_due_on' => 'nullable|date_format:Y-m-d',
             'card_note' => 'nullable|string|max:30',
+            'use_gateway' => 'sometimes|boolean',
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('is_admin', true)],
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
@@ -306,6 +301,10 @@ class AdminController extends Controller
             ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['ready_estimate_at'], GameAccount::LOCAL_TIMEZONE)->utc()
             : null;
         unset($data['packages']);
+        // Only the super admin chooses between website checkout and WhatsApp for an account.
+        if (! $request->user()->is_super_admin) {
+            unset($data['use_gateway']);
+        }
         $deletedImages = $account->images()->whereIn('id', $data['remove_images'] ?? [])->get();
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
             return back()->withErrors(['images' => 'Maksimal 6 gambar tambahan per akun.'])->withInput();

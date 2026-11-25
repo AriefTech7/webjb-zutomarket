@@ -398,6 +398,35 @@ class CheckoutTest extends TestCase
         $this->post('/joki/bayar', $brief)->assertRedirect(route('joki'))->assertSessionHas('error');
     }
 
+    public function test_each_account_can_be_switched_between_website_payment_and_whatsapp(): void
+    {
+        $account = $this->storeAccount(['title' => 'Akun Saklar']);
+        $buyer = User::factory()->buyer()->create();
+
+        // The list shows the switch; clicking it moves the account to WhatsApp.
+        $this->actingAs($this->superAdmin)->get('/admin/accounts')->assertOk()->assertSee(route('admin.accounts.gateway', $account), false)->assertSee('Bayar di website');
+        $this->patch(route('admin.accounts.gateway', $account))->assertSessionHas('success');
+        $this->assertFalse($account->fresh()->use_gateway);
+        $this->assertFalse($account->fresh()->usesPaymentGateway());
+        $this->get('/admin/accounts')->assertSee('Lewat WhatsApp');
+        $this->actingAs($buyer)->get('/akun/'.$account->slug)->assertDontSee('data-checkout-button', false)->assertSee(e($account->buyWhatsappUrl()), false);
+        $this->get('/checkout?akun[]='.$account->id)->assertRedirect(route('cart'));
+
+        // The edit form has the same switch.
+        $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 350000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic', 'status' => 'available'];
+        $this->actingAs($this->superAdmin)->get('/admin/accounts/'.$account->id.'/edit')->assertSee('Bayar di website (payment gateway)')->assertDontSee('name="use_gateway" value="1" class="size-4 accent-lime-300" checked', false);
+        $this->put('/admin/accounts/'.$account->id, $data + ['use_gateway' => '1'])->assertSessionHasNoErrors();
+        $this->assertTrue($account->fresh()->usesPaymentGateway());
+
+        // Regular admins can neither flip it nor change it through the form.
+        $other = User::factory()->regularAdmin()->create();
+        $this->actingAs($other)->patch(route('admin.accounts.gateway', $account))->assertForbidden();
+        $own = GameAccount::factory()->create(['owner_id' => $other->id]);
+        $this->get('/admin/accounts/'.$own->id.'/edit')->assertDontSee('Bayar di website (payment gateway)');
+        $this->put('/admin/accounts/'.$own->id, ['title' => $own->title, 'category_id' => $own->category_id, 'price' => 350000, 'description' => 'D', 'specifications' => 'S', 'status' => 'available', 'use_gateway' => '0'])->assertSessionHasNoErrors();
+        $this->assertTrue($own->fresh()->use_gateway);
+    }
+
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void
     {
         $store = $this->storeAccount(['price' => 100000]);

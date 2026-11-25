@@ -158,19 +158,18 @@ class CatalogTest extends TestCase
         $this->assertNull($account->whatsappUrl());
 
         // The admin keeps tracking the old DP until it is paid off, then marks it sold.
+        // The dashboard no longer has a DP panel; the edit form still finishes an old DP.
         $this->actingAs(User::factory()->create());
-        $this->get('/admin')->assertOk()->assertSee('Pembayaran DP &amp; cicilan', false)->assertSee('Cicilan / DP sudah tidak dijual lagi')
-            ->assertSee('Dibayar Rp 200.000 · Sisa')->assertSee('Lewat 2 hari')->assertSee('action="'.route('admin.accounts.payment', $account).'"', false);
+        $this->get('/admin')->assertOk()->assertDontSee('Pembayaran DP &amp; cicilan', false)->assertDontSee('DP / cicil');
         $this->get('/admin/accounts/'.$account->id.'/edit')->assertOk()->assertSee('<option value="dp"', false)->assertSee('pesanan DP lama');
-        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 80, 'payment_due_on' => '2026-11-25'])->assertSessionHasNoErrors();
-        $this->assertSame([80, 7], [$account->refresh()->dp_percent, $account->daysUntilPaymentDue()]);
         $data = ['title' => $account->title, 'category_id' => $account->category_id, 'price' => 500000, 'description' => 'Deskripsi', 'specifications' => 'Rank Mythic'];
-        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil', 'dp_percent' => 90])->assertSessionHasNoErrors();
+        $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'cicil', 'dp_percent' => 90, 'payment_due_on' => '2026-11-25'])->assertSessionHasNoErrors();
+        $this->assertSame([90, 7], [$account->refresh()->dp_percent, $account->daysUntilPaymentDue()]);
         $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'sold'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('game_accounts', ['id' => $account->id, 'status' => 'sold', 'dp_percent' => null, 'payment_due_on' => null]);
         // Once sold it cannot go back to a DP.
         $this->put('/admin/accounts/'.$account->id, $data + ['status' => 'dp'])->assertSessionHasErrors('status');
-        $this->get('/admin')->assertOk()->assertSee('Belum ada akun berstatus Sudah DP atau Sudah dicicil.');
+        $this->patch('/admin/accounts/'.$account->id.'/payment', ['dp_percent' => 50])->assertNotFound();
     }
 
     public function test_the_admins_card_note_is_limited_to_30_characters(): void

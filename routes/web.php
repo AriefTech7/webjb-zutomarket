@@ -96,7 +96,6 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
     Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
     Route::patch('/rentals/{account}/status', [AdminController::class, 'updateRentalStatus'])->name('rentals.status');
-    Route::patch('/accounts/{account}/payment', [AdminController::class, 'updatePayment'])->name('accounts.payment');
     Route::get('/accounts/create', [AdminController::class, 'form'])->name('accounts.create');
     Route::post('/accounts', [AdminController::class, 'store'])->name('accounts.store');
     Route::get('/accounts/{account}/edit', [AdminController::class, 'form'])->name('accounts.edit');
@@ -114,6 +113,7 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
         Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
         Route::get('/orders/{order}/chat', [AdminOrderController::class, 'chat'])->name('orders.chat');
         Route::patch('/orders-gateway', [AdminOrderController::class, 'toggleGateway'])->name('orders.gateway');
+        Route::patch('/accounts/{account}/gateway', [AdminController::class, 'toggleAccountGateway'])->name('accounts.gateway');
         Route::get('/vouchers', [AdminVoucherController::class, 'index'])->name('vouchers');
         Route::post('/vouchers', [AdminVoucherController::class, 'store'])->name('vouchers.store');
         Route::patch('/vouchers/{voucher}', [AdminVoucherController::class, 'toggle'])->name('vouchers.toggle');

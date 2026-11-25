@@ -54,6 +54,16 @@
                     value="{{ old('flash_sale_ends_at', $account->flash_sale_ends_at?->timezone(\App\Models\GameAccount::LOCAL_TIMEZONE)->format('Y-m-d\TH:i')) }}">
                 <p class="muted mt-2 text-xs">Waktu WIB. Akun tampil di halaman Flash Sale sampai waktu ini. Kosongkan jika tidak ikut flash sale.</p>
             </div>
+            @if (auth()->user()->is_super_admin)
+                <div class="rounded-2xl border border-emerald-300/25 bg-emerald-300/5 p-4 md:col-span-2">
+                    <label class="flex cursor-pointer items-center gap-3 text-sm font-semibold text-white">
+                        <input type="hidden" name="use_gateway" value="0">
+                        <input type="checkbox" name="use_gateway" value="1" class="size-4 accent-lime-300" @checked(old('use_gateway', $account->use_gateway ?? true))>
+                        Bayar di website (payment gateway)
+                    </label>
+                    <p class="muted mt-1 text-xs">Centang: pembeli membayar akun ini di website (QRIS, VA, e-wallet). Kosongkan: tombol Beli akun ini lewat WhatsApp. Hanya berlaku untuk akun milik super admin dan saat saklar payment gateway toko ON.</p>
+                </div>
+            @endif
             <div class="md:col-span-2">
                 <label class="label" for="card_note">Catatan di kartu (opsional)</label>
                 <input class="field" id="card_note" name="card_note" maxlength="30" value="{{ old('card_note', $account->card_note) }}" placeholder="Contoh: Full skin, Akun lama">

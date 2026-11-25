@@ -119,56 +119,6 @@
                 </section>
             </div>
 
-            {{-- Booked accounts: store DP terms, then per account how much is paid, what is left and when it is due. All editable here. --}}
-            @php($overdue = $bookings->filter(fn ($booking) => ($booking->daysUntilPaymentDue() ?? 0) < 0)->count())
-            <section id="dp" class="panel scroll-mt-28 p-5" aria-labelledby="booking-title">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h2 id="booking-title" class="font-black">Pembayaran DP &amp; cicilan</h2>
-                    <div class="flex flex-wrap gap-2 text-xs font-bold">
-                        <span class="rounded-full bg-white/5 px-3 py-1 text-slate-300">{{ $bookings->count() }} akun</span>
-                        @if ($overdue)
-                            <span class="rounded-full bg-rose-400/15 px-3 py-1 text-rose-300">{{ $overdue }} lewat tempo</span>
-                        @endif
-                    </div>
-                </div>
-
-                <p class="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 text-xs text-slate-300"><span class="font-bold text-amber-300">Cicilan / DP sudah tidak dijual lagi.</span> Daftar ini hanya untuk menyelesaikan pesanan DP lama sampai lunas, lalu ubah statusnya ke "Terjual". Pengunjung melihat akun ini sebagai "Dipesan".</p>
-
-                <ul class="mt-4 space-y-3">
-                    @forelse ($bookings as $booking)
-                        @php($daysLeft = $booking->daysUntilPaymentDue())
-                        <li class="grid gap-3 rounded-xl border border-white/10 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center {{ $daysLeft !== null && $daysLeft < 0 ? 'border-rose-400/40 bg-rose-400/5' : '' }}">
-                            <div class="flex min-w-0 items-center gap-3">
-                                <img src="{{ $booking->imageUrl() }}" alt="" class="h-12 w-12 shrink-0 rounded-lg object-cover object-top" loading="lazy">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <a href="{{ route('admin.accounts.edit', $booking) }}" class="truncate text-sm font-bold text-white hover:text-lime-300">{{ $booking->title }}</a>
-                                        <span class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black {{ $booking->status === 'dp' ? 'bg-amber-300/15 text-amber-300' : 'bg-violet-300/15 text-violet-300' }}">{{ $booking->statusLabel() }}</span>
-                                        @if ($daysLeft !== null)
-                                            <span class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black {{ $daysLeft < 0 ? 'bg-rose-400 text-slate-950' : ($daysLeft <= 3 ? 'bg-amber-300 text-slate-950' : 'bg-white/10 text-slate-200') }}">{{ $daysLeft < 0 ? 'Lewat '.abs($daysLeft).' hari' : ($daysLeft === 0 ? 'Jatuh tempo hari ini' : $daysLeft.' hari lagi') }}</span>
-                                        @endif
-                                    </div>
-                                    <span class="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-white/10" role="img" aria-label="{{ $booking->dp_percent ?? 0 }}% sudah dibayar"><span class="block h-full rounded-full bg-lime-300" style="width: {{ $booking->dp_percent ?? 0 }}%"></span></span>
-                                    <span class="mt-1 block text-xs text-slate-400">Harga {{ $booking->formattedPrice() }} · Dibayar {{ 'Rp '.number_format($booking->paidAmount(), 0, ',', '.') }} · Sisa <strong class="text-white">{{ 'Rp '.number_format($booking->remainingAmount(), 0, ',', '.') }}</strong></span>
-                                </div>
-                            </div>
-                            <form method="POST" action="{{ route('admin.accounts.payment', $booking) }}" class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-end gap-2 sm:flex sm:flex-wrap">
-                                @csrf @method('PATCH')
-                                <label class="text-[11px] text-slate-400 sm:w-24">% dibayar
-                                    <input class="field mt-1 px-3 py-2" name="dp_percent" type="number" inputmode="numeric" min="1" max="100" value="{{ $booking->dp_percent }}" placeholder="%" aria-label="Persen dibayar {{ $booking->title }}">
-                                </label>
-                                <label class="min-w-0 text-[11px] text-slate-400 sm:w-44">Jatuh tempo
-                                    <input class="field mt-1 px-3 py-2" name="payment_due_on" type="date" value="{{ $booking->payment_due_on?->toDateString() }}" aria-label="Jatuh tempo {{ $booking->title }}">
-                                </label>
-                                <button class="btn-secondary col-span-2 shrink-0 sm:col-auto">Simpan</button>
-                            </form>
-                        </li>
-                    @empty
-                        <li class="rounded-xl border border-dashed border-[#a9c3ff]/20 p-4 text-center text-sm text-slate-400">Belum ada akun berstatus Sudah DP atau Sudah dicicil. Ubah status akun di menu Akun game.</li>
-                    @endforelse
-                </ul>
-            </section>
-
             {{-- Headline numbers. --}}
             <section class="panel p-5" aria-labelledby="totals-title">
                 <h2 id="totals-title" class="font-black">Angka toko</h2>
