@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\JokiOrderController;
 use App\Models\ChatConversation;
 use App\Models\GameAccount;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Services\JokiPricing;
 use App\Services\Tripay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
@@ -315,6 +317,85 @@ class CheckoutTest extends TestCase
         // Tripay gets item prices that add up to the discounted amount.
         $this->assertSame([270000, 180000], Tripay::splitDiscount([300000, 200000], 50000));
         $this->assertSame([66667, 33333], Tripay::splitDiscount([100000, 50000], 50000));
+    }
+
+    public function test_joki_pricing_on_the_server_matches_the_calculator(): void
+    {
+        $pricing = JokiPricing::fromConfig();
+        $this->assertSame(['Epic V', 'Epic IV', 'Epic III', 'Epic II', 'Epic I', 'Legend V', 'Legend IV', 'Legend III', 'Legend II', 'Legend I', 'Mythic', 'Mythical Honor', 'Mythical Glory', 'Mythical Immortal'], array_keys($pricing->rankOptions()));
+
+        // Same examples as tests/Unit/Joki.test.js.
+        $quote = $pricing->quote('Epic I', 3, 'Mythic', 2);
+        $this->assertSame([29, 2 * 6000 + 25 * 7000 + 2 * 8000], [$quote['stars'], $quote['total']]);
+        $this->assertSame([['name' => 'Epic', 'stars' => 2, 'price' => 6000], ['name' => 'Legend', 'stars' => 25, 'price' => 7000], ['name' => 'Mythic', 'stars' => 2, 'price' => 8000]], $quote['lines']);
+        $this->assertSame([80000, 8000, 88000], array_values(array_intersect_key($pricing->quote('Mythic', 0, 'Mythic', 10, 10), array_flip(['subtotal', 'extra', 'total']))));
+        $this->assertSame('Epic I bintang 3', $quote['from']);
+        $this->assertSame('Mythical Honor (30 bintang Mythic)', $pricing->quote('Mythic', 0, 'Mythical Honor', 30)['to']);
+
+        // Not higher, unknown rank or impossible stars: no price.
+        $this->assertNull($pricing->quote('Legend V', 0, 'Epic I', 0));
+        $this->assertNull($pricing->quote('Rank Palsu', 0, 'Epic I', 0));
+        $this->assertNull($pricing->quote('Epic V', 9, 'Epic I', 0));
+        $this->assertSame([225000, null], [JokiPricing::packagePrice('Honor – Glory'), JokiPricing::packagePrice('Paket Palsu')]);
+    }
+
+    public function test_a_joki_is_paid_on_the_website(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $brief = ['mode' => 'calculator', 'service' => 'regular', 'fromRank' => 'Epic I', 'fromStars' => 3, 'toRank' => 'Mythic', 'toStars' => 2,
+            'heroes' => ['Layla', 'Miya', 'Tigreal'], 'userId' => '123456789', 'serverId' => '2001', 'loginVia' => 'Moonton', 'loginId' => 'budi@example.com',
+            'notes' => 'Jangan pakai Fanny', 'contactName' => 'Budi Joki', 'contactPhone' => '812 3456 7890', 'total' => 1000, 'password' => 'rahasia'];
+
+        // The joki page offers website payment; there is no password field; guests sign in first.
+        $this->get('/joki-ml')->assertOk()->assertSee('Bayar di website')->assertSee('action="'.route('joki.prepare').'"', false)
+            ->assertSee('data-joki-checkout', false)->assertDontSee('data-signed-in', false)->assertDontSee('type="password"', false);
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('account.login'));
+        $this->actingAs($buyer)->get('/joki-ml')->assertSee('data-signed-in', false);
+
+        // The price comes from the server, not from the browser ("total" is ignored), and no password is kept.
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('checkout', ['joki' => 1]));
+        $draft = session(JokiOrderController::SESSION_KEY);
+        $this->assertSame(203000, $draft['price']);
+        $this->assertStringNotContainsString('rahasia', json_encode($draft));
+        $this->get('/checkout?joki=1')->assertOk()->assertSee('Pesanan joki')->assertSee('Epic I bintang 3 → Mythic (2 bintang Mythic)', false)
+            ->assertSee('Rp 203.000')->assertSee('123456789 (2001)')->assertSee('Jangan pakai Fanny')->assertSee('value="Budi Joki"', false)->assertSee('value="081234567890"', false)
+            ->assertSee('name="joki" value="1"', false);
+
+        $this->post('/checkout', ['joki' => 1, 'method' => 'QRIS', 'customer_name' => 'Budi Joki', 'customer_phone' => '08123456789', 'agree' => '1']);
+        $order = Order::sole();
+        $item = $order->items()->sole();
+        $this->assertSame(['joki', null, 203000], [$item->kind, $item->game_account_id, $item->price]);
+        $this->assertSame('Moonton', $item->details['Masuk melalui']);
+        $this->assertNull(session(JokiOrderController::SESSION_KEY));
+        Http::assertSent(fn (HttpRequest $request): bool => str_ends_with($request->url(), 'transaction/create') && $request['amount'] === 203000 && str_starts_with($request['order_items'][0]['name'], 'Joki Regular ML: Epic I'));
+
+        // Paid: nothing to mark sold, no "refund" warning; the admin sees the brief and opens the chat.
+        $order->markPaid();
+        $this->assertSame(['paid', null], [$order->fresh()->status, $order->fresh()->admin_note]);
+        $this->get(route('orders.show', $order))->assertSee('memulai joki');
+        $this->actingAs($this->superAdmin)->get('/admin/orders')->assertSee('Joki')->assertSee('Request hero')->assertSee('Layla, Miya, Tigreal');
+        $this->get(route('admin.orders.chat', $order))->assertSessionHas('chat_draft', fn (string $draft): bool => str_contains($draft, 'kirim kata sandi'));
+    }
+
+    public function test_joki_packages_and_the_gateway_switch(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $brief = ['mode' => 'package', 'packages' => ['Honor – Glory', 'Mythic – Mythic Honor'], 'heroes' => ['A', 'B', 'C'], 'userId' => '111', 'loginVia' => 'Moonton', 'loginId' => 'x@y.z', 'contactName' => 'Budi', 'contactPhone' => '81234567890'];
+
+        $this->actingAs($buyer)->post('/joki/bayar', [...$brief, 'packages' => ['Paket Palsu']])->assertSessionHas('error');
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('checkout', ['joki' => 1]));
+        $this->assertSame(425000, session(JokiOrderController::SESSION_KEY)['price']);
+        $this->post('/joki/bayar', ['mode' => 'calculator', 'service' => 'regular', 'fromRank' => 'Legend V', 'fromStars' => 0, 'toRank' => 'Epic I', 'toStars' => 0, ...array_diff_key($brief, ['mode' => 1, 'packages' => 1])])
+            ->assertSessionHas('error', 'Rank tujuan harus lebih tinggi dari rank saat ini.');
+
+        // Without a brief the joki checkout sends the buyer back to the joki page.
+        session()->forget(JokiOrderController::SESSION_KEY);
+        $this->get('/checkout?joki=1')->assertRedirect(route('joki'));
+
+        // Gateway off: the joki goes back to WhatsApp.
+        Setting::create(['key' => 'payment_gateway', 'value' => '0']);
+        $this->get('/joki-ml')->assertSee('Pesan via WhatsApp')->assertDontSee('data-joki-checkout', false);
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('joki'))->assertSessionHas('error');
     }
 
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void

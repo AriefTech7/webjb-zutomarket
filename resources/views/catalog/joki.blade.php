@@ -4,6 +4,8 @@
 @section('content')
     @php
         $whatsappNumber = \App\Models\Setting::valueFor('whatsapp_number');
+        // Payment gateway on: the joki is paid on the website (JokiOrderController → checkout); off: WhatsApp.
+        $jokiGateway = \App\Services\Tripay::active();
         $tiers = config('joki.tiers');
         $services = config('joki.services');
         $packageGroups = config('joki.packages');
@@ -29,7 +31,14 @@
             'hero' => 'M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4Z',
             'gendong' => 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
         ];
-        $steps = [
+        $steps = $jokiGateway ? [
+            ['Pilih rank atau paket', 'Hitung harga di kalkulator joki, atau tambahkan paket siap pakai.'],
+            ['Isi detail akun & kontak', 'ID akun, metode masuk, dan kontakmu. Kata sandi tidak diisi di website.'],
+            ['Bayar di website', 'Masuk ke akunmu, pakai voucher jika ada, lalu bayar lewat QRIS, virtual account, atau e-wallet.'],
+            ['Kirim kata sandi lewat live chat', 'Setelah lunas, admin menghubungimu di live chat untuk meminta data login.'],
+            ['Akun dikerjakan', 'Jangan login ke game selama akun sedang dikerjakan.'],
+            ['Terima kabar selesai', 'Admin memberi tahu lewat live chat saat pengerjaan selesai.'],
+        ] : [
             ['Pilih rank atau paket', 'Hitung harga di kalkulator joki, atau tambahkan paket siap pakai.'],
             ['Isi detail akun & kontak', 'Data hanya dipakai untuk menyusun pesan WhatsApp, tidak disimpan di website.'],
             ['Kirim lewat WhatsApp', 'Tempel password yang sudah disalin pada baris Password di chat.'],
@@ -71,6 +80,7 @@
 
         @if ($whatsappNumber)
             <form class="mt-6" data-joki-form data-whatsapp-url="https://wa.me/{{ $whatsappNumber }}" autocomplete="off" novalidate
+                @if ($jokiGateway) method="POST" action="{{ route('joki.prepare') }}" data-joki-checkout data-login-url="{{ route('joki.sign-in') }}" @auth data-signed-in @endauth @endif
                 data-joki-tiers="{{ json_encode(collect($tiers)->map(fn ($tier) => [...$tier, 'icon' => $tierIcon($tier['name'])])->values()) }}"
                 data-joki-services="{{ json_encode($services) }}">
                 {{-- Game bar with the two ways to order. --}}
@@ -215,10 +225,14 @@
                                     </select>
                                 </div>
                                 <div><label class="label" for="joki-login-id">Email / No. HP / Moonton ID</label><input id="joki-login-id" class="field" type="text" name="loginId" maxlength="100" required placeholder="Masukkan email"></div>
-                                <div>
-                                    <label class="label" for="joki-password">Kata sandi</label>
-                                    @include('auth.partials.password-field', ['id' => 'joki-password', 'name' => 'password', 'placeholder' => 'Masukkan kata sandi', 'autocomplete' => 'new-password'])
-                                </div>
+                                @if ($jokiGateway)
+                                    <p class="self-end rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-300">Kata sandi <strong class="text-white">tidak</strong> diisi di sini. Setelah pembayaran lunas, admin memintanya lewat live chat.</p>
+                                @else
+                                    <div>
+                                        <label class="label" for="joki-password">Kata sandi</label>
+                                        @include('auth.partials.password-field', ['id' => 'joki-password', 'name' => 'password', 'placeholder' => 'Masukkan kata sandi', 'autocomplete' => 'new-password'])
+                                    </div>
+                                @endif
                             </fieldset>
                             <div class="mt-4"><label class="label" for="joki-notes">Catatan untuk penjoki <span class="font-normal text-slate-500">(opsional)</span></label><input id="joki-notes" class="field" type="text" name="notes" maxlength="200" placeholder="Contoh: jangan pakai hero tertentu"></div>
                         </section>
@@ -237,13 +251,26 @@
                                 <div><label class="label" for="joki-name">Nama lengkap</label><input id="joki-name" class="field" type="text" name="contactName" maxlength="60" required placeholder="Namamu"></div>
                                 <div><label class="label" for="joki-email">Email <span class="font-normal text-slate-500">(opsional)</span></label><input id="joki-email" class="field" type="email" name="contactEmail" maxlength="100" placeholder="kamu@contoh.com"></div>
                             </div>
-                            <p class="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-200">Password tidak dimasukkan ke tautan WhatsApp, melainkan disalin agar bisa kamu tempel di chat.</p>
+                            @if ($jokiGateway)
+                                <p class="mt-5 rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3 text-xs leading-5 text-emerald-200">Bayar langsung di website (QRIS, virtual account, e-wallet). Harga dihitung ulang otomatis sesuai daftar harga joki.@guest Kamu akan diminta masuk/daftar dulu.@endguest</p>
+                            @else
+                                <p class="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-200">Password tidak dimasukkan ke tautan WhatsApp, melainkan disalin agar bisa kamu tempel di chat.</p>
+                            @endif
                             {{-- On phones the estimate panel sits below this form, so the total is repeated here. --}}
                             <p class="mt-5 flex items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 lg:hidden"><span class="text-sm text-slate-400">Total</span><strong class="text-lg font-black text-lime-300" data-joki-total>-</strong></p>
                             <button type="button" class="btn mt-5 w-full" data-joki-submit>
-                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $chatIcon }}" /></svg>
-                                Pesan via WhatsApp
+                                @if ($jokiGateway)
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                                    Bayar di website
+                                @else
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $chatIcon }}" /></svg>
+                                    Pesan via WhatsApp
+                                @endif
                             </button>
+                            @if ($jokiGateway)
+                                @csrf
+                                <div data-joki-hidden hidden></div>
+                            @endif
                             <p data-joki-status role="status" aria-live="polite" class="muted mt-3 hidden"></p>
                         </section>
                     </div>

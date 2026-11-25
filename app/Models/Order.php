@@ -57,6 +57,12 @@ class Order extends Model
         return $this->belongsTo(Voucher::class);
     }
 
+    /** A joki (rank boost) order rather than game accounts. */
+    public function isJoki(): bool
+    {
+        return $this->items->contains('kind', 'joki');
+    }
+
     /** What the accounts cost after the voucher, before the payment fee (the amount sent to Tripay). */
     public function payable(): int
     {
@@ -111,7 +117,8 @@ class Order extends Model
         }
         DB::transaction(function (): void {
             $conflicts = [];
-            foreach ($this->items()->with('account')->get() as $item) {
+            // Joki items have no account to mark sold; the admin starts the job after payment.
+            foreach ($this->items()->where('kind', 'account')->with('account')->get() as $item) {
                 $account = $item->account;
                 if (! $account) {
                     $conflicts[] = $item->title.' (sudah dihapus)';

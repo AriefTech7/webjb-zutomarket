@@ -48,9 +48,9 @@
             <article class="panel p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ $order->merchant_ref }} · {{ $order->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">@if ($order->isJoki())<span class="mr-1 rounded bg-violet-400/20 px-1.5 py-0.5 text-violet-300">Joki</span>@endif{{ $order->merchant_ref }} · {{ $order->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</p>
                         <h2 class="mt-1 text-lg font-black">{{ $order->items->pluck('title')->implode(', ') }}</h2>
-                        <p class="mt-1 text-sm"><span class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</span> <span class="text-slate-400">(akun {{ \App\Models\Order::rupiah($order->subtotal) }}@if ($order->discount) − voucher {{ $order->voucher_code }} {{ \App\Models\Order::rupiah($order->discount) }}@endif + biaya {{ \App\Models\Order::rupiah($order->fee) }}) · {{ $order->payment_name }}</span></p>
+                        <p class="mt-1 text-sm"><span class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</span> <span class="text-slate-400">({{ $order->isJoki() ? 'joki' : 'akun' }} {{ \App\Models\Order::rupiah($order->subtotal) }}@if ($order->discount) − voucher {{ $order->voucher_code }} {{ \App\Models\Order::rupiah($order->discount) }}@endif + biaya {{ \App\Models\Order::rupiah($order->fee) }}) · {{ $order->payment_name }}</span></p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span @class(['rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wider', 'border-amber-300/40 text-amber-300' => $order->status === 'unpaid', 'border-emerald-300/40 text-emerald-300' => $order->status === 'paid', 'border-rose-400/40 text-rose-300' => ! in_array($order->status, ['unpaid', 'paid'], true)])>{{ $order->statusLabel() }}</span>
@@ -67,6 +67,13 @@
                         @endif
                     </div>
                 </div>
+                @foreach ($order->items->whereNotNull('details') as $item)
+                    <dl class="mt-3 grid gap-1 rounded-xl border border-violet-300/20 bg-violet-300/5 p-3 text-xs sm:grid-cols-2">
+                        @foreach ($item->details as $detailLabel => $detailValue)
+                            <div class="flex gap-2"><dt class="w-32 shrink-0 text-slate-400">{{ $detailLabel }}</dt><dd class="min-w-0 break-words font-semibold text-slate-100">{{ $detailValue }}</dd></div>
+                        @endforeach
+                    </dl>
+                @endforeach
                 @if ($order->admin_note)
                     <p class="mt-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm font-semibold text-rose-200">{{ $order->admin_note }}</p>
                 @endif

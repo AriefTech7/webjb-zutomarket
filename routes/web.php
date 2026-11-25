@@ -15,6 +15,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\JokiOrderController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WishlistController;
@@ -72,6 +73,9 @@ Route::middleware('auth')->group(function () {
     // Website checkout through Tripay (the super admin's accounts) and the buyer's orders.
     Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    // Joki paid on the website: the joki form posts its brief here, then continues to /checkout?joki=1.
+    Route::post('/joki/bayar', [JokiOrderController::class, 'prepare'])->middleware('throttle:20,1')->name('joki.prepare');
+    Route::get('/joki/masuk', [JokiOrderController::class, 'signIn'])->name('joki.sign-in');
     Route::get('/pesanan', [OrderController::class, 'index'])->name('orders');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/pesanan/{order}/status', [OrderController::class, 'status'])->middleware('throttle:30,1')->name('orders.status');

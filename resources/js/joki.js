@@ -289,6 +289,13 @@ export function initialiseJokiOrder() {
     };
 
     form.querySelector('[data-joki-submit]').addEventListener('click', () => {
+        const checkout = form.dataset.jokiCheckout !== undefined;
+        // Paying on the website needs a buyer account: guests sign in first and come back here.
+        if (checkout && form.dataset.signedIn === undefined) {
+            announce('Masuk atau daftar dulu untuk bayar di website. Mengalihkan…');
+            window.location.href = form.dataset.loginUrl;
+            return;
+        }
         const { from, to, service, result } = currentQuote();
         const heroes = [...form.querySelectorAll('input[name="heroes[]"]')].map((input) => input.value.trim()).filter(Boolean);
         const firstHero = heroList.querySelector('input');
@@ -305,6 +312,16 @@ export function initialiseJokiOrder() {
             return;
         }
         if (!form.reportValidity()) return;
+
+        if (checkout) {
+            // The server works the price out again; it only needs the choices. No password field exists here.
+            const hidden = form.querySelector('[data-joki-hidden]');
+            const field = (name, value) => Object.assign(document.createElement('input'), { type: 'hidden', name, value });
+            hidden.replaceChildren(field('mode', mode), ...(mode === 'package' ? packages.map((item) => field('packages[]', item.name)) : []));
+            announce('Menyiapkan pembayaran…');
+            form.submit();
+            return;
+        }
 
         const needsLogin = !els.login.disabled;
         const message = buildOrderMessage({

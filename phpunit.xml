@@ -32,5 +32,10 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Tests never use real Tripay keys from a local .env; checkout tests set fake ones themselves. -->
+        <env name="TRIPAY_API_KEY" value="" force="true"/>
+        <env name="TRIPAY_PRIVATE_KEY" value="" force="true"/>
+        <env name="TRIPAY_MERCHANT_CODE" value="" force="true"/>
+        <env name="ADMIN_PATH" value="admin" force="true"/>
     </php>
 </phpunit>

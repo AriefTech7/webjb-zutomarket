@@ -50,9 +50,11 @@ class AdminOrderController extends Controller
     {
         $conversation = ChatConversation::firstOrCreate(['user_id' => $order->user_id]);
         $titles = $order->items()->pluck('title')->implode(', ');
-        $draft = $order->status === 'paid'
+        $draft = $order->status === 'paid' && $order->isJoki()
+            ? 'Halo '.$order->customer_name.', terima kasih sudah membayar joki '.$order->merchant_ref.'. Untuk mulai, kirim kata sandi akun game kamu di chat ini ya. Selama proses joki jangan login ke akun.'
+            : ($order->status === 'paid'
             ? 'Halo '.$order->customer_name.', terima kasih sudah membayar pesanan '.$order->merchant_ref.' ('.$titles.'). Berikut data akunnya:'
-            : 'Halo '.$order->customer_name.', ini admin ZutoMarket soal pesanan '.$order->merchant_ref.' ('.$titles.').';
+            : 'Halo '.$order->customer_name.', ini admin ZutoMarket soal pesanan '.$order->merchant_ref.' ('.$titles.').');
 
         return redirect()->route('admin.chat.show', $conversation)->with('chat_draft', $draft);
     }
