@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChatConversation;
 use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,21 @@ class AdminOrderController extends Controller
             'orders' => $apply($query, $tab)->latest('id')->paginate(15)->withQueryString(),
             'counts' => collect($filters)->map(fn ($label, string $key): int => $apply(Order::query(), $key)->count()),
         ]);
+    }
+
+    /**
+     * "Chat pembeli": open (or start) the live chat with the order's buyer, with a hand-over message ready to edit.
+     * The conversation only shows in Admin > Live chat once a message has been sent.
+     */
+    public function chat(Order $order): RedirectResponse
+    {
+        $conversation = ChatConversation::firstOrCreate(['user_id' => $order->user_id]);
+        $titles = $order->items()->pluck('title')->implode(', ');
+        $draft = $order->status === 'paid'
+            ? 'Halo '.$order->customer_name.', terima kasih sudah membayar pesanan '.$order->merchant_ref.' ('.$titles.'). Berikut data akunnya:'
+            : 'Halo '.$order->customer_name.', ini admin ZutoMarket soal pesanan '.$order->merchant_ref.' ('.$titles.').';
+
+        return redirect()->route('admin.chat.show', $conversation)->with('chat_draft', $draft);
     }
 
     public function deliver(Request $request, Order $order): RedirectResponse

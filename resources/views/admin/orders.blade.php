@@ -27,6 +27,10 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span @class(['rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wider', 'border-amber-300/40 text-amber-300' => $order->status === 'unpaid', 'border-emerald-300/40 text-emerald-300' => $order->status === 'paid', 'border-rose-400/40 text-rose-300' => ! in_array($order->status, ['unpaid', 'paid'], true)])>{{ $order->statusLabel() }}</span>
+                        <a href="{{ route('admin.orders.chat', $order) }}" class="btn-secondary">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z" /></svg>
+                            Chat pembeli
+                        </a>
                         @if ($order->status === 'paid')
                             <form method="POST" action="{{ route('admin.orders.deliver', $order) }}">
                                 @csrf @method('PATCH')

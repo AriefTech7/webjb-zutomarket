@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ChatConversation;
 use App\Models\GameAccount;
 use App\Models\Order;
 use App\Models\Setting;
@@ -199,7 +200,18 @@ class CheckoutTest extends TestCase
         $this->assertNotNull($order->fresh()->delivered_at);
         $this->get('/admin/orders?tab=done')->assertOk()->assertSee($order->merchant_ref);
 
+        // "Chat pembeli" opens the live chat with the buyer, a hand-over message ready to edit.
+        $this->get('/admin/orders?tab=done')->assertSee(route('admin.orders.chat', $order), false)->assertSee('Chat pembeli');
+        $response = $this->get(route('admin.orders.chat', $order));
+        $conversation = ChatConversation::where('user_id', $order->user_id)->sole();
+        $response->assertRedirect(route('admin.chat.show', $conversation));
+        $this->get(route('admin.chat.show', $conversation))->assertOk()->assertSee('Budi Pembeli')
+            ->assertSee('terima kasih sudah membayar pesanan '.$order->merchant_ref, false);
+        $this->get(route('admin.orders.chat', $order));
+        $this->assertSame(1, ChatConversation::count());
+
         $this->actingAs(User::factory()->regularAdmin()->create())->get('/admin/orders')->assertForbidden();
+        $this->get(route('admin.orders.chat', $order))->assertForbidden();
     }
 
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void

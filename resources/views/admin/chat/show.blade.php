@@ -30,7 +30,7 @@
                     </li>
                 @endforeach
             </ul>
-            @include('layouts.chat-form', ['chatFormId' => 'admin'])
+            @include('layouts.chat-form', ['chatFormId' => 'admin', 'chatDraft' => session('chat_draft')])
         </div>
     </section>
 @endsection
