@@ -42,7 +42,6 @@ class AdminController extends Controller
             'soldPercent' => $total ? (int) round($sold / $total * 100) : 0,
             'stockSegments' => [
                 ['label' => 'Tersedia', 'value' => $countWhere(fn ($row): bool => $row->status === 'available' && ! $row->is_rental), 'color' => 'var(--viz-available)'],
-                ['label' => 'DP / cicil', 'value' => $countWhere(fn ($row): bool => in_array($row->status, GameAccount::BOOKED_STATUSES, true)), 'color' => 'var(--viz-booked)'],
                 ['label' => 'Terjual', 'value' => $sold, 'color' => 'var(--viz-sold)'],
                 ['label' => 'Rental', 'value' => $countWhere(fn ($row): bool => $row->is_rental && $row->status !== 'sold'), 'color' => 'var(--viz-rental)'],
                 ['label' => 'Draft', 'value' => $countWhere(fn ($row): bool => $row->status === 'draft' && ! $row->is_rental), 'color' => 'var(--viz-draft)'],
@@ -59,9 +58,6 @@ class AdminController extends Controller
             ])
                 ->orderByDesc('accounts_count')->get()->where('accounts_count', '>', 0)->take(5)->values(),
             'flashSales' => GameAccount::onFlashSale()->manageableBy($request->user())->orderBy('flash_sale_ends_at')->limit(4)->get(),
-            // Booked accounts, nearest due date first; those without a due date last.
-            'bookings' => GameAccount::with('category')->manageableBy($request->user())->whereIn('status', GameAccount::BOOKED_STATUSES)
-                ->orderByRaw('payment_due_on IS NULL')->orderBy('payment_due_on')->orderBy('id')->get(),
             'latestMessages' => FeedbackMessage::latest()->limit(4)->get(),
             'accounts' => GameAccount::with(['category', 'owner'])->manageableBy($request->user())->latest()->limit(5)->get(),
         ]);
@@ -114,17 +110,6 @@ class AdminController extends Controller
             'readyCount' => (clone $rentals)->where('status', 'available')->count(),
             'rentedCount' => (clone $rentals)->where('status', 'rented')->count(),
         ]);
-    }
-
-    /** Paid share and due date of one booked account, edited inline on the dashboard. */
-    public function updatePayment(Request $request, GameAccount $account): RedirectResponse
-    {
-        $this->authorizeAccount($request, $account);
-        abort_unless($account->isBooked(), 404);
-        $data = $request->validate(['dp_percent' => 'nullable|integer|min:1|max:100', 'payment_due_on' => 'nullable|date_format:Y-m-d']);
-        $account->update(['dp_percent' => $data['dp_percent'] ?? null, 'payment_due_on' => $data['payment_due_on'] ?? null]);
-
-        return back()->with('success', 'Pembayaran '.$account->title.' diperbarui.');
     }
 
     /** Per-account switch (super admin): this account is paid on the website, or bought through WhatsApp. */

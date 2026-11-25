@@ -96,7 +96,6 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
     Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
     Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
     Route::patch('/rentals/{account}/status', [AdminController::class, 'updateRentalStatus'])->name('rentals.status');
-    Route::patch('/accounts/{account}/payment', [AdminController::class, 'updatePayment'])->name('accounts.payment');
     Route::get('/accounts/create', [AdminController::class, 'form'])->name('accounts.create');
     Route::post('/accounts', [AdminController::class, 'store'])->name('accounts.store');
     Route::get('/accounts/{account}/edit', [AdminController::class, 'form'])->name('accounts.edit');

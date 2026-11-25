@@ -43,7 +43,6 @@ class AdminOwnershipTest extends TestCase
         $this->put('/admin/accounts/'.$theirs->id, $this->formData($theirs, ['title' => 'Diambil']))->assertForbidden();
         $this->delete('/admin/accounts/'.$theirs->id)->assertForbidden();
         $this->delete('/admin/accounts', ['ids' => [$mine->id, $theirs->id]])->assertForbidden();
-        $this->patch('/admin/accounts/'.$theirsBooked->id.'/payment', ['dp_percent' => 90])->assertForbidden();
         $this->assertModelExists($mine);
         $this->assertSame('Akun Bob', $theirs->refresh()->title);
         $this->assertNull($theirsBooked->refresh()->dp_percent);
