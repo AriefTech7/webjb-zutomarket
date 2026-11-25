@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChatConversation;
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,6 +40,34 @@ class AdminOrderController extends Controller
             'orders' => $apply($query, $tab)->latest('id')->paginate(15)->withQueryString(),
             'counts' => collect($filters)->map(fn ($label, string $key): int => $apply(Order::query(), $key)->count()),
         ]);
+    }
+
+    /**
+     * "Chat pembeli": open (or start) the live chat with the order's buyer, with a hand-over message ready to edit.
+     * The conversation only shows in Admin > Live chat once a message has been sent.
+     */
+    public function chat(Order $order): RedirectResponse
+    {
+        $conversation = ChatConversation::firstOrCreate(['user_id' => $order->user_id]);
+        $titles = $order->items()->pluck('title')->implode(', ');
+        $draft = $order->status === 'paid' && $order->isJoki()
+            ? 'Halo '.$order->customer_name.', terima kasih sudah membayar joki '.$order->merchant_ref.'. Untuk mulai, kirim kata sandi akun game kamu di chat ini ya. Selama proses joki jangan login ke akun.'
+            : ($order->status === 'paid'
+            ? 'Halo '.$order->customer_name.', terima kasih sudah membayar pesanan '.$order->merchant_ref.' ('.$titles.'). Berikut data akunnya:'
+            : 'Halo '.$order->customer_name.', ini admin ZutoMarket soal pesanan '.$order->merchant_ref.' ('.$titles.').');
+
+        return redirect()->route('admin.chat.show', $conversation)->with('chat_draft', $draft);
+    }
+
+    /** "Gunakan payment gateway" ON/OFF: when off, buyers go back to WhatsApp for every account. */
+    public function toggleGateway(Request $request): RedirectResponse
+    {
+        $on = $request->validate(['enabled' => 'required|boolean'])['enabled'];
+        Setting::updateOrCreate(['key' => 'payment_gateway'], ['value' => $on ? '1' : '0']);
+
+        return back()->with('success', $on
+            ? 'Payment gateway AKTIF: akun milik super admin dibayar di website.'
+            : 'Payment gateway NONAKTIF: semua pembelian kembali lewat WhatsApp. Pesanan yang sudah dibuat tetap diproses.');
     }
 
     public function deliver(Request $request, Order $order): RedirectResponse

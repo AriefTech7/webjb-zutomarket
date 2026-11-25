@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\JokiOrderController;
+use App\Models\ChatConversation;
 use App\Models\GameAccount;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\Voucher;
+use App\Services\JokiPricing;
+use App\Services\Tripay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -199,7 +204,198 @@ class CheckoutTest extends TestCase
         $this->assertNotNull($order->fresh()->delivered_at);
         $this->get('/admin/orders?tab=done')->assertOk()->assertSee($order->merchant_ref);
 
+        // "Chat pembeli" opens the live chat with the buyer, a hand-over message ready to edit.
+        $this->get('/admin/orders?tab=done')->assertSee(route('admin.orders.chat', $order), false)->assertSee('Chat pembeli');
+        $response = $this->get(route('admin.orders.chat', $order));
+        $conversation = ChatConversation::where('user_id', $order->user_id)->sole();
+        $response->assertRedirect(route('admin.chat.show', $conversation));
+        $this->get(route('admin.chat.show', $conversation))->assertOk()->assertSee('Budi Pembeli')
+            ->assertSee('terima kasih sudah membayar pesanan '.$order->merchant_ref, false);
+        $this->get(route('admin.orders.chat', $order));
+        $this->assertSame(1, ChatConversation::count());
+
         $this->actingAs(User::factory()->regularAdmin()->create())->get('/admin/orders')->assertForbidden();
+        $this->get(route('admin.orders.chat', $order))->assertForbidden();
+    }
+
+    public function test_the_super_admin_switches_the_payment_gateway_off_and_on(): void
+    {
+        $account = $this->storeAccount();
+        $buyer = User::factory()->buyer()->create();
+        $this->actingAs($this->superAdmin)->get('/admin/orders')->assertOk()->assertSee('Gunakan payment gateway')->assertSee('Matikan (OFF)');
+
+        // Off: every "Beli" goes to WhatsApp and the checkout refuses.
+        $this->patch(route('admin.orders.gateway'), ['enabled' => '0'])->assertSessionHas('success');
+        $this->assertFalse($account->fresh()->usesPaymentGateway());
+        $this->get('/admin/orders')->assertSee('Nyalakan (ON)');
+        $this->actingAs($buyer)->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-checkout-button', false)->assertSee(e($account->buyWhatsappUrl()), false);
+        $this->get('/checkout?akun[]='.$account->id)->assertRedirect(route('cart'));
+        $this->assertStringNotContainsString('Bayar di website', $this->getJson('/keranjang/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+
+        // On again.
+        $this->actingAs($this->superAdmin)->patch(route('admin.orders.gateway'), ['enabled' => '1'])->assertSessionHas('success');
+        $this->actingAs($buyer)->get('/akun/'.$account->slug)->assertSee('data-checkout-button', false);
+
+        // Only the super admin may flip it.
+        $this->actingAs(User::factory()->regularAdmin()->create())->patch(route('admin.orders.gateway'), ['enabled' => '0'])->assertForbidden();
+        $this->assertTrue($account->fresh()->usesPaymentGateway());
+    }
+
+    public function test_the_super_admin_creates_switches_and_deletes_vouchers(): void
+    {
+        $this->actingAs($this->superAdmin)->get('/admin/vouchers')->assertOk()->assertSee('Buat kode voucher')->assertSee('name="code"', false);
+        $this->post('/admin/vouchers', ['code' => ' hemat 10 ', 'type' => 'percent', 'value' => '10', 'max_discount' => '20.000', 'min_purchase' => '100.000', 'quota' => 5, 'per_user' => 1, 'ends_at' => '2030-01-31T23:59'])->assertSessionHasNoErrors();
+        $voucher = Voucher::sole();
+        $this->assertSame(['HEMAT10', 'percent', 10, 20000, 100000, 5, 1, true], [$voucher->code, $voucher->type, $voucher->value, $voucher->max_discount, $voucher->min_purchase, $voucher->quota, $voucher->per_user, $voucher->is_active]);
+        $this->assertSame('2030-01-31 16:59', $voucher->ends_at->format('Y-m-d H:i'));
+        $this->get('/admin/vouchers')->assertSee('HEMAT10')->assertSee('10% (maks Rp 20.000)')->assertSee('Dipakai 0 / 5');
+
+        $this->post('/admin/vouchers', ['code' => 'HEMAT10', 'type' => 'fixed', 'value' => '5000'])->assertSessionHasErrors('code');
+        $this->post('/admin/vouchers', ['code' => 'ada spasi!', 'type' => 'fixed', 'value' => '5000'])->assertSessionHasErrors('code');
+        $this->post('/admin/vouchers', ['code' => 'BESAR', 'type' => 'percent', 'value' => '150'])->assertSessionHasErrors('value');
+        $this->post('/admin/vouchers', ['code' => 'POTONG25', 'type' => 'fixed', 'value' => 'Rp 25.000', 'max_discount' => '9999'])->assertSessionHasNoErrors();
+        $this->assertSame([25000, null, null], [Voucher::where('code', 'POTONG25')->value('value'), Voucher::where('code', 'POTONG25')->value('max_discount'), Voucher::where('code', 'POTONG25')->value('starts_at')]);
+
+        $this->patch(route('admin.vouchers.toggle', $voucher))->assertSessionHas('success');
+        $this->assertFalse($voucher->fresh()->is_active);
+        $this->delete(route('admin.vouchers.destroy', $voucher))->assertSessionHas('success');
+        $this->assertSame(1, Voucher::count());
+
+        $this->actingAs(User::factory()->regularAdmin()->create())->get('/admin/vouchers')->assertForbidden();
+        $this->post('/admin/vouchers', ['code' => 'CURANG', 'type' => 'fixed', 'value' => 1000])->assertForbidden();
+    }
+
+    public function test_a_buyer_pays_less_with_a_voucher(): void
+    {
+        $account = $this->storeAccount(['price' => 350000]);
+        $buyer = User::factory()->buyer()->create();
+        Voucher::create(['code' => 'HEMAT10', 'type' => 'percent', 'value' => 10, 'max_discount' => 30000, 'per_user' => 1]);
+
+        // "Pakai" reloads the checkout with the discount; fees are worked out on the discounted price.
+        $this->actingAs($buyer)->get('/checkout?akun[]='.$account->id.'&voucher=hemat10')->assertOk()
+            ->assertSee('Voucher HEMAT10')->assertSee('−Rp 30.000', false)->assertSee('Rp 320.000')->assertSee('data-subtotal="320000"', false)
+            ->assertSee('data-fee="2990"', false)->assertSee('name="voucher" value="HEMAT10"', false);
+        $this->get('/checkout?akun[]='.$account->id.'&voucher=SALAH')->assertOk()->assertSee('Kode voucher tidak ditemukan.')->assertSee('data-subtotal="350000"', false);
+
+        $this->checkout($buyer, $account, ['voucher' => 'HEMAT10']);
+        $order = Order::sole();
+        $this->assertSame([350000, 30000, 'HEMAT10', 320000], [$order->subtotal, $order->discount, $order->voucher_code, $order->payable()]);
+        Http::assertSent(fn (HttpRequest $request): bool => str_ends_with($request->url(), 'transaction/create') && $request['amount'] === 320000
+            && $request['order_items'][0]['price'] === 320000 && $request['signature'] === hash_hmac('sha256', 'T1234'.$order->merchant_ref.'320000', 'test-private'));
+        $this->get(route('orders.show', $order))->assertSee('Voucher HEMAT10')->assertSee('−Rp 30.000', false);
+
+        // One use per buyer: the waiting order already counts.
+        $other = $this->storeAccount(['price' => 200000]);
+        $this->get('/checkout?akun[]='.$other->id.'&voucher=HEMAT10')->assertSee('Kamu sudah memakai voucher ini.');
+        $this->checkout($buyer, $other, ['voucher' => 'HEMAT10'])->assertSessionHas('error', 'Kamu sudah memakai voucher ini.');
+        $this->assertSame(1, Order::count());
+    }
+
+    public function test_voucher_rules(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $voucher = fn (array $attributes) => Voucher::create(['code' => 'V'.Voucher::count(), 'type' => 'fixed', 'value' => 10000, 'per_user' => null, ...$attributes]);
+
+        $this->assertSame('Kode voucher tidak berlaku.', $voucher(['is_active' => false])->problemFor(100000, $buyer));
+        $this->assertSame('Kode voucher tidak berlaku.', $voucher(['starts_at' => now()->addDay()])->problemFor(100000, $buyer));
+        $this->assertSame('Kode voucher sudah kedaluwarsa.', $voucher(['ends_at' => now()->subMinute()])->problemFor(100000, $buyer));
+        $this->assertSame('Voucher ini berlaku untuk pembelian minimal Rp 150.000.', $voucher(['min_purchase' => 150000])->problemFor(100000, $buyer));
+        $this->assertStringContainsString('total bayar minimal', $voucher(['value' => 95000])->problemFor(100000, $buyer));
+        $this->assertNull($voucher([])->problemFor(100000, $buyer));
+
+        // Percent with a cap; a fixed voucher never takes more than the price.
+        $this->assertSame([25000, 50000], [$voucher(['type' => 'percent', 'value' => 25])->discountFor(100000), $voucher(['type' => 'percent', 'value' => 25, 'max_discount' => 50000])->discountFor(400000)]);
+        $this->assertSame(5000, $voucher(['value' => 9000])->discountFor(5000));
+
+        // Quota: a waiting order holds a use until it expires.
+        $limited = $voucher(['quota' => 1]);
+        $order = Order::create(['merchant_ref' => 'ZMT1', 'user_id' => User::factory()->buyer()->create()->id, 'status' => 'unpaid', 'subtotal' => 100000, 'voucher_id' => $limited->id, 'voucher_code' => $limited->code, 'discount' => 10000, 'fee' => 0, 'total' => 90000, 'payment_method' => 'QRIS', 'payment_name' => 'QRIS', 'customer_name' => 'A', 'customer_email' => 'a@b.c', 'customer_phone' => '0812', 'expires_at' => now()->addHour()]);
+        $this->assertSame('Kuota voucher ini sudah habis.', $limited->problemFor(100000, $buyer));
+        $order->update(['expires_at' => now()->subMinute()]);
+        $this->assertNull($limited->problemFor(100000, $buyer));
+
+        // Tripay gets item prices that add up to the discounted amount.
+        $this->assertSame([270000, 180000], Tripay::splitDiscount([300000, 200000], 50000));
+        $this->assertSame([66667, 33333], Tripay::splitDiscount([100000, 50000], 50000));
+    }
+
+    public function test_joki_pricing_on_the_server_matches_the_calculator(): void
+    {
+        $pricing = JokiPricing::fromConfig();
+        $this->assertSame(['Epic V', 'Epic IV', 'Epic III', 'Epic II', 'Epic I', 'Legend V', 'Legend IV', 'Legend III', 'Legend II', 'Legend I', 'Mythic', 'Mythical Honor', 'Mythical Glory', 'Mythical Immortal'], array_keys($pricing->rankOptions()));
+
+        // Same examples as tests/Unit/Joki.test.js.
+        $quote = $pricing->quote('Epic I', 3, 'Mythic', 2);
+        $this->assertSame([29, 2 * 6000 + 25 * 7000 + 2 * 8000], [$quote['stars'], $quote['total']]);
+        $this->assertSame([['name' => 'Epic', 'stars' => 2, 'price' => 6000], ['name' => 'Legend', 'stars' => 25, 'price' => 7000], ['name' => 'Mythic', 'stars' => 2, 'price' => 8000]], $quote['lines']);
+        $this->assertSame([80000, 8000, 88000], array_values(array_intersect_key($pricing->quote('Mythic', 0, 'Mythic', 10, 10), array_flip(['subtotal', 'extra', 'total']))));
+        $this->assertSame('Epic I bintang 3', $quote['from']);
+        $this->assertSame('Mythical Honor (30 bintang Mythic)', $pricing->quote('Mythic', 0, 'Mythical Honor', 30)['to']);
+
+        // Not higher, unknown rank or impossible stars: no price.
+        $this->assertNull($pricing->quote('Legend V', 0, 'Epic I', 0));
+        $this->assertNull($pricing->quote('Rank Palsu', 0, 'Epic I', 0));
+        $this->assertNull($pricing->quote('Epic V', 9, 'Epic I', 0));
+        $this->assertSame([225000, null], [JokiPricing::packagePrice('Honor – Glory'), JokiPricing::packagePrice('Paket Palsu')]);
+    }
+
+    public function test_a_joki_is_paid_on_the_website(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $brief = ['mode' => 'calculator', 'service' => 'regular', 'fromRank' => 'Epic I', 'fromStars' => 3, 'toRank' => 'Mythic', 'toStars' => 2,
+            'heroes' => ['Layla', 'Miya', 'Tigreal'], 'userId' => '123456789', 'serverId' => '2001', 'loginVia' => 'Moonton', 'loginId' => 'budi@example.com',
+            'notes' => 'Jangan pakai Fanny', 'contactName' => 'Budi Joki', 'contactPhone' => '812 3456 7890', 'total' => 1000, 'password' => 'rahasia'];
+
+        // The joki page offers website payment; there is no password field; guests sign in first.
+        $this->get('/joki-ml')->assertOk()->assertSee('Bayar di website')->assertSee('action="'.route('joki.prepare').'"', false)
+            ->assertSee('data-joki-checkout', false)->assertDontSee('data-signed-in', false)->assertDontSee('type="password"', false);
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('account.login'));
+        $this->actingAs($buyer)->get('/joki-ml')->assertSee('data-signed-in', false);
+
+        // The price comes from the server, not from the browser ("total" is ignored), and no password is kept.
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('checkout', ['joki' => 1]));
+        $draft = session(JokiOrderController::SESSION_KEY);
+        $this->assertSame(203000, $draft['price']);
+        $this->assertStringNotContainsString('rahasia', json_encode($draft));
+        $this->get('/checkout?joki=1')->assertOk()->assertSee('Pesanan joki')->assertSee('Epic I bintang 3 → Mythic (2 bintang Mythic)', false)
+            ->assertSee('Rp 203.000')->assertSee('123456789 (2001)')->assertSee('Jangan pakai Fanny')->assertSee('value="Budi Joki"', false)->assertSee('value="081234567890"', false)
+            ->assertSee('name="joki" value="1"', false);
+
+        $this->post('/checkout', ['joki' => 1, 'method' => 'QRIS', 'customer_name' => 'Budi Joki', 'customer_phone' => '08123456789', 'agree' => '1']);
+        $order = Order::sole();
+        $item = $order->items()->sole();
+        $this->assertSame(['joki', null, 203000], [$item->kind, $item->game_account_id, $item->price]);
+        $this->assertSame('Moonton', $item->details['Masuk melalui']);
+        $this->assertNull(session(JokiOrderController::SESSION_KEY));
+        Http::assertSent(fn (HttpRequest $request): bool => str_ends_with($request->url(), 'transaction/create') && $request['amount'] === 203000 && str_starts_with($request['order_items'][0]['name'], 'Joki Regular ML: Epic I'));
+
+        // Paid: nothing to mark sold, no "refund" warning; the admin sees the brief and opens the chat.
+        $order->markPaid();
+        $this->assertSame(['paid', null], [$order->fresh()->status, $order->fresh()->admin_note]);
+        $this->get(route('orders.show', $order))->assertSee('memulai joki');
+        $this->actingAs($this->superAdmin)->get('/admin/orders')->assertSee('Joki')->assertSee('Request hero')->assertSee('Layla, Miya, Tigreal');
+        $this->get(route('admin.orders.chat', $order))->assertSessionHas('chat_draft', fn (string $draft): bool => str_contains($draft, 'kirim kata sandi'));
+    }
+
+    public function test_joki_packages_and_the_gateway_switch(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $brief = ['mode' => 'package', 'packages' => ['Honor – Glory', 'Mythic – Mythic Honor'], 'heroes' => ['A', 'B', 'C'], 'userId' => '111', 'loginVia' => 'Moonton', 'loginId' => 'x@y.z', 'contactName' => 'Budi', 'contactPhone' => '81234567890'];
+
+        $this->actingAs($buyer)->post('/joki/bayar', [...$brief, 'packages' => ['Paket Palsu']])->assertSessionHas('error');
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('checkout', ['joki' => 1]));
+        $this->assertSame(425000, session(JokiOrderController::SESSION_KEY)['price']);
+        $this->post('/joki/bayar', ['mode' => 'calculator', 'service' => 'regular', 'fromRank' => 'Legend V', 'fromStars' => 0, 'toRank' => 'Epic I', 'toStars' => 0, ...array_diff_key($brief, ['mode' => 1, 'packages' => 1])])
+            ->assertSessionHas('error', 'Rank tujuan harus lebih tinggi dari rank saat ini.');
+
+        // Without a brief the joki checkout sends the buyer back to the joki page.
+        session()->forget(JokiOrderController::SESSION_KEY);
+        $this->get('/checkout?joki=1')->assertRedirect(route('joki'));
+
+        // Gateway off: the joki goes back to WhatsApp.
+        Setting::create(['key' => 'payment_gateway', 'value' => '0']);
+        $this->get('/joki-ml')->assertSee('Pesan via WhatsApp')->assertDontSee('data-joki-checkout', false);
+        $this->post('/joki/bayar', $brief)->assertRedirect(route('joki'))->assertSessionHas('error');
     }
 
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void

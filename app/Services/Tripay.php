@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -19,6 +20,15 @@ class Tripay
     public static function enabled(): bool
     {
         return filled(config('services.tripay.api_key')) && filled(config('services.tripay.private_key')) && filled(config('services.tripay.merchant_code'));
+    }
+
+    /**
+     * Website checkout is offered: the keys are set and the super admin has not switched it off in
+     * Admin > Pesanan website. When off, every "Beli" button goes back to WhatsApp; orders already made still finish.
+     */
+    public static function active(): bool
+    {
+        return self::enabled() && Setting::valueFor('payment_gateway', '1') === '1';
     }
 
     public static function sandbox(): bool
@@ -66,6 +76,31 @@ class Tripay
         return $channel['flat'] + (int) ceil($amount * $channel['percent'] / 100);
     }
 
+    /**
+     * Item prices after taking $discount off in proportion to each price; the rounding remainder goes on the last
+     * item so the prices add up to exactly sum(prices) - discount.
+     *
+     * @param  list<int>  $prices
+     * @return list<int>
+     */
+    public static function splitDiscount(array $prices, int $discount): array
+    {
+        $total = array_sum($prices);
+        if ($discount <= 0 || $total <= 0) {
+            return array_values($prices);
+        }
+        $result = [];
+        $left = $discount;
+        foreach (array_values($prices) as $index => $price) {
+            $share = $index === count($prices) - 1 ? $left : (int) floor($discount * $price / $total);
+            $share = min($share, $price);
+            $result[] = $price - $share;
+            $left -= $share;
+        }
+
+        return $result;
+    }
+
     public static function signature(string $merchantRef, int $amount): string
     {
         return hash_hmac('sha256', config('services.tripay.merchant_code').$merchantRef.$amount, (string) config('services.tripay.private_key'));
@@ -83,24 +118,27 @@ class Tripay
     public function createTransaction(Order $order): array
     {
         $order->loadMissing('items');
+        $amount = $order->payable();
+        $prices = self::splitDiscount($order->items->pluck('price')->all(), $order->discount);
         $response = $this->http()->asForm()->post('transaction/create', [
             'method' => $order->payment_method,
             'merchant_ref' => $order->merchant_ref,
-            'amount' => $order->subtotal,
+            'amount' => $amount,
             'customer_name' => $order->customer_name,
             'customer_email' => $order->customer_email,
             'customer_phone' => $order->customer_phone,
-            'order_items' => $order->items->map(fn ($item): array => array_filter([
+            // Tripay checks that the items add up to the amount, so a voucher discount is spread over the items.
+            'order_items' => $order->items->values()->map(fn ($item, int $index): array => array_filter([
                 'sku' => 'AKUN-'.$item->game_account_id,
-                'name' => mb_substr($item->title, 0, 100),
-                'price' => $item->price,
+                'name' => mb_substr($item->title, 0, 100).($order->discount ? ' (voucher '.$order->voucher_code.')' : ''),
+                'price' => $prices[$index],
                 'quantity' => 1,
                 'product_url' => $item->account ? route('accounts.show', $item->account->slug) : null,
             ], fn ($value): bool => $value !== null))->all(),
             'callback_url' => route('payment.tripay.callback'),
             'return_url' => route('orders.show', $order),
             'expired_time' => $order->expires_at->getTimestamp(),
-            'signature' => self::signature($order->merchant_ref, $order->subtotal),
+            'signature' => self::signature($order->merchant_ref, $amount),
         ]);
         if (! $response->successful() || ! $response->json('success')) {
             Log::warning('Tripay transaction/create failed', ['ref' => $order->merchant_ref, 'status' => $response->status(), 'message' => $response->json('message')]);

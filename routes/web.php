@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\JokiOrderController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WishlistController;
@@ -71,6 +73,9 @@ Route::middleware('auth')->group(function () {
     // Website checkout through Tripay (the super admin's accounts) and the buyer's orders.
     Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    // Joki paid on the website: the joki form posts its brief here, then continues to /checkout?joki=1.
+    Route::post('/joki/bayar', [JokiOrderController::class, 'prepare'])->middleware('throttle:20,1')->name('joki.prepare');
+    Route::get('/joki/masuk', [JokiOrderController::class, 'signIn'])->name('joki.sign-in');
     Route::get('/pesanan', [OrderController::class, 'index'])->name('orders');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/pesanan/{order}/status', [OrderController::class, 'status'])->middleware('throttle:30,1')->name('orders.status');
@@ -107,6 +112,12 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
     Route::middleware('super-admin')->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
+        Route::get('/orders/{order}/chat', [AdminOrderController::class, 'chat'])->name('orders.chat');
+        Route::patch('/orders-gateway', [AdminOrderController::class, 'toggleGateway'])->name('orders.gateway');
+        Route::get('/vouchers', [AdminVoucherController::class, 'index'])->name('vouchers');
+        Route::post('/vouchers', [AdminVoucherController::class, 'store'])->name('vouchers.store');
+        Route::patch('/vouchers/{voucher}', [AdminVoucherController::class, 'toggle'])->name('vouchers.toggle');
+        Route::delete('/vouchers/{voucher}', [AdminVoucherController::class, 'destroy'])->name('vouchers.destroy');
         Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
         Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
         Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');

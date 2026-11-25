@@ -16,7 +16,9 @@
             <div class="panel mt-6 border-emerald-300/30 p-5 md:p-6">
                 <p class="text-lg font-black text-emerald-300">Pembayaran berhasil 🎉</p>
                 <p class="mt-2 text-sm leading-6 text-slate-300">Terima kasih! Pembayaran {{ \App\Models\Order::rupiah($order->total) }} sudah kami terima {{ $order->paid_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB.
-                    @if ($order->delivered_at)
+                    @if ($order->isJoki())
+                        Admin akan menghubungimu lewat <strong class="text-white">live chat</strong> untuk meminta data login dan memulai joki. Jangan login ke akun selama proses joki berjalan.
+                    @elseif ($order->delivered_at)
                         Data akun sudah diserahkan admin.
                     @else
                         Admin akan segera menyerahkan data login akun melalui <strong class="text-white">live chat</strong> atau WhatsApp ke nomor {{ $order->customer_phone }}. Setelah menerima, langsung ganti password dan amankan akunnya.
@@ -88,13 +90,25 @@
             <h2 class="text-lg font-black">Rincian pesanan</h2>
             <ul class="mt-3 divide-y divide-white/10 text-sm">
                 @foreach ($order->items as $item)
-                    <li class="flex justify-between gap-3 py-2">
-                        @if ($item->account)<a class="min-w-0 truncate font-semibold hover:text-lime-300" href="{{ route('accounts.show', $item->account->slug) }}">{{ $item->title }}</a>@else<span class="min-w-0 truncate font-semibold">{{ $item->title }}</span>@endif
-                        <span class="shrink-0 font-bold">{{ \App\Models\Order::rupiah($item->price) }}</span>
+                    <li class="py-2">
+                        <div class="flex justify-between gap-3">
+                            @if ($item->account)<a class="min-w-0 truncate font-semibold hover:text-lime-300" href="{{ route('accounts.show', $item->account->slug) }}">{{ $item->title }}</a>@else<span class="min-w-0 font-semibold">{{ $item->title }}</span>@endif
+                            <span class="shrink-0 font-bold">{{ \App\Models\Order::rupiah($item->price) }}</span>
+                        </div>
+                        @if ($item->details)
+                            <dl class="mt-2 grid gap-1 text-xs">
+                                @foreach ($item->details as $detailLabel => $detailValue)
+                                    <div class="flex gap-2"><dt class="w-36 shrink-0 text-slate-400">{{ $detailLabel }}</dt><dd class="min-w-0 break-words text-slate-200">{{ $detailValue }}</dd></div>
+                                @endforeach
+                            </dl>
+                        @endif
                     </li>
                 @endforeach
             </ul>
             <dl class="mt-2 space-y-1 border-t border-white/10 pt-3 text-sm">
+                @if ($order->discount)
+                    <div class="flex justify-between gap-3 text-emerald-300"><dt>Voucher {{ $order->voucher_code }}</dt><dd>−{{ \App\Models\Order::rupiah($order->discount) }}</dd></div>
+                @endif
                 <div class="flex justify-between gap-3"><dt class="text-slate-400">Biaya {{ $order->payment_name }}</dt><dd>{{ \App\Models\Order::rupiah($order->fee) }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="font-bold">Total</dt><dd class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="text-slate-400">Pembeli</dt><dd class="text-right">{{ $order->customer_name }} · {{ $order->customer_phone }}</dd></div>

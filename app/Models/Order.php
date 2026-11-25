@@ -17,11 +17,11 @@ class Order extends Model
 {
     public const STATUSES = ['unpaid' => 'Menunggu pembayaran', 'paid' => 'Lunas', 'expired' => 'Kedaluwarsa', 'failed' => 'Gagal', 'refunded' => 'Dikembalikan'];
 
-    protected $fillable = ['merchant_ref', 'user_id', 'status', 'subtotal', 'fee', 'total', 'payment_method', 'payment_name', 'tripay_reference', 'pay_code', 'pay_url', 'qr_url', 'instructions', 'customer_name', 'customer_email', 'customer_phone', 'expires_at', 'paid_at', 'delivered_at', 'checked_at', 'admin_note'];
+    protected $fillable = ['merchant_ref', 'user_id', 'status', 'subtotal', 'voucher_id', 'voucher_code', 'discount', 'fee', 'total', 'payment_method', 'payment_name', 'tripay_reference', 'pay_code', 'pay_url', 'qr_url', 'instructions', 'customer_name', 'customer_email', 'customer_phone', 'expires_at', 'paid_at', 'delivered_at', 'checked_at', 'admin_note'];
 
     protected function casts(): array
     {
-        return ['subtotal' => 'integer', 'fee' => 'integer', 'total' => 'integer', 'instructions' => 'array', 'expires_at' => 'datetime', 'paid_at' => 'datetime', 'delivered_at' => 'datetime', 'checked_at' => 'datetime'];
+        return ['subtotal' => 'integer', 'discount' => 'integer', 'fee' => 'integer', 'total' => 'integer', 'instructions' => 'array', 'expires_at' => 'datetime', 'paid_at' => 'datetime', 'delivered_at' => 'datetime', 'checked_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string
@@ -49,6 +49,24 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** @return BelongsTo<Voucher, $this> */
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
+    /** A joki (rank boost) order rather than game accounts. */
+    public function isJoki(): bool
+    {
+        return $this->items->contains('kind', 'joki');
+    }
+
+    /** What the accounts cost after the voucher, before the payment fee (the amount sent to Tripay). */
+    public function payable(): int
+    {
+        return max(0, $this->subtotal - $this->discount);
     }
 
     /**
@@ -99,7 +117,8 @@ class Order extends Model
         }
         DB::transaction(function (): void {
             $conflicts = [];
-            foreach ($this->items()->with('account')->get() as $item) {
+            // Joki items have no account to mark sold; the admin starts the job after payment.
+            foreach ($this->items()->where('kind', 'account')->with('account')->get() as $item) {
                 $account = $item->account;
                 if (! $account) {
                     $conflicts[] = $item->title.' (sudah dihapus)';
