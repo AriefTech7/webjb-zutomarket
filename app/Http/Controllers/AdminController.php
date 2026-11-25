@@ -127,6 +127,15 @@ class AdminController extends Controller
         return back()->with('success', 'Pembayaran '.$account->title.' diperbarui.');
     }
 
+    /** Per-account switch (super admin): this account is paid on the website, or bought through WhatsApp. */
+    public function toggleAccountGateway(GameAccount $account): RedirectResponse
+    {
+        abort_if($account->is_rental, 422);
+        $account->forceFill(['use_gateway' => ! $account->use_gateway])->save();
+
+        return back()->with('success', $account->title.($account->use_gateway ? ': dibayar di website (payment gateway).' : ': dibeli lewat WhatsApp.'));
+    }
+
     public function updateRentalStatus(Request $request, GameAccount $account): RedirectResponse
     {
         $this->authorizeAccount($request, $account);
@@ -267,6 +276,7 @@ class AdminController extends Controller
             'dp_percent' => 'nullable|integer|min:1|max:100',
             'payment_due_on' => 'nullable|date_format:Y-m-d',
             'card_note' => 'nullable|string|max:30',
+            'use_gateway' => 'sometimes|boolean',
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('is_admin', true)],
             'seller_whatsapp' => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
             'original_price' => ['nullable', 'integer', 'gt:price', 'max:999999999999'],
@@ -306,6 +316,10 @@ class AdminController extends Controller
             ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $data['ready_estimate_at'], GameAccount::LOCAL_TIMEZONE)->utc()
             : null;
         unset($data['packages']);
+        // Only the super admin chooses between website checkout and WhatsApp for an account.
+        if (! $request->user()->is_super_admin) {
+            unset($data['use_gateway']);
+        }
         $deletedImages = $account->images()->whereIn('id', $data['remove_images'] ?? [])->get();
         if ($account->images()->count() - $deletedImages->count() + count($request->file('images', [])) > 6) {
             return back()->withErrors(['images' => 'Maksimal 6 gambar tambahan per akun.'])->withInput();

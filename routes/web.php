@@ -114,6 +114,7 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
         Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
         Route::get('/orders/{order}/chat', [AdminOrderController::class, 'chat'])->name('orders.chat');
         Route::patch('/orders-gateway', [AdminOrderController::class, 'toggleGateway'])->name('orders.gateway');
+        Route::patch('/accounts/{account}/gateway', [AdminController::class, 'toggleAccountGateway'])->name('accounts.gateway');
         Route::get('/vouchers', [AdminVoucherController::class, 'index'])->name('vouchers');
         Route::post('/vouchers', [AdminVoucherController::class, 'store'])->name('vouchers.store');
         Route::patch('/vouchers/{voucher}', [AdminVoucherController::class, 'toggle'])->name('vouchers.toggle');
