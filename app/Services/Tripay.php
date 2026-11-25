@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -19,6 +20,15 @@ class Tripay
     public static function enabled(): bool
     {
         return filled(config('services.tripay.api_key')) && filled(config('services.tripay.private_key')) && filled(config('services.tripay.merchant_code'));
+    }
+
+    /**
+     * Website checkout is offered: the keys are set and the super admin has not switched it off in
+     * Admin > Pesanan website. When off, every "Beli" button goes back to WhatsApp; orders already made still finish.
+     */
+    public static function active(): bool
+    {
+        return self::enabled() && Setting::valueFor('payment_gateway', '1') === '1';
     }
 
     public static function sandbox(): bool

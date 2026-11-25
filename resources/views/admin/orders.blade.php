@@ -2,6 +2,33 @@
 @section('title', 'Pesanan website')
 @section('admin-title', 'Pesanan website')
 @section('admin-content')
+    {{-- Store-wide switch: website checkout (Tripay) on or off. --}}
+    @php($gatewayKeys = \App\Services\Tripay::enabled())
+    @php($gatewayOn = \App\Services\Tripay::active())
+    <section class="panel mb-5 flex flex-wrap items-center justify-between gap-4 p-5" aria-labelledby="gateway-title" data-gateway-switch>
+        <div class="min-w-0">
+            <h2 id="gateway-title" class="flex flex-wrap items-center gap-2 font-black">Gunakan payment gateway
+                <span @class(['rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider', 'border-emerald-300/40 text-emerald-300' => $gatewayOn, 'border-rose-400/40 text-rose-300' => ! $gatewayOn])>{{ $gatewayOn ? 'ON' : 'OFF' }}</span>
+            </h2>
+            <p class="muted mt-1 text-sm">
+                @if (! $gatewayKeys)
+                    Key Tripay belum diisi di server, jadi semua pembelian lewat WhatsApp.
+                @elseif ($gatewayOn)
+                    Akun milik super admin dibayar langsung di website (QRIS, VA, e-wallet). Akun admin lain tetap lewat WhatsApp.
+                @else
+                    Semua tombol "Beli" kembali lewat WhatsApp. Pesanan website yang sudah dibuat tetap diproses sampai selesai.
+                @endif
+            </p>
+        </div>
+        @if ($gatewayKeys)
+            <form method="POST" action="{{ route('admin.orders.gateway') }}" @if ($gatewayOn) data-confirm="Matikan payment gateway? Semua pembelian akan kembali lewat WhatsApp." @endif>
+                @csrf @method('PATCH')
+                <input type="hidden" name="enabled" value="{{ $gatewayOn ? 0 : 1 }}">
+                <button class="{{ $gatewayOn ? 'btn-secondary text-rose-300' : 'btn' }}">{{ $gatewayOn ? 'Matikan (OFF)' : 'Nyalakan (ON)' }}</button>
+            </form>
+        @endif
+    </section>
+
     <p class="muted mb-5">Pembelian akun milik super admin yang dibayar lewat checkout website (Tripay{{ \App\Services\Tripay::sandbox() ? ' — mode sandbox / uji coba' : '' }}). Akun otomatis menjadi <strong>Terjual</strong> saat pembayaran lunas. Serahkan data akun ke pembeli lewat live chat atau WhatsApp, lalu tekan <strong>Sudah diserahkan</strong>.</p>
 
     <div class="mb-5 flex flex-wrap items-center gap-2">

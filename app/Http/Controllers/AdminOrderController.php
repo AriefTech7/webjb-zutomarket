@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatConversation;
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -54,6 +55,17 @@ class AdminOrderController extends Controller
             : 'Halo '.$order->customer_name.', ini admin ZutoMarket soal pesanan '.$order->merchant_ref.' ('.$titles.').';
 
         return redirect()->route('admin.chat.show', $conversation)->with('chat_draft', $draft);
+    }
+
+    /** "Gunakan payment gateway" ON/OFF: when off, buyers go back to WhatsApp for every account. */
+    public function toggleGateway(Request $request): RedirectResponse
+    {
+        $on = $request->validate(['enabled' => 'required|boolean'])['enabled'];
+        Setting::updateOrCreate(['key' => 'payment_gateway'], ['value' => $on ? '1' : '0']);
+
+        return back()->with('success', $on
+            ? 'Payment gateway AKTIF: akun milik super admin dibayar di website.'
+            : 'Payment gateway NONAKTIF: semua pembelian kembali lewat WhatsApp. Pesanan yang sudah dibuat tetap diproses.');
     }
 
     public function deliver(Request $request, Order $order): RedirectResponse

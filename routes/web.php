@@ -108,6 +108,7 @@ Route::middleware(['auth', 'admin'])->prefix(config('app.admin_path'))->name('ad
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::patch('/orders/{order}/delivered', [AdminOrderController::class, 'deliver'])->name('orders.deliver');
         Route::get('/orders/{order}/chat', [AdminOrderController::class, 'chat'])->name('orders.chat');
+        Route::patch('/orders-gateway', [AdminOrderController::class, 'toggleGateway'])->name('orders.gateway');
         Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
         Route::post('/sales', [AdminController::class, 'storeSale'])->name('sales.store');
         Route::delete('/sales/{manualSale}', [AdminController::class, 'destroySale'])->name('sales.destroy');

@@ -104,7 +104,7 @@ class GameAccount extends Model
      */
     public function usesPaymentGateway(): bool
     {
-        return Tripay::enabled() && ! $this->is_rental && (bool) $this->owner?->is_super_admin;
+        return Tripay::active() && ! $this->is_rental && (bool) $this->owner?->is_super_admin;
     }
 
     /** The unpaid, not yet expired order holding this account, if any. */

@@ -214,6 +214,29 @@ class CheckoutTest extends TestCase
         $this->get(route('admin.orders.chat', $order))->assertForbidden();
     }
 
+    public function test_the_super_admin_switches_the_payment_gateway_off_and_on(): void
+    {
+        $account = $this->storeAccount();
+        $buyer = User::factory()->buyer()->create();
+        $this->actingAs($this->superAdmin)->get('/admin/orders')->assertOk()->assertSee('Gunakan payment gateway')->assertSee('Matikan (OFF)');
+
+        // Off: every "Beli" goes to WhatsApp and the checkout refuses.
+        $this->patch(route('admin.orders.gateway'), ['enabled' => '0'])->assertSessionHas('success');
+        $this->assertFalse($account->fresh()->usesPaymentGateway());
+        $this->get('/admin/orders')->assertSee('Nyalakan (ON)');
+        $this->actingAs($buyer)->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-checkout-button', false)->assertSee(e($account->buyWhatsappUrl()), false);
+        $this->get('/checkout?akun[]='.$account->id)->assertRedirect(route('cart'));
+        $this->assertStringNotContainsString('Bayar di website', $this->getJson('/keranjang/accounts?'.http_build_query(['ids' => [$account->id]]))->json('html'));
+
+        // On again.
+        $this->actingAs($this->superAdmin)->patch(route('admin.orders.gateway'), ['enabled' => '1'])->assertSessionHas('success');
+        $this->actingAs($buyer)->get('/akun/'.$account->slug)->assertSee('data-checkout-button', false);
+
+        // Only the super admin may flip it.
+        $this->actingAs(User::factory()->regularAdmin()->create())->patch(route('admin.orders.gateway'), ['enabled' => '0'])->assertForbidden();
+        $this->assertTrue($account->fresh()->usesPaymentGateway());
+    }
+
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void
     {
         $store = $this->storeAccount(['price' => 100000]);
