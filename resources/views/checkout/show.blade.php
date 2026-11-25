@@ -95,6 +95,9 @@
                 @endforeach
             </ul>
             <dl class="mt-2 space-y-1 border-t border-white/10 pt-3 text-sm">
+                @if ($order->discount)
+                    <div class="flex justify-between gap-3 text-emerald-300"><dt>Voucher {{ $order->voucher_code }}</dt><dd>−{{ \App\Models\Order::rupiah($order->discount) }}</dd></div>
+                @endif
                 <div class="flex justify-between gap-3"><dt class="text-slate-400">Biaya {{ $order->payment_name }}</dt><dd>{{ \App\Models\Order::rupiah($order->fee) }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="font-bold">Total</dt><dd class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="text-slate-400">Pembeli</dt><dd class="text-right">{{ $order->customer_name }} · {{ $order->customer_phone }}</dd></div>

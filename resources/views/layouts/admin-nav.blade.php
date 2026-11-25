@@ -3,11 +3,11 @@
     @php($editedAccount = request()->route('account'))
     @php($inRentalForm = request()->routeIs('admin.accounts.*') && ($editedAccount instanceof \App\Models\GameAccount ? $editedAccount->is_rental : request()->boolean('rental')))
     {{-- Regular admins only manage their own accounts; the store-wide menus are for the super admin. --}}
-    @php($superOnly = ['chat', 'orders', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
+    @php($superOnly = ['chat', 'orders', 'vouchers', 'sales', 'reports', 'buyers', 'admins', 'categories', 'banner', 'infos', 'contacts', 'settings'])
     @php($pendingReports = auth()->user()->is_super_admin ? \App\Models\Report::where('status', 'pending')->count() : 0)
     @php($unreadChats = auth()->user()->is_super_admin ? \App\Models\ChatConversation::unreadByAdmin()->count() : 0)
     @php($ordersToDeliver = auth()->user()->is_super_admin ? \App\Models\Order::where('status', 'paid')->whereNull('delivered_at')->count() : 0)
-    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'orders' => 'Pesanan website', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Profil & password'] as $route => $label)
+    @foreach (['dashboard' => 'Ringkasan', 'chat' => 'Live chat', 'orders' => 'Pesanan website', 'vouchers' => 'Voucher', 'accounts' => 'Akun game', 'rentals' => 'Rental akun', 'sales' => 'Data penjualan', 'messages' => 'Pesan masuk', 'reports' => 'Laporan', 'buyers' => 'Akun pembeli', 'admins' => 'Akun admin', 'categories' => 'Kategori', 'banner' => 'Banner', 'infos' => 'Info terbaru', 'contacts' => 'Kontak & Sosmed', 'settings' => 'Pengaturan WhatsApp', 'password' => 'Profil & password'] as $route => $label)
         @continue(in_array($route, $superOnly, true) && ! auth()->user()->is_super_admin)
         @php($isActiveMenu = $route === 'rentals' ? request()->routeIs('admin.rentals*') || $inRentalForm : request()->routeIs('admin.' . $route . '*') && ! ($route === 'accounts' && $inRentalForm))
         <a href="{{ route('admin.' . $route) }}"
@@ -40,6 +40,11 @@
                         @case('orders')
                             <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
                             <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+                        @break
+
+                        @case('vouchers')
+                            <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z" />
+                            <path d="M10 9h.01M14 15h.01M14.5 9.5l-5 5" />
                         @break
 
                         @case('sales')

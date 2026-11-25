@@ -50,7 +50,7 @@
                     <div class="min-w-0">
                         <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ $order->merchant_ref }} · {{ $order->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</p>
                         <h2 class="mt-1 text-lg font-black">{{ $order->items->pluck('title')->implode(', ') }}</h2>
-                        <p class="mt-1 text-sm"><span class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</span> <span class="text-slate-400">(akun {{ \App\Models\Order::rupiah($order->subtotal) }} + biaya {{ \App\Models\Order::rupiah($order->fee) }}) · {{ $order->payment_name }}</span></p>
+                        <p class="mt-1 text-sm"><span class="font-black text-lime-300">{{ \App\Models\Order::rupiah($order->total) }}</span> <span class="text-slate-400">(akun {{ \App\Models\Order::rupiah($order->subtotal) }}@if ($order->discount) − voucher {{ $order->voucher_code }} {{ \App\Models\Order::rupiah($order->discount) }}@endif + biaya {{ \App\Models\Order::rupiah($order->fee) }}) · {{ $order->payment_name }}</span></p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span @class(['rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wider', 'border-amber-300/40 text-amber-300' => $order->status === 'unpaid', 'border-emerald-300/40 text-emerald-300' => $order->status === 'paid', 'border-rose-400/40 text-rose-300' => ! in_array($order->status, ['unpaid', 'paid'], true)])>{{ $order->statusLabel() }}</span>

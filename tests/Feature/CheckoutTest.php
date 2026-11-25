@@ -7,6 +7,8 @@ use App\Models\GameAccount;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\Voucher;
+use App\Services\Tripay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -235,6 +237,84 @@ class CheckoutTest extends TestCase
         // Only the super admin may flip it.
         $this->actingAs(User::factory()->regularAdmin()->create())->patch(route('admin.orders.gateway'), ['enabled' => '0'])->assertForbidden();
         $this->assertTrue($account->fresh()->usesPaymentGateway());
+    }
+
+    public function test_the_super_admin_creates_switches_and_deletes_vouchers(): void
+    {
+        $this->actingAs($this->superAdmin)->get('/admin/vouchers')->assertOk()->assertSee('Buat kode voucher')->assertSee('name="code"', false);
+        $this->post('/admin/vouchers', ['code' => ' hemat 10 ', 'type' => 'percent', 'value' => '10', 'max_discount' => '20.000', 'min_purchase' => '100.000', 'quota' => 5, 'per_user' => 1, 'ends_at' => '2030-01-31T23:59'])->assertSessionHasNoErrors();
+        $voucher = Voucher::sole();
+        $this->assertSame(['HEMAT10', 'percent', 10, 20000, 100000, 5, 1, true], [$voucher->code, $voucher->type, $voucher->value, $voucher->max_discount, $voucher->min_purchase, $voucher->quota, $voucher->per_user, $voucher->is_active]);
+        $this->assertSame('2030-01-31 16:59', $voucher->ends_at->format('Y-m-d H:i'));
+        $this->get('/admin/vouchers')->assertSee('HEMAT10')->assertSee('10% (maks Rp 20.000)')->assertSee('Dipakai 0 / 5');
+
+        $this->post('/admin/vouchers', ['code' => 'HEMAT10', 'type' => 'fixed', 'value' => '5000'])->assertSessionHasErrors('code');
+        $this->post('/admin/vouchers', ['code' => 'ada spasi!', 'type' => 'fixed', 'value' => '5000'])->assertSessionHasErrors('code');
+        $this->post('/admin/vouchers', ['code' => 'BESAR', 'type' => 'percent', 'value' => '150'])->assertSessionHasErrors('value');
+        $this->post('/admin/vouchers', ['code' => 'POTONG25', 'type' => 'fixed', 'value' => 'Rp 25.000', 'max_discount' => '9999'])->assertSessionHasNoErrors();
+        $this->assertSame([25000, null, null], [Voucher::where('code', 'POTONG25')->value('value'), Voucher::where('code', 'POTONG25')->value('max_discount'), Voucher::where('code', 'POTONG25')->value('starts_at')]);
+
+        $this->patch(route('admin.vouchers.toggle', $voucher))->assertSessionHas('success');
+        $this->assertFalse($voucher->fresh()->is_active);
+        $this->delete(route('admin.vouchers.destroy', $voucher))->assertSessionHas('success');
+        $this->assertSame(1, Voucher::count());
+
+        $this->actingAs(User::factory()->regularAdmin()->create())->get('/admin/vouchers')->assertForbidden();
+        $this->post('/admin/vouchers', ['code' => 'CURANG', 'type' => 'fixed', 'value' => 1000])->assertForbidden();
+    }
+
+    public function test_a_buyer_pays_less_with_a_voucher(): void
+    {
+        $account = $this->storeAccount(['price' => 350000]);
+        $buyer = User::factory()->buyer()->create();
+        Voucher::create(['code' => 'HEMAT10', 'type' => 'percent', 'value' => 10, 'max_discount' => 30000, 'per_user' => 1]);
+
+        // "Pakai" reloads the checkout with the discount; fees are worked out on the discounted price.
+        $this->actingAs($buyer)->get('/checkout?akun[]='.$account->id.'&voucher=hemat10')->assertOk()
+            ->assertSee('Voucher HEMAT10')->assertSee('−Rp 30.000', false)->assertSee('Rp 320.000')->assertSee('data-subtotal="320000"', false)
+            ->assertSee('data-fee="2990"', false)->assertSee('name="voucher" value="HEMAT10"', false);
+        $this->get('/checkout?akun[]='.$account->id.'&voucher=SALAH')->assertOk()->assertSee('Kode voucher tidak ditemukan.')->assertSee('data-subtotal="350000"', false);
+
+        $this->checkout($buyer, $account, ['voucher' => 'HEMAT10']);
+        $order = Order::sole();
+        $this->assertSame([350000, 30000, 'HEMAT10', 320000], [$order->subtotal, $order->discount, $order->voucher_code, $order->payable()]);
+        Http::assertSent(fn (HttpRequest $request): bool => str_ends_with($request->url(), 'transaction/create') && $request['amount'] === 320000
+            && $request['order_items'][0]['price'] === 320000 && $request['signature'] === hash_hmac('sha256', 'T1234'.$order->merchant_ref.'320000', 'test-private'));
+        $this->get(route('orders.show', $order))->assertSee('Voucher HEMAT10')->assertSee('−Rp 30.000', false);
+
+        // One use per buyer: the waiting order already counts.
+        $other = $this->storeAccount(['price' => 200000]);
+        $this->get('/checkout?akun[]='.$other->id.'&voucher=HEMAT10')->assertSee('Kamu sudah memakai voucher ini.');
+        $this->checkout($buyer, $other, ['voucher' => 'HEMAT10'])->assertSessionHas('error', 'Kamu sudah memakai voucher ini.');
+        $this->assertSame(1, Order::count());
+    }
+
+    public function test_voucher_rules(): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $voucher = fn (array $attributes) => Voucher::create(['code' => 'V'.Voucher::count(), 'type' => 'fixed', 'value' => 10000, 'per_user' => null, ...$attributes]);
+
+        $this->assertSame('Kode voucher tidak berlaku.', $voucher(['is_active' => false])->problemFor(100000, $buyer));
+        $this->assertSame('Kode voucher tidak berlaku.', $voucher(['starts_at' => now()->addDay()])->problemFor(100000, $buyer));
+        $this->assertSame('Kode voucher sudah kedaluwarsa.', $voucher(['ends_at' => now()->subMinute()])->problemFor(100000, $buyer));
+        $this->assertSame('Voucher ini berlaku untuk pembelian minimal Rp 150.000.', $voucher(['min_purchase' => 150000])->problemFor(100000, $buyer));
+        $this->assertStringContainsString('total bayar minimal', $voucher(['value' => 95000])->problemFor(100000, $buyer));
+        $this->assertNull($voucher([])->problemFor(100000, $buyer));
+
+        // Percent with a cap; a fixed voucher never takes more than the price.
+        $this->assertSame([25000, 50000], [$voucher(['type' => 'percent', 'value' => 25])->discountFor(100000), $voucher(['type' => 'percent', 'value' => 25, 'max_discount' => 50000])->discountFor(400000)]);
+        $this->assertSame(5000, $voucher(['value' => 9000])->discountFor(5000));
+
+        // Quota: a waiting order holds a use until it expires.
+        $limited = $voucher(['quota' => 1]);
+        $order = Order::create(['merchant_ref' => 'ZMT1', 'user_id' => User::factory()->buyer()->create()->id, 'status' => 'unpaid', 'subtotal' => 100000, 'voucher_id' => $limited->id, 'voucher_code' => $limited->code, 'discount' => 10000, 'fee' => 0, 'total' => 90000, 'payment_method' => 'QRIS', 'payment_name' => 'QRIS', 'customer_name' => 'A', 'customer_email' => 'a@b.c', 'customer_phone' => '0812', 'expires_at' => now()->addHour()]);
+        $this->assertSame('Kuota voucher ini sudah habis.', $limited->problemFor(100000, $buyer));
+        $order->update(['expires_at' => now()->subMinute()]);
+        $this->assertNull($limited->problemFor(100000, $buyer));
+
+        // Tripay gets item prices that add up to the discounted amount.
+        $this->assertSame([270000, 180000], Tripay::splitDiscount([300000, 200000], 50000));
+        $this->assertSame([66667, 33333], Tripay::splitDiscount([100000, 50000], 50000));
     }
 
     public function test_the_cart_pays_store_accounts_on_the_website_and_the_rest_by_whatsapp(): void

@@ -18,7 +18,7 @@ export function initialiseCheckout() {
         };
         form.addEventListener('change', update);
         form.addEventListener('submit', () => {
-            const button = form.querySelector('button:not([type="button"])');
+            const button = form.querySelector('[data-pay-button]');
             if (button) setTimeout(() => { button.disabled = true; button.textContent = 'Membuat pembayaran…'; }, 0);
         });
         update();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GameAccount;
 use App\Models\Order;
+use App\Models\Voucher;
 use App\Services\Tripay;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -29,13 +30,40 @@ class CheckoutController extends Controller
         if ($problem) {
             return $problem;
         }
+        $subtotal = (int) $accounts->sum('price');
+        // "Pakai" on the voucher box reloads this page with ?voucher=CODE.
+        $code = Voucher::normaliseCode($request->query('voucher'));
+        [$voucher, $voucherError] = $this->voucher($code, $subtotal, $request);
+        $discount = $voucher?->discountFor($subtotal) ?? 0;
         try {
-            $channels = $this->channelsFor((int) $accounts->sum('price'));
+            $channels = $this->channelsFor($subtotal - $discount);
         } catch (RuntimeException) {
             $channels = null;
         }
 
-        return view('checkout.create', ['accounts' => $accounts, 'channels' => $channels, 'user' => $request->user()]);
+        return view('checkout.create', [
+            'accounts' => $accounts, 'channels' => $channels, 'user' => $request->user(),
+            'subtotal' => $subtotal, 'voucher' => $voucher, 'voucherCode' => $code, 'voucherError' => $voucherError, 'discount' => $discount,
+        ]);
+    }
+
+    /**
+     * The voucher for a typed code, or why it cannot be used.
+     *
+     * @return array{0: ?Voucher, 1: ?string}
+     */
+    private function voucher(string $code, int $subtotal, Request $request): array
+    {
+        if ($code === '') {
+            return [null, null];
+        }
+        $voucher = Voucher::findByCode($code);
+        if (! $voucher) {
+            return [null, 'Kode voucher tidak ditemukan.'];
+        }
+        $problem = $voucher->problemFor($subtotal, $request->user());
+
+        return $problem ? [null, $problem] : [$voucher, null];
     }
 
     public function store(Request $request): RedirectResponse
@@ -46,8 +74,13 @@ class CheckoutController extends Controller
             return $problem;
         }
         $subtotal = (int) $accounts->sum('price');
+        [$voucher, $voucherError] = $this->voucher(Voucher::normaliseCode($request->input('voucher')), $subtotal, $request);
+        if ($voucherError) {
+            return back()->withInput()->with('error', $voucherError);
+        }
+        $payable = $subtotal - ($voucher?->discountFor($subtotal) ?? 0);
         try {
-            $channels = collect($this->channelsFor($subtotal))->keyBy('code');
+            $channels = collect($this->channelsFor($payable))->keyBy('code');
         } catch (RuntimeException) {
             return back()->withInput()->with('error', 'Metode pembayaran sedang tidak bisa dimuat. Coba lagi beberapa saat.');
         }
@@ -65,18 +98,25 @@ class CheckoutController extends Controller
         $channel = $channels[$data['method']];
 
         // Hold the accounts: lock them, re-check nobody else is paying for them, then create the order.
-        $order = DB::transaction(function () use ($accounts, $request, $data, $channel, $subtotal): ?Order {
+        $order = DB::transaction(function () use ($accounts, $request, $data, $channel, $subtotal, $voucher, $payable): Order|string|null {
             $locked = GameAccount::whereKey($accounts->modelKeys())->lockForUpdate()->get();
             if ($locked->contains(fn (GameAccount $account): bool => $account->status !== 'available' || $account->pendingOrder() !== null)) {
                 return null;
+            }
+            // Re-check the voucher under a lock so its quota cannot be overspent by two buyers at once.
+            if ($voucher && ($problem = Voucher::whereKey($voucher->id)->lockForUpdate()->first()?->problemFor($subtotal, $request->user()))) {
+                return $problem;
             }
             $order = Order::create([
                 'merchant_ref' => Order::newMerchantRef(),
                 'user_id' => $request->user()->id,
                 'status' => 'unpaid',
                 'subtotal' => $subtotal,
-                'fee' => Tripay::customerFee($channel, $subtotal),
-                'total' => $subtotal + Tripay::customerFee($channel, $subtotal),
+                'voucher_id' => $voucher?->id,
+                'voucher_code' => $voucher?->code,
+                'discount' => $subtotal - $payable,
+                'fee' => Tripay::customerFee($channel, $payable),
+                'total' => $payable + Tripay::customerFee($channel, $payable),
                 'payment_method' => $channel['code'],
                 'payment_name' => $channel['name'],
                 'customer_name' => $data['customer_name'],
@@ -92,6 +132,9 @@ class CheckoutController extends Controller
         });
         if (! $order) {
             return redirect()->route('cart')->with('error', 'Maaf, salah satu akun baru saja dipesan pembeli lain. Pilih akun lain atau coba lagi nanti.');
+        }
+        if (is_string($order)) {
+            return back()->withInput()->with('error', $order);
         }
 
         try {
