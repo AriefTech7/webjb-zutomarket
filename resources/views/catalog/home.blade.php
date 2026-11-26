@@ -102,5 +102,7 @@
                 </div>
             </section>
         @endif
+
+        @include('catalog.payment-strip')
     </div>
 @endsection
