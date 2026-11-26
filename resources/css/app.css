@@ -106,8 +106,11 @@
     /* Payment logos under "Produk Terjual": same loop as the running text, faded at both edges. */
     .pay-strip { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
     .pay-strip:hover .marquee-track { animation-play-state: paused; }
+    /* "Info Terbaru" on phones: posters run right to left; a touch (or mouse over) holds them still. */
+    .info-marquee { overflow: hidden; }
+    .info-marquee:hover .marquee-track, .info-marquee:active .marquee-track { animation-play-state: paused; }
     @media (prefers-reduced-motion: reduce) {
-        .marquee, .pay-strip { overflow-x: auto; scrollbar-width: none; }
+        .marquee, .pay-strip, .info-marquee { overflow-x: auto; scrollbar-width: none; }
         .marquee-track { animation: none; }
     }
     /* Share / Suka / Keranjang row on product cards: icon over label when narrow, side by side from 15rem. */

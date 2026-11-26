@@ -207,6 +207,12 @@ class GameAccount extends Model
         return 'Rp '.number_format(max(0, (int) $this->original_price - $this->price), 0, ',', '.');
     }
 
+    /** "Mau cicil?" under the buy button: asks the admin about paying this account in instalments. */
+    public function installmentInquiryWhatsappUrl(): ?string
+    {
+        return $this->whatsappLink('Halo admin, saya ingin tanya soal cicilan untuk akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug));
+    }
+
     public function buyWhatsappUrl(): ?string
     {
         return $this->whatsappLink('Halo admin, saya ingin membeli akun '.$this->title.' seharga '.$this->formattedPrice().'. '.route('accounts.show', $this->slug));
