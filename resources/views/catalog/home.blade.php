@@ -36,7 +36,25 @@
                     <svg class="h-5 w-5 shrink-0 text-lime-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4" /></svg>
                     <h2 id="home-info" class="text-base font-black md:text-lg">Info Terbaru</h2>
                 </div>
-                <div class="relative mt-3">
+                {{-- Phones: the posters run right to left without end (the list is repeated so the loop has no gap). --}}
+                @php($infoLoop = array_merge(...array_fill(0, (int) max(1, ceil(4 / $infos->count())), $infos->all())))
+                @php($infoIndex = $infos->pluck('id')->flip())
+                <div class="info-marquee mt-3 md:hidden" style="--marquee-duration: {{ max(12, count($infoLoop) * 4) }}s">
+                    <div class="marquee-track">
+                        @foreach ([false, true] as $isCopy)
+                            <div class="flex shrink-0 gap-3 pr-3" @if ($isCopy) aria-hidden="true" @endif>
+                                @foreach ($infoLoop as $info)
+                                    <a class="w-36 shrink-0 overflow-hidden rounded-2xl border border-[#a9c3ff]/15 bg-[#101833]"
+                                        href="{{ $info->targetUrl() }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $info->title }}" aria-haspopup="dialog" data-info-open="{{ $infoIndex[$info->id] }}"
+                                        @if ($isCopy || $loop->index >= $infos->count()) tabindex="-1" @endif>
+                                        <img class="aspect-[3/4] w-full object-cover" src="{{ $info->imageUrl() }}" alt="{{ $isCopy ? '' : $info->title }}" loading="lazy">
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="relative mt-3 hidden md:block">
                     <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none]" data-carousel-track>
                         @foreach ($infos as $info)
                             <a class="w-36 shrink-0 snap-start overflow-hidden rounded-2xl border border-[#a9c3ff]/15 bg-[#101833] transition hover:-translate-y-0.5 hover:border-lime-300/40 md:w-52"

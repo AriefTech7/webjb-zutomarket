@@ -107,22 +107,6 @@ document.querySelectorAll('[data-carousel]').forEach((carousel) => {
     window.addEventListener('resize', toggleArrows);
     track.querySelectorAll('img').forEach((image) => image.addEventListener('load', toggleArrows));
     toggleArrows();
-
-    // Phones: the posters slide sideways on their own, one poster at a time, back to the first at the end.
-    // A touch, swipe or keyboard focus pauses it for a few seconds; reduced-motion users get no auto-slide.
-    const phone = window.matchMedia('(max-width: 767px)');
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let pausedUntil = 0;
-    const pause = () => { pausedUntil = Date.now() + 6000; };
-    ['pointerdown', 'touchstart', 'wheel', 'focusin'].forEach((type) => track.addEventListener(type, pause, { passive: true }));
-    setInterval(() => {
-        if (!phone.matches || calm.matches || Date.now() < pausedUntil || document.visibilityState !== 'visible') return;
-        if (track.scrollWidth <= track.clientWidth + 1) return;
-        const poster = track.firstElementChild;
-        const stepWidth = poster ? poster.getBoundingClientRect().width + 12 : 160;
-        const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
-        track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + stepWidth, behavior: 'smooth' });
-    }, 2800);
 });
 
 document.querySelectorAll('[data-bulk-delete]').forEach((form) => {
