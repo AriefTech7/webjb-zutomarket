@@ -393,6 +393,19 @@ class CatalogTest extends TestCase
         $this->put('/admin/accounts/'.$account->id, $data + ['is_rental' => 0, 'price' => 100000])->assertRedirect('/admin/accounts');
     }
 
+    public function test_the_buy_button_is_followed_by_an_instalment_question_on_whatsapp(): void
+    {
+        Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);
+        $account = GameAccount::factory()->create(['title' => 'Akun Cicil', 'price' => 500000]);
+
+        $url = $account->installmentInquiryWhatsappUrl();
+        $this->assertStringStartsWith('https://wa.me/6281234567890?text='.rawurlencode('Halo admin, saya ingin tanya soal cicilan untuk akun Akun Cicil seharga Rp 500.000.'), $url);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertSee('Mau cicil?')->assertSee('data-installment-ask', false)->assertSee(e($url), false);
+
+        $account->update(['status' => 'sold']);
+        $this->get('/akun/'.$account->slug)->assertOk()->assertDontSee('data-installment-ask', false);
+    }
+
     public function test_stock_questions_open_the_live_chat_and_there_is_no_trade_in_or_haggling(): void
     {
         Setting::create(['key' => 'whatsapp_number', 'value' => '6281234567890']);

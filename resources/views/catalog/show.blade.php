@@ -163,6 +163,14 @@
                                     Bayar aman di website: QRIS, virtual account, e-wallet
                                 </p>
                             @endif
+                            @if ($installmentUrl = $account->installmentInquiryWhatsappUrl())
+                                <a href="{{ $installmentUrl }}" target="_blank" rel="noopener noreferrer" data-installment-ask
+                                    class="flex items-center gap-3 rounded-xl border border-amber-300/30 bg-amber-300/5 px-4 py-3 text-sm transition hover:border-amber-300/60 hover:bg-amber-300/10">
+                                    <svg class="size-5 shrink-0 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M6 15h4" /></svg>
+                                    <span class="min-w-0 flex-1"><span class="block font-bold text-amber-300">Mau cicil?</span><span class="block text-xs text-slate-300">Tanya syarat cicilan langsung ke admin lewat WhatsApp.</span></span>
+                                    <svg class="size-5 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" /></svg>
+                                </a>
+                            @endif
                         @elseif ($account->status === 'sold' || $account->isBooked())
                             <a class="btn w-full" href="{{ route('catalog.all') }}">Lihat akun lain ↗</a>
                         @else
