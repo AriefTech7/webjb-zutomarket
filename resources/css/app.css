@@ -103,8 +103,11 @@
     .marquee { overflow: hidden; color: var(--marquee-text, #ffffff); background: linear-gradient(90deg, var(--marquee-from, #2b55d8), var(--marquee-via, #3a74f0), var(--marquee-from, #2b55d8)); }
     .marquee-track { display: flex; width: max-content; animation: marquee var(--marquee-duration, 30s) linear infinite; }
     .marquee:hover .marquee-track { animation-play-state: paused; }
+    /* Payment logos under "Produk Terjual": same loop as the running text, faded at both edges. */
+    .pay-strip { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+    .pay-strip:hover .marquee-track { animation-play-state: paused; }
     @media (prefers-reduced-motion: reduce) {
-        .marquee { overflow-x: auto; scrollbar-width: none; }
+        .marquee, .pay-strip { overflow-x: auto; scrollbar-width: none; }
         .marquee-track { animation: none; }
     }
     /* Share / Suka / Keranjang row on product cards: icon over label when narrow, side by side from 15rem. */
